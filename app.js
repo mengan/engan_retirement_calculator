@@ -1347,6 +1347,7 @@ function project(opts) {
       net: nonWithdrawIncome - totalExpenses - totalTax,
       withdrawnByType, totalWithdrawn,
       taxableGapWD: wSpend.byType["taxable"] || 0,
+      taxableTaxWD: wTax.byType["taxable"] || 0,
       surplusDeposited,
       ordinaryTax, ltcgTax, totalTax,
       ordTaxByBracket, ltcgTaxByBracket,
@@ -1882,7 +1883,19 @@ function drawExpenseBreakdown(rows) {
   // Net flow to/from taxable brokerage each year.
   // Positive = surplus deposited (inflows beat outflows that year).
   // Negative = deficit drawn (outflows exceed inflows, brokerage fills the gap).
-  const netFlow = rows.map(r => (r.surplusDeposited || 0) - (r.taxableGapWD || 0));
+  const netFlow = rows.map(r => {
+    const inflows = (r.salary1 || 0) + (r.salary2 || 0)
+      + (r.grossSS || 0)
+      + (r.rentalNet || 0)
+      + (r.dividendIncome || 0)
+      + (r.saleProceeds || 0)
+      + (r.traditionalRMD || 0)
+      + (r.inheritedRMD || 0)
+      + (r.inheritedBracketDrain || 0)
+      + (r.rothConverted || 0);
+    const outflows = (r.expenses || 0) + (r.ordinaryTax || 0) + (r.ltcgTax || 0);
+    return inflows - outflows;
+  });
   taxableBrokerageFlowChart = new Chart(
     document.getElementById("gapWithdrawalChart").getContext("2d"),
     {
