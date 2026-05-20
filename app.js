@@ -1640,23 +1640,31 @@ function recalc() {
   const rows = project();
   const tbody = document.querySelector("#projection-table tbody");
   tbody.innerHTML = "";
-  let cumTaxableWD = 0;
+  let cumBrokerageFlow = 0;
   rows.forEach(r => {
     const tr = document.createElement("tr");
     if (r.retired) tr.className = "retired";
-    const taxableWD = (r.withdrawnByType && r.withdrawnByType.taxable) || 0;
-    cumTaxableWD += taxableWD;
+    const inflows = (r.salary1 || 0) + (r.salary2 || 0)
+      + (r.grossSS || 0) + (r.rentalNet || 0) + (r.dividendIncome || 0)
+      + (r.saleProceeds || 0) + (r.traditionalRMD || 0)
+      + (r.inheritedRMD || 0) + (r.inheritedBracketDrain || 0)
+      + (r.rothConverted || 0);
+    const outflows = (r.expenses || 0) + (r.ordinaryTax || 0) + (r.ltcgTax || 0);
+    const brokerageNetFlow = inflows - outflows;
+    cumBrokerageFlow += brokerageNetFlow;
     const taxableBal = (r.balancesByType && r.balancesByType.taxable) || 0;
-    const taxableWDPct = taxableBal > 0 ? (taxableWD / taxableBal * 100).toFixed(1) + "%" : "—";
+    const brokerageNetPct = taxableBal > 0 ? (brokerageNetFlow / taxableBal * 100).toFixed(1) + "%" : "—";
+    const flowClass = brokerageNetFlow < 0 ? "negative" : "";
+    const cumClass  = cumBrokerageFlow  < 0 ? "negative" : "";
     tr.innerHTML = `
       <td>${r.year}</td>
       <td>${r.s1Age}/${r.s2Age}</td>
       <td>${fmt(r.income)}</td>
       <td>${fmt(r.expenses)}</td>
       <td class="${r.net<0?'negative':''}">${fmt(r.net)}</td>
-      <td>${fmt(taxableWD)}</td>
-      <td>${taxableWDPct}</td>
-      <td><strong>${fmt(cumTaxableWD)}</strong></td>
+      <td class="${flowClass}">${fmt(brokerageNetFlow)}</td>
+      <td class="${flowClass}">${brokerageNetPct}</td>
+      <td class="${cumClass}"><strong>${fmt(cumBrokerageFlow)}</strong></td>
       <td>${fmt(r.liquid)}</td>
       <td>${fmt(r.reEquity)}</td>
       <td>${fmt(r.netWorth)}</td>
