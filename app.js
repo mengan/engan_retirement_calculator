@@ -1643,6 +1643,8 @@ function recalc() {
     if (r.retired) tr.className = "retired";
     const taxableWD = (r.withdrawnByType && r.withdrawnByType.taxable) || 0;
     cumTaxableWD += taxableWD;
+    const taxableBal = (r.balancesByType && r.balancesByType.taxable) || 0;
+    const taxableWDPct = taxableBal > 0 ? (taxableWD / taxableBal * 100).toFixed(1) + "%" : "—";
     tr.innerHTML = `
       <td>${r.year}</td>
       <td>${r.s1Age}/${r.s2Age}</td>
@@ -1650,6 +1652,7 @@ function recalc() {
       <td>${fmt(r.expenses)}</td>
       <td class="${r.net<0?'negative':''}">${fmt(r.net)}</td>
       <td>${fmt(taxableWD)}</td>
+      <td>${taxableWDPct}</td>
       <td><strong>${fmt(cumTaxableWD)}</strong></td>
       <td>${fmt(r.liquid)}</td>
       <td>${fmt(r.reEquity)}</td>
