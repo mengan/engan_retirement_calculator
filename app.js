@@ -1347,6 +1347,7 @@ function project(opts) {
       net: nonWithdrawIncome - totalExpenses - totalTax,
       withdrawnByType, totalWithdrawn,
       taxableGapWD: wSpend.byType["taxable"] || 0,
+      surplusDeposited,
       ordinaryTax, ltcgTax, totalTax,
       ordTaxByBracket, ltcgTaxByBracket,
       taxableOrdinary, totalOrdinary, marginalRate: margRate,
@@ -1414,7 +1415,7 @@ function renderCurrentPortfolio() {
 }
 
 // ===== Render Summary =====
-let assetChart, cashflowChart, incomeBreakdownChart, gapWithdrawalChart, expenseBreakdownChart;
+let assetChart, cashflowChart, incomeBreakdownChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart;
 let taxByBracketChart;
 let expenseByYearChart, realEstateEquityChart, rentalIncomeChart, accountBalancesChart;
 
@@ -1809,9 +1810,6 @@ function drawCharts(rows, lowRows, highRows) {
 }
 
 function drawIncomeBreakdown(rows) {
-  // Auto-generated income: things that flow in without the model "choosing" to withdraw —
-  // salaries, Social Security, rental net, dividends, scheduled property sales, and
-  // required minimum distributions (Traditional IRA/401k RMDs + Inherited IRA RMD/drain).
   if (incomeBreakdownChart) incomeBreakdownChart.destroy();
   const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
   incomeBreakdownChart = new Chart(
@@ -1821,19 +1819,21 @@ function drawIncomeBreakdown(rows) {
       data: {
         labels,
         datasets: [
-          { label: "Salaries",            data: rows.map(r => (r.salary1 || 0) + (r.salary2 || 0)), backgroundColor: "#1d4ed8" },
-          { label: "Social Security",     data: rows.map(r => r.grossSS || 0),         backgroundColor: "#0ea5e9" },
-          { label: "Rental Net",          data: rows.map(r => r.rentalNet || 0),       backgroundColor: "#10b981" },
-          { label: "Dividends",           data: rows.map(r => r.dividendIncome || 0),  backgroundColor: "#a78bfa" },
-          { label: "Property Sale Proceeds", data: rows.map(r => r.saleProceeds || 0), backgroundColor: "#84cc16" },
-          { label: "Traditional IRA / 401k RMD", data: rows.map(r => r.traditionalRMD || 0), backgroundColor: "#dc2626" },
-          { label: "Inherited IRA RMD", data: rows.map(r => r.inheritedRMD || 0), backgroundColor: "#b45309" },
+          { label: "Salaries",                     data: rows.map(r => (r.salary1 || 0) + (r.salary2 || 0)), backgroundColor: "#1d4ed8" },
+          { label: "Social Security",              data: rows.map(r => r.grossSS || 0),              backgroundColor: "#0ea5e9" },
+          { label: "Rental Net",                   data: rows.map(r => r.rentalNet || 0),            backgroundColor: "#10b981" },
+          { label: "Dividends",                    data: rows.map(r => r.dividendIncome || 0),       backgroundColor: "#a78bfa" },
+          { label: "Property Sale Proceeds",       data: rows.map(r => r.saleProceeds || 0),         backgroundColor: "#84cc16" },
+          { label: "Traditional IRA / 401k RMD",  data: rows.map(r => r.traditionalRMD || 0),       backgroundColor: "#dc2626" },
+          { label: "Inherited IRA RMD",            data: rows.map(r => r.inheritedRMD || 0),         backgroundColor: "#b45309" },
+          { label: "Inherited IRA Bracket Fill",   data: rows.map(r => r.inheritedBracketDrain || 0), backgroundColor: "#c2410c" },
+          { label: "Roth Conversion",              data: rows.map(r => r.rothConverted || 0),        backgroundColor: "#7c3aed" },
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          title: { display: true, text: "Annual Auto-Generated Income (stacked)" },
+          title: { display: true, text: "Annual Inflows by Source (stacked)" },
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
         },
         scales: {
@@ -1846,48 +1846,8 @@ function drawIncomeBreakdown(rows) {
 }
 
 function drawGapWithdrawalBreakdown(rows) {
-  // Gap-funding withdrawals: discretionary draws the model takes (per your withdrawal
-  // strategy) to cover the shortfall when auto income < expenses + taxes. Roth
-  // conversions shown for visibility — they aren't cash flow but are real account moves.
-  if (gapWithdrawalChart) gapWithdrawalChart.destroy();
-  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
-  const w = (r, t) => (r.withdrawnByType && r.withdrawnByType[t]) || 0;
-  gapWithdrawalChart = new Chart(
-    document.getElementById("gapWithdrawalChart").getContext("2d"),
-    {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [
-          { label: "Taxable Brokerage WD (gap only)", data: rows.map(r => r.taxableGapWD || 0), backgroundColor: "#f59e0b" },
-          { label: "Traditional WD (above RMD)", data: rows.map(r => w(r, "ira") + w(r, "401k")), backgroundColor: "#ef4444" },
-          { label: "Roth WD",          data: rows.map(r => w(r, "roth")),          backgroundColor: "#15803d" },
-          { label: "Inherited IRA WD (above RMD)", data: rows.map(r => w(r, "inherited_ira")), backgroundColor: "#9a3412" },
-          { label: "Inherited IRA Bracket Drain",  data: rows.map(r => r.inheritedBracketDrain || 0), backgroundColor: "#c2410c" },
-          { label: "HSA WD",           data: rows.map(r => w(r, "hsa")),           backgroundColor: "#ec4899" },
-          { label: "Roth Conversions", data: rows.map(r => r.rothConverted || 0),  backgroundColor: "#7c3aed" },
-        ],
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          title: { display: true, text: "Annual Gap-Funding Withdrawals (stacked)" },
-          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
-        },
-        scales: {
-          x: { stacked: true },
-          y: { stacked: true, ticks: { callback: v => fmt(v) } },
-        },
-      },
-    }
-  );
-}
-
-function drawExpenseBreakdown(rows) {
   if (expenseBreakdownChart) expenseBreakdownChart.destroy();
   const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
-  // "Living expenses" = the spending side (baseline + recurring + large + mortgage).
-  // The projection puts everything except taxes in r.expenses.
   expenseBreakdownChart = new Chart(
     document.getElementById("expenseBreakdownChart").getContext("2d"),
     {
@@ -1903,12 +1863,49 @@ function drawExpenseBreakdown(rows) {
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          title: { display: true, text: "Annual Outflow: Living Expenses vs Federal Taxes (stacked)" },
+          title: { display: true, text: "Annual Outflows: Living Expenses & Taxes (stacked)" },
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
         },
         scales: {
           x: { stacked: true },
           y: { stacked: true, ticks: { callback: v => fmt(v) } },
+        },
+      },
+    }
+  );
+}
+
+function drawExpenseBreakdown(rows) {
+  if (gapWithdrawalChart) gapWithdrawalChart.destroy();
+  if (taxableBrokerageFlowChart) taxableBrokerageFlowChart.destroy();
+  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  // Net flow to/from taxable brokerage each year.
+  // Positive = surplus deposited (inflows beat outflows that year).
+  // Negative = deficit drawn (outflows exceed inflows, brokerage fills the gap).
+  const netFlow = rows.map(r => (r.surplusDeposited || 0) - (r.taxableGapWD || 0));
+  taxableBrokerageFlowChart = new Chart(
+    document.getElementById("gapWithdrawalChart").getContext("2d"),
+    {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Taxable Brokerage Net Flow",
+            data: netFlow,
+            backgroundColor: netFlow.map(v => v >= 0 ? "#10b981" : "#ef4444"),
+          },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: "Annual Taxable Brokerage Net Flow (green = surplus added, red = gap drawn)" },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+        },
+        scales: {
+          x: { stacked: false },
+          y: { ticks: { callback: v => fmt(v) } },
         },
       },
     }
