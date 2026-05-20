@@ -1416,7 +1416,7 @@ function renderCurrentPortfolio() {
 }
 
 // ===== Render Summary =====
-let assetChart, cashflowChart, incomeBreakdownChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart;
+let assetChart, incomeBreakdownChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart;
 let taxByBracketChart;
 let expenseByYearChart, realEstateEquityChart, rentalIncomeChart, accountBalancesChart;
 
@@ -1719,7 +1719,7 @@ function recalc() {
 function drawCharts(rows, lowRows, highRows) {
   const labels = rows.map(r => r.year);
   if (assetChart) assetChart.destroy();
-  if (cashflowChart) cashflowChart.destroy();
+
 
   const ctx1 = document.getElementById("assetChart").getContext("2d");
   assetChart = new Chart(ctx1, {
@@ -1792,30 +1792,6 @@ function drawCharts(rows, lowRows, highRows) {
     }
   });
 
-  const ctx2 = document.getElementById("cashflowChart").getContext("2d");
-  cashflowChart = new Chart(ctx2, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [
-        { label: "Income", data: rows.map(r => r.income), backgroundColor: "#10b981" },
-        { label: "Expenses", data: rows.map(r => -r.expenses), backgroundColor: "#ef4444" },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        title: { display: true, text: "Annual Income vs Expenses" },
-        tooltip: {
-          callbacks: { label: c => `${c.dataset.label}: ${fmt(Math.abs(c.parsed.y))}` }
-        },
-      },
-      scales: {
-        y: { ticks: { callback: v => fmt(v) } }
-      }
-    }
-  });
 }
 
 function drawIncomeBreakdown(rows) {
