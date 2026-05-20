@@ -1,0 +1,380 @@
+{
+  "settings": {
+    "currentYear": 2026,
+    "endYear": 2056,
+    "taxRate": 18,
+    "cgRate": 15,
+    "salaryReal": false,
+    "defaultReturnLow": 5,
+    "defaultReturnHigh": 6,
+    "defaultInflationLow": 1.5,
+    "defaultInflationHigh": 5,
+    "defaultPropertyAppreciation": 1,
+    "defaultRentGrowth": 2,
+    "useTaxBrackets": true,
+    "stdDeduction": 29200,
+    "taxableCapGainsPct": 50,
+    "filingStatus": "mfj",
+    "taxBrackets": [
+      {
+        "rate": 10,
+        "upTo": 23200
+      },
+      {
+        "rate": 12,
+        "upTo": 94300
+      },
+      {
+        "rate": 22,
+        "upTo": 201050
+      },
+      {
+        "rate": 24,
+        "upTo": 383900
+      },
+      {
+        "rate": 32,
+        "upTo": 487450
+      },
+      {
+        "rate": 35,
+        "upTo": 731200
+      },
+      {
+        "rate": 37,
+        "upTo": 0
+      }
+    ],
+    "ltcgBrackets": [
+      {
+        "rate": 0,
+        "upTo": 94050
+      },
+      {
+        "rate": 15,
+        "upTo": 583750
+      },
+      {
+        "rate": 20,
+        "upTo": 0
+      }
+    ],
+    "withdrawalOrder": [
+      "inherited_ira",
+      "taxable",
+      "traditional",
+      "roth",
+      "hsa"
+    ],
+    "bracketAwareWithdrawals": true,
+    "swr": 4,
+    "swrMethod": "dynamic",
+    "swrUpperBand": 20,
+    "swrLowerBand": 20,
+    "swrAdjust": 10,
+    "rothConv": {
+      "strategy": "fill_12",
+      "startYear": 2028,
+      "endYear": 2041,
+      "customAmount": 0,
+      "startAfterInheritedDepleted": true
+    },
+    "inheritedIra": {
+      "strategy": "fill_first",
+      "splitPct": 50,
+      "capAtBracketFill": false,
+      "_capMigrated": true
+    },
+    "s1": {
+      "name": "mike",
+      "age": 50,
+      "salary": 250000,
+      "salaryGrowth": 3,
+      "retireYear": 2027,
+      "contrib": 10001,
+      "ssAge": 70,
+      "ssAmt": 37407.758811428575,
+      "ssEstEarnings": 120000,
+      "ssEstYears": 26,
+      "ssOverride": 0
+    },
+    "s2": {
+      "name": "juliet ",
+      "age": 54,
+      "salary": 100000,
+      "salaryGrowth": 2,
+      "retireYear": 2028,
+      "contrib": 20000,
+      "ssAge": 62,
+      "ssAmt": 18055.08,
+      "ssEstEarnings": 90000,
+      "ssEstYears": 25,
+      "ssOverride": 0
+    },
+    "defaultReturn": 6,
+    "defaultInflation": 3
+  },
+  "expenses": {
+    "base": 10000,
+    "inflation": 2.5,
+    "preRetMult": 100,
+    "phases": [
+      {
+        "start": 54,
+        "end": 66,
+        "mult": 100
+      },
+      {
+        "start": 67,
+        "end": 79,
+        "mult": 100
+      },
+      {
+        "start": 80,
+        "end": 110,
+        "mult": 100
+      }
+    ],
+    "large": [
+      {
+        "id": "c0r93is6",
+        "desc": "Wedding gift",
+        "year": 2029,
+        "amount": 30000,
+        "inflate": true
+      },
+      {
+        "id": "7roz737p",
+        "desc": "alex downpayment",
+        "year": 2031,
+        "amount": 100000,
+        "inflate": true
+      }
+    ],
+    "recurring": [
+      {
+        "id": "oqu5ipy7",
+        "desc": "medical",
+        "amount": 30000,
+        "period": "annual",
+        "inflate": true,
+        "startYear": 2027,
+        "endYear": 2065
+      },
+      {
+        "id": "ah8klp7z",
+        "desc": "car",
+        "amount": 500,
+        "period": "monthly",
+        "inflate": true,
+        "startYear": 2050,
+        "endYear": 2065
+      },
+      {
+        "id": "ei5niuk4",
+        "desc": "travel",
+        "amount": 25000,
+        "period": "annual",
+        "inflate": true,
+        "startYear": 2027,
+        "endYear": 2037
+      }
+    ]
+  },
+  "accounts": [
+    {
+      "id": "smgzlndq",
+      "name": "Joint Brokerage",
+      "type": "taxable",
+      "owner": "Joint",
+      "balance": 1449609,
+      "basis": 1000000,
+      "returnPct": 6,
+      "contribution": 12000,
+      "dividendYield": 0.7
+    },
+    {
+      "id": "kom3wb4a",
+      "name": "S1 ira",
+      "type": "ira",
+      "owner": "Spouse 1",
+      "balance": 765775,
+      "basis": 0,
+      "returnPct": 6,
+      "contribution": 23000
+    },
+    {
+      "id": "mrcpcnba",
+      "name": "s1 roth",
+      "type": "roth",
+      "owner": "Spouse 1",
+      "balance": 84100,
+      "basis": 0,
+      "returnPct": 6,
+      "contribution": 0
+    },
+    {
+      "id": "s65pocge",
+      "name": "S1 sep",
+      "type": "ira",
+      "owner": "Spouse 1",
+      "balance": 939,
+      "basis": 0,
+      "returnPct": 6,
+      "contribution": 0
+    },
+    {
+      "id": "9t9nbolv",
+      "name": "s1 401k pre",
+      "type": "401k",
+      "owner": "Spouse 1",
+      "balance": 830079,
+      "basis": 0,
+      "returnPct": 6,
+      "contribution": 0
+    },
+    {
+      "id": "g73b8iza",
+      "name": "s2 roth",
+      "type": "roth",
+      "owner": "Spouse 2",
+      "balance": 60594,
+      "basis": 0,
+      "returnPct": 6,
+      "contribution": 0
+    },
+    {
+      "id": "dtbciw44",
+      "name": "s2 ira",
+      "type": "ira",
+      "owner": "Spouse 2",
+      "balance": 56806,
+      "basis": 0,
+      "returnPct": 6,
+      "contribution": 0
+    },
+    {
+      "id": "qg4pp2xh",
+      "name": "s2 sep ",
+      "type": "ira",
+      "owner": "Spouse 2",
+      "balance": 141083,
+      "basis": 0,
+      "returnPct": 6,
+      "contribution": 20000
+    },
+    {
+      "id": "z457xywx",
+      "name": "inherited ira",
+      "type": "inherited_ira",
+      "owner": "Spouse 1",
+      "balance": 528000,
+      "basis": 0,
+      "returnPct": 6,
+      "contribution": 0,
+      "inheritanceYear": 2026
+    },
+    {
+      "id": "uyux56qk",
+      "name": "inherited",
+      "type": "taxable",
+      "owner": "Spouse 1",
+      "balance": 849996,
+      "basis": 850000,
+      "returnPct": 6,
+      "contribution": 0,
+      "dividendYield": 0.7
+    },
+    {
+      "id": "70zvz4ua",
+      "name": "s1 401k pre",
+      "type": "roth",
+      "owner": "Spouse 1",
+      "balance": 234124.88,
+      "basis": 0,
+      "returnPct": 6,
+      "contribution": 0
+    }
+  ],
+  "properties": [
+    {
+      "id": "si8m5jmp",
+      "name": "Primary Home",
+      "type": "primary",
+      "value": 1850000,
+      "appreciation": 3,
+      "loanBalance": 409158,
+      "payment": 3404.06,
+      "interestRate": 2.875,
+      "isRental": false,
+      "rent": 0,
+      "rentGrowth": 0,
+      "basis": 0,
+      "sellYear": 0,
+      "accumDepreciation": 0,
+      "loanPayoffYear": 2051,
+      "loanPayoffMonth": 7,
+      "escrow": 1462.36
+    },
+    {
+      "id": "p8u0r8un",
+      "name": "171",
+      "type": "investment",
+      "value": 1250000,
+      "appreciation": 3,
+      "loanBalance": 264853,
+      "payment": 2290.5,
+      "interestRate": 3.625,
+      "isRental": true,
+      "rent": 5001,
+      "rentGrowth": 3,
+      "basis": 220000,
+      "sellYear": 0,
+      "accumDepreciation": 60000,
+      "taxablePct": 35,
+      "loanPayoffYear": 2050,
+      "loanPayoffMonth": 6,
+      "escrow": 908.66
+    },
+    {
+      "id": "mamnz8s6",
+      "name": "14008",
+      "type": "investment",
+      "value": 1249999,
+      "appreciation": 3,
+      "loanBalance": 782843,
+      "payment": 4897.84,
+      "interestRate": 3.5,
+      "isRental": true,
+      "rent": 5500,
+      "rentGrowth": 3,
+      "basis": 0,
+      "sellYear": 0,
+      "accumDepreciation": 0,
+      "taxablePct": 35,
+      "loanPayoffYear": 2051,
+      "escrow": 1022.58
+    },
+    {
+      "id": "oir2dtre",
+      "name": "14016",
+      "type": "investment",
+      "value": 1250000,
+      "appreciation": 3,
+      "loanBalance": 447131,
+      "payment": 3281.38,
+      "interestRate": 3.625,
+      "isRental": true,
+      "rent": 5350,
+      "rentGrowth": 3,
+      "basis": 0,
+      "sellYear": 0,
+      "accumDepreciation": 0,
+      "taxablePct": 35,
+      "loanPayoffYear": 2050,
+      "loanPayoffMonth": 6,
+      "escrow": 941.84
+    }
+  ],
+  "version": 2
+}

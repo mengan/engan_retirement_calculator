@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Retirement Calculator</title>
+<link rel="stylesheet" href="styles.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>Retirement Calculator</h1>
+  <div class="header-actions">
+    <button id="recalc-btn" class="primary">Recalculate</button>
+    <button id="export-btn">Export</button>
+    <button id="import-btn">Import</button>
+    <button id="reset-btn" class="danger">Reset</button>
+    <input type="file" id="import-file" accept="application/json" style="display:none"/>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="summary">Summary</button>
+  <button class="tab" data-tab="settings">General Settings</button>
+  <button class="tab" data-tab="socialsecurity">Social Security</button>
+  <button class="tab" data-tab="expenses">Expenses</button>
+  <button class="tab" data-tab="accounts">Investment Accounts</button>
+  <button class="tab" data-tab="realestate">Real Estate</button>
+  <button class="tab" data-tab="guardrails">Guardrails (SWR)</button>
+  <button class="tab" data-tab="withdrawals">Withdrawals &amp; Taxes</button>
+  <button class="tab" data-tab="montecarlo">Monte Carlo</button>
+</nav>
+
+<main>
+
+<!-- SUMMARY -->
+<section id="tab-summary" class="tab-panel active">
+  <h2>Current Portfolio</h2>
+  <div id="current-portfolio-cards" class="summary-cards"></div>
+
+  <h2>Portfolio Trajectory</h2>
+  <div class="summary-cards">
+    <div class="card"><div class="card-label">End of Year 1 Assets</div><div class="card-value" id="sum-current">$0</div></div>
+    <div class="card"><div class="card-label">Peak Liquid Assets</div><div class="card-value" id="sum-peak">$0</div></div>
+    <div class="card">
+      <div class="card-label">End-of-Plan Assets (mid)</div>
+      <div class="card-value" id="sum-end">$0</div>
+      <div class="muted" style="font-size:11px;margin-top:4px;">
+        Low <span id="sum-end-low">—</span> · High <span id="sum-end-high">—</span>
+      </div>
+    </div>
+    <div class="card"><div class="card-label">Avg Burn Rate (retirement)</div><div class="card-value" id="sum-burn">$0/yr</div></div>
+    <div class="card"><div class="card-label">Money-Out Year</div><div class="card-value" id="sum-bust">—</div></div>
+  </div>
+  <div class="chart-container">
+    <canvas id="assetChart"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="cashflowChart"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="incomeBreakdownChart"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="gapWithdrawalChart"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="expenseBreakdownChart"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="taxByBracketChart"></canvas>
+  </div>
+
+  <h3>Year-by-Year Projection</h3>
+  <div class="table-wrap">
+    <table id="projection-table">
+      <thead>
+        <tr>
+          <th>Year</th><th>Ages</th>
+          <th>Income</th><th>Expenses</th>
+          <th>Net Cash Flow</th>
+          <th>Taxable WD<br/><small>(this year)</small></th>
+          <th>Taxable WD<br/><small>(cumulative)</small></th>
+          <th>Liquid Assets</th>
+          <th>Real Estate Equity</th>
+          <th>Total Net Worth</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- GENERAL SETTINGS -->
+<section id="tab-settings" class="tab-panel">
+  <h2>General Settings</h2>
+  <div class="grid-2">
+    <fieldset>
+      <legend>Plan Horizon</legend>
+      <label>Current Year <input type="number" id="set-current-year" value="2026" /></label>
+      <label>Plan End Year <input type="number" id="set-end-year" value="2065" /></label>
+      <small class="muted">
+        Federal taxes are computed from the bracket table on the Withdrawals &amp; Taxes tab — no flat rate needed here.
+      </small>
+    </fieldset>
+
+    <fieldset>
+      <legend>Spouse 1</legend>
+      <label>Name <input type="text" id="s1-name" value="Spouse 1" /></label>
+      <label>Current Age <input type="number" id="s1-age" value="50" /></label>
+      <label>Annual Salary ($) <input type="number" id="s1-salary" value="120000" /></label>
+      <label>Salary Growth (%/yr) <input type="number" id="s1-salary-growth" value="3" step="0.1" /></label>
+      <label>Retirement Year <input type="number" id="s1-retire-year" value="2035" /></label>
+      <label>401k / Pretax Contribution ($/yr) <input type="number" id="s1-contrib" value="23000" /></label>
+      <label>Social Security Start Age <input type="number" id="s1-ss-age" value="67" /></label>
+      <label>Social Security Annual Benefit (today $) <input type="number" id="s1-ss-amt" value="36000" /></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Spouse 2</legend>
+      <label>Name <input type="text" id="s2-name" value="Spouse 2" /></label>
+      <label>Current Age <input type="number" id="s2-age" value="48" /></label>
+      <label>Annual Salary ($) <input type="number" id="s2-salary" value="90000" /></label>
+      <label>Salary Growth (%/yr) <input type="number" id="s2-salary-growth" value="3" step="0.1" /></label>
+      <label>Retirement Year <input type="number" id="s2-retire-year" value="2037" /></label>
+      <label>401k / Pretax Contribution ($/yr) <input type="number" id="s2-contrib" value="20000" /></label>
+      <label>Social Security Start Age <input type="number" id="s2-ss-age" value="67" /></label>
+      <label>Social Security Annual Benefit (today $) <input type="number" id="s2-ss-amt" value="28000" /></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Defaults</legend>
+      <h4 style="margin:0 0 4px 0;">Investment Return Range</h4>
+      <div class="grid-2" style="gap:0 16px;">
+        <label>Lower Return (%/yr)
+          <input type="number" id="set-default-return-low" value="4.5" step="0.1" /></label>
+        <label>Upper Return (%/yr)
+          <input type="number" id="set-default-return-high" value="7.5" step="0.1" /></label>
+      </div>
+      <small class="muted">
+        <strong>Suggested ranges:</strong> conservative balanced (60/40) ≈ 4.5–6.0%; moderate (80/20) ≈ 5.5–7.5%; aggressive (100% equities) ≈ 6.0–9.0%. Long-term real S&amp;P 500 average ≈ 7% nominal after inflation.
+      </small>
+
+      <h4 style="margin:16px 0 4px 0;">Inflation Range</h4>
+      <div class="grid-2" style="gap:0 16px;">
+        <label>Lower Inflation (%/yr)
+          <input type="number" id="set-default-inflation-low" value="2.0" step="0.1" /></label>
+        <label>Upper Inflation (%/yr)
+          <input type="number" id="set-default-inflation-high" value="4.0" step="0.1" /></label>
+      </div>
+      <small class="muted">
+        <strong>Suggested ranges:</strong> Fed target ≈ 2%; 100-year US average ≈ 3%; cautious planning ≈ 2–4%; high-inflation scenario ≈ 3–5%.
+      </small>
+
+      <h4 style="margin:16px 0 4px 0;">Other Defaults</h4>
+      <label>Default Property Value Growth (%/yr)
+        <input type="number" id="set-default-property-appreciation" value="3" step="0.1" />
+        <small>Applied to all properties.</small>
+      </label>
+      <label>Default Rent Growth (%/yr)
+        <input type="number" id="set-default-rent-growth" value="3" step="0.1" />
+        <small>Applied to all rental properties.</small>
+      </label>
+      <label>Inflation Applied To Salaries Already? <select id="set-salary-real">
+        <option value="false" selected>No — grow salary by growth rate above</option>
+        <option value="true">Yes — keep salary flat in today's dollars</option>
+      </select></label>
+    </fieldset>
+  </div>
+</section>
+
+<!-- SOCIAL SECURITY -->
+<section id="tab-socialsecurity" class="tab-panel">
+  <h2>Social Security</h2>
+  <p class="muted">
+    Quick estimator using the SSA "bend-point" formula (2024 base). Enter each spouse's average annual
+    career earnings (in today's dollars) and the age they plan to claim. Filing earlier reduces the
+    benefit; filing later (up to age 70) increases it via delayed retirement credits. The estimated
+    benefit feeds into the main projection automatically.
+  </p>
+  <div id="ss-spouses"></div>
+  <fieldset>
+    <legend>How this works</legend>
+    <ul class="muted" style="margin:6px 0 0 18px; padding:0;">
+      <li>Earnings are capped at the 2024 SS wage base ($168,600).</li>
+      <li>Average Indexed Monthly Earnings (AIME) = average annual earnings ÷ 12.</li>
+      <li>PIA = 90% of first $1,174 of AIME + 32% from $1,174 to $7,078 + 15% above $7,078.</li>
+      <li>Years worked &lt; 35 scales the benefit down proportionally.</li>
+      <li>Claiming at 62 ≈ 70% of FRA benefit; at 67 (FRA) = 100%; at 70 ≈ 124%.</li>
+      <li>Manual override lets you paste in your real SSA statement number.</li>
+    </ul>
+  </fieldset>
+</section>
+
+<!-- EXPENSES -->
+<section id="tab-expenses" class="tab-panel">
+  <h2>Expenses</h2>
+
+  <fieldset>
+    <legend>Baseline</legend>
+    <div class="grid-2">
+      <label>Monthly Base Expenses today ($)
+        <input type="number" id="exp-base" value="7500" />
+        <small>Enter your typical monthly spend (rent/mortgage already counted automatically from Real Estate, so exclude it here). The model multiplies by 12 internally.</small>
+        <small id="exp-base-swr-hint" style="margin-top:6px; color:#1f3a5f; font-weight:500;"></small>
+      </label>
+      <label>Inflation Rate (%/yr)
+        <input type="number" id="exp-inflation" value="3" step="0.1" /></label>
+      <label>Pre-Retirement Expense Adjustment (% of base)
+        <input type="number" id="exp-preret" value="100" step="1" />
+        <small>Spend during working years as % of base (e.g. 110 = 10% more while working)</small>
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>"Smile" / Phased Retirement Spending</legend>
+    <p class="muted">Multipliers applied to base expenses based on the older spouse's age. Standard "retirement smile": high early (travel), lower mid, higher late (medical).</p>
+    <table class="phase-table">
+      <thead><tr><th>Phase</th><th>Start Age</th><th>End Age</th><th>Multiplier (%)</th></tr></thead>
+      <tbody>
+        <tr><td>Early (Go-Go)</td>
+          <td><input type="number" id="phase1-start" value="65"/></td>
+          <td><input type="number" id="phase1-end" value="74"/></td>
+          <td><input type="number" id="phase1-mult" value="110"/></td></tr>
+        <tr><td>Mid (Slow-Go)</td>
+          <td><input type="number" id="phase2-start" value="75"/></td>
+          <td><input type="number" id="phase2-end" value="84"/></td>
+          <td><input type="number" id="phase2-mult" value="85"/></td></tr>
+        <tr><td>Late (No-Go / Medical)</td>
+          <td><input type="number" id="phase3-start" value="85"/></td>
+          <td><input type="number" id="phase3-end" value="110"/></td>
+          <td><input type="number" id="phase3-mult" value="120"/></td></tr>
+      </tbody>
+    </table>
+  </fieldset>
+
+  <fieldset>
+    <legend>Recurring Expenses (on top of baseline)</legend>
+    <p class="muted" style="margin-top:0;">
+      Add line items that aren't part of your typical month — e.g. $1,500/mo for healthcare,
+      $500/mo for a vehicle loan, $10,000/yr for travel. Each line is added to expenses for
+      every year between its start and end years (inclusive). Toggle "Inflate?" to grow the
+      amount with inflation each year.
+    </p>
+    <p class="muted" style="margin-top:0;font-size:12px;">
+      <strong>Note:</strong> The Mortgage row is read-only and pulled automatically from the
+      Real Estate tab — it sums the current monthly PITI payment for every property that's
+      <em>not</em> a rental. (Rental mortgages are netted inside the rental's taxable %.)
+      The projection amortizes each loan independently, so the actual yearly mortgage cost
+      drops to $0 in the year the loan is paid off.
+    </p>
+    <table id="recurring-expenses-table">
+      <thead><tr>
+        <th>Description</th><th>Amount ($)</th><th>Period</th>
+        <th>Start Year</th><th>End Year</th><th>Inflate?</th><th></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+    <button id="add-recurring-expense">+ Add Recurring Expense</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>Large One-Time Expenses</legend>
+    <table id="large-expenses-table">
+      <thead><tr><th>Description</th><th>Year</th><th>Amount (today $)</th><th>Inflate?</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button id="add-large-expense">+ Add Large Expense</button>
+  </fieldset>
+
+  <h3 style="margin-top:24px;">Forecasted Expenses by Year</h3>
+  <div class="chart-container">
+    <canvas id="expenseByYearChart"></canvas>
+  </div>
+  <div class="table-wrap">
+    <table id="expense-by-year-table">
+      <thead>
+        <tr>
+          <th>Year</th><th>Ages</th>
+          <th>Baseline</th>
+          <th>Recurring</th>
+          <th>Large</th>
+          <th>Mortgage</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- INVESTMENT ACCOUNTS -->
+<section id="tab-accounts" class="tab-panel">
+  <h2>Investment Accounts</h2>
+  <p class="muted">
+    All accounts grow at the <strong>Default Investment Return</strong> from General Settings.
+    Taxable brokerage withdrawals trigger capital gains tax on the realized portion;
+    pretax IRA/401(k) withdrawals are taxed as ordinary income; Roth and HSA (qualified) withdraw tax-free.
+  </p>
+
+  <h3 style="margin-top:8px;">Today's Totals by Account Type</h3>
+  <div id="account-totals-cards" class="summary-cards"></div>
+  <table id="accounts-table">
+    <thead>
+      <tr>
+        <th>Account Name</th>
+        <th>Type</th>
+        <th>Owner</th>
+        <th>Current Balance</th>
+        <th>Cost Basis<br/><small>(taxable only)</small></th>
+        <th>Div Yield (%)<br/><small>(taxable only)</small></th>
+        <th>Inherit Year<br/><small>(inherited IRA only)</small></th>
+        <th>Annual Contribution<br/><small>(while working)</small></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button id="add-account">+ Add Account</button>
+
+  <h3 style="margin-top:24px;">Projected Account Balances by Year</h3>
+  <div class="chart-container" style="height:800px;">
+    <canvas id="accountBalancesChart"></canvas>
+  </div>
+</section>
+
+<!-- REAL ESTATE -->
+<section id="tab-realestate" class="tab-panel">
+  <h2>Real Estate</h2>
+  <p class="muted">
+    All properties appreciate at the <strong>Default Property Value Growth</strong> rate from General Settings.
+    All rentals raise rents at the <strong>Default Rent Growth</strong> rate from General Settings.
+  </p>
+  <div id="properties-container"></div>
+  <button id="add-property">+ Add Property</button>
+
+  <h3 style="margin-top:24px;">Real Estate Equity by Year</h3>
+  <div class="chart-container">
+    <canvas id="realEstateEquityChart"></canvas>
+  </div>
+
+  <h3 style="margin-top:24px;">Rental Net Income by Year</h3>
+  <div class="chart-container">
+    <canvas id="rentalIncomeChart"></canvas>
+  </div>
+  <div class="table-wrap">
+    <table id="real-estate-table">
+      <thead>
+        <tr>
+          <th>Year</th><th>Ages</th>
+          <th>Real Estate Equity</th>
+          <th>Total Rent Collected</th>
+          <th>Net Taxable Rent<br/><small>(flows to income)</small></th>
+          <th>Primary-Residence Mortgage<br/><small>(annual, non-rentals)</small></th>
+          <th>Rental Mortgage<br/><small>(annual, informational)</small></th>
+          <th>Property Sale Proceeds</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- GUARDRAILS (SWR) -->
+<section id="tab-guardrails" class="tab-panel">
+  <h2>Spending Guardrails (Safe Withdrawal Rate)</h2>
+  <p class="muted">
+    A sanity check that's separate from your forecasted expenses. The SWR rule of thumb says you can
+    sustainably withdraw a fixed percentage of your liquid portfolio each year without running out.
+    Choose your method below — the chart and table compare your <em>forecasted</em> expenses against the
+    <em>SWR-allowed</em> spend. Years where the forecast exceeds the guardrail are flagged in red.
+  </p>
+
+  <fieldset>
+    <legend>Settings</legend>
+    <div class="grid-2">
+      <label>Safe Withdrawal Rate (%)
+        <input type="number" id="swr-rate" value="3.5" step="0.1" min="0.5" max="10"/>
+        <small>Default is 3.5% — a conservative variant of the classic 4% rule.</small>
+      </label>
+      <label>Method
+        <select id="swr-method">
+          <option value="dynamic">Dynamic — % of current liquid portfolio each year</option>
+          <option value="static">Static (Trinity) — initial-retirement portfolio × SWR, grown by inflation</option>
+          <option value="guyton_klinger">Guyton-Klinger — dynamic with upper/lower spending guardrails</option>
+        </select>
+      </label>
+      <label>Upper Guardrail Band (% above initial WR triggers cut)
+        <input type="number" id="swr-upper" value="20" step="1"/></label>
+      <label>Lower Guardrail Band (% below initial WR triggers raise)
+        <input type="number" id="swr-lower" value="20" step="1"/></label>
+      <label>Adjustment Size (% to cut/raise)
+        <input type="number" id="swr-adjust" value="10" step="1"/></label>
+    </div>
+  </fieldset>
+
+  <div class="summary-cards">
+    <div class="card">
+      <div class="card-label">Today's SWR-Allowed Spend</div>
+      <div class="card-value" id="swr-today">$0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Allowed at Retirement (today $)</div>
+      <div class="card-value" id="swr-at-retire">$0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Years Forecast Exceeds Guardrail</div>
+      <div class="card-value" id="swr-overruns">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Status</div>
+      <div class="card-value" id="swr-status">—</div>
+    </div>
+  </div>
+
+  <div class="chart-container" style="height:380px;">
+    <canvas id="guardrailChart"></canvas>
+  </div>
+
+  <h3>Year-by-Year</h3>
+  <div class="table-wrap">
+    <table id="guardrail-table">
+      <thead>
+        <tr>
+          <th>Year</th><th>Ages</th>
+          <th>Liquid Portfolio</th>
+          <th>SWR-Allowed</th>
+          <th>Forecasted Expenses</th>
+          <th>Headroom</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- WITHDRAWALS & TAXES -->
+<section id="tab-withdrawals" class="tab-panel">
+  <h2>Withdrawals &amp; Taxes</h2>
+  <p class="muted">
+    Configure how the model funds your spending each year. The order below decides which account
+    is drained first to cover expenses (and to cover the tax bill on those withdrawals).
+    Federal taxes are computed using the bracket tables; Social Security taxability uses the
+    simplified MFJ rules; both standard deduction and brackets inflate each year using your
+    default inflation rate.
+  </p>
+
+  <div class="grid-2">
+    <fieldset>
+      <legend>Withdrawal Strategy</legend>
+      <p class="muted" style="margin-top:0;">Drag with ↑ ↓ to reorder.</p>
+      <ol id="withdrawal-order"></ol>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <input type="checkbox" id="set-bracket-aware" style="width:auto;"/>
+        Respect Roth bracket-fill target when withdrawing
+        <small style="margin:0;">
+          When checked and Roth strategy is fill_X, cash-gap withdrawals from
+          Traditional / Inherited IRA are capped at the bracket headroom — overflow
+          spills to Taxable / Roth before the model busts into a higher bracket.
+        </small>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Inherited IRA Strategy</legend>
+      <p class="muted" style="margin-top:0;">
+        The IRS requires inherited IRAs (post-2019, non-spouse) to be fully drained within 10 years.
+        Each year, a minimum proportional distribution (balance ÷ years-remaining) is taken automatically and
+        counts as ordinary income. During the bracket-fill window below, choose how to allocate the bracket
+        headroom between additional inherited IRA drain and Roth conversions.
+      </p>
+      <label>Strategy
+        <select id="ii-strategy">
+          <option value="rmd_only">RMD only — bracket headroom goes to Roth conversion</option>
+          <option value="fill_first">Drain Inherited IRA first — Roth conv after it's empty</option>
+          <option value="split_50_50">50/50 — split headroom evenly</option>
+          <option value="custom">Custom split (slider below)</option>
+        </select>
+      </label>
+      <label>Custom: % of bracket headroom from Inherited IRA
+        <input type="number" id="ii-split-pct" min="0" max="100" value="50"/></label>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <input type="checkbox" id="ii-cap-bracket" style="width:auto;"/>
+        Skip annual RMD &amp; cap drain at Roth bracket target
+        <small style="margin:0;">
+          <strong>Off by default.</strong> If the original owner was past age 73 (Required
+          Beginning Date), the IRS requires you to take an annual RMD <em>every</em> year on
+          top of the 10-year drain — leave this unchecked. Only enable for inheritances
+          where annual RMDs aren't required (original owner died before RBD) — then the
+          model will cap distributions at the bracket target instead.
+        </small>
+      </label>
+      <div id="ii-summary" class="muted" style="font-size:13px; margin-top:8px;"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Tax Strategy Comparison</legend>
+      <p class="muted" style="margin-top:0;">
+        Lifetime federal tax bill (ordinary + LTCG) under each Roth conversion strategy.
+        Re-runs the projection for each option using your current accounts, expenses,
+        and withdrawal order. Current selection is highlighted.
+      </p>
+      <table id="tax-strategy-table">
+        <thead><tr>
+          <th>Strategy</th>
+          <th>Tax (Full Plan)<br/><small id="tsc-full-range"></small></th>
+          <th>Tax (First Half)<br/><small id="tsc-half-range"></small></th>
+          <th>End Net Worth</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </fieldset>
+
+    <fieldset>
+      <legend>Roth Conversion Strategy</legend>
+      <p class="muted" style="margin-top:0;">
+        During the "tax valley" (after retirement but before Social Security and RMDs),
+        convert pretax IRA/401k dollars to Roth up to the top of a chosen bracket. Conversions
+        add to ordinary income (taxed at the time) but grow tax-free afterward.
+      </p>
+      <label>Strategy
+        <select id="rc-strategy">
+          <option value="none">None</option>
+          <option value="fill_12">Fill 12% bracket</option>
+          <option value="fill_22">Fill 22% bracket</option>
+          <option value="fill_24">Fill 24% bracket</option>
+          <option value="fill_32">Fill 32% bracket</option>
+          <option value="custom">Custom $ per year</option>
+        </select>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="rc-wait-inherited" style="width:auto;"/>
+        Start only after Inherited IRA is depleted
+        <small style="margin:0;">Overrides Start Year — conversions wait while inherited IRA still has balance.</small>
+      </label>
+      <label>Start Year <input type="number" id="rc-start"/></label>
+      <label>End Year <input type="number" id="rc-end"/></label>
+      <label>Custom Amount per Year ($, today)
+        <input type="number" id="rc-custom"/></label>
+
+      <h4 style="margin-bottom:4px;">Recommendation</h4>
+      <div id="rc-recommendation" class="muted" style="font-size:13px;line-height:1.45;"></div>
+    </fieldset>
+  </div>
+
+  <fieldset>
+    <legend>Federal Ordinary-Income Tax Brackets (MFJ, 2024 defaults)</legend>
+    <label>Standard Deduction (today $)
+      <input type="number" id="set-std-deduction" value="29200"/></label>
+    <label>Use Brackets? <select id="set-use-brackets">
+      <option value="true">Yes — full bracket calculation</option>
+      <option value="false">No — use flat effective rates below</option>
+    </select></label>
+    <div class="grid-2">
+      <label>Flat Effective Ordinary Tax Rate (%)
+        <input type="number" id="set-tax-rate" value="18" step="0.5"/>
+        <small>Only used when brackets are disabled.</small>
+      </label>
+      <label>Capital Gains Tax Rate (%)
+        <input type="number" id="set-cg-rate" value="15" step="0.5"/>
+        <small>Used when brackets are disabled AND for property-sale capital gains.</small>
+      </label>
+      <label>Assumed Cap-Gains % of Taxable Withdrawal
+        <input type="number" id="set-taxable-cg-pct" value="50" step="1" min="0" max="100"/>
+        <small>
+          Of every dollar withdrawn from a taxable brokerage account, this percent is treated as
+          realized capital gain (the rest is return-of-basis). Default 50% — a common rough
+          estimate for a long-held portfolio that has roughly doubled.
+        </small>
+      </label>
+    </div>
+    <table id="tax-brackets-table">
+      <thead><tr><th>Rate (%)</th><th>Income Up To ($, today)</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button id="add-tax-bracket" class="small">+ Add Bracket</button>
+    <button id="reset-tax-brackets" class="small">Reset to 2024 MFJ defaults</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>Long-Term Capital Gains Brackets (MFJ, 2024 defaults)</legend>
+    <table id="ltcg-brackets-table">
+      <thead><tr><th>Rate (%)</th><th>Income Up To ($, today)</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button id="add-ltcg-bracket" class="small">+ Add Bracket</button>
+    <button id="reset-ltcg-brackets" class="small">Reset to 2024 MFJ defaults</button>
+  </fieldset>
+
+  <h3>Year-by-Year Withdrawals &amp; Taxes</h3>
+  <div class="table-wrap">
+    <table id="withdrawals-table">
+      <thead>
+        <tr>
+          <th>Year</th><th>Ages</th>
+          <th>Salaries</th><th>SS (gross)</th><th>Rental Net</th>
+          <th>Expenses</th>
+          <th>Taxable WD</th><th>IRA/401k WD</th><th>Roth WD</th><th>Other WD</th>
+          <th>Inh IRA Drain</th>
+          <th>Roth Conv</th>
+          <th>Ord. Tax</th><th>LTCG Tax</th><th>Total Tax</th>
+          <th>Marg %</th>
+          <th>End Liquid</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="chart-container" style="height:380px;">
+    <canvas id="withdrawalChart"></canvas>
+  </div>
+  <div class="chart-container" style="height:340px;">
+    <canvas id="taxChart"></canvas>
+  </div>
+</section>
+
+<!-- MONTE CARLO -->
+<section id="tab-montecarlo" class="tab-panel">
+  <h2>Monte Carlo Simulation</h2>
+  <p class="muted">
+    Re-runs the projection many times with randomized annual returns (normal distribution around each account's
+    expected return ± stddev). Reports the probability your plan survives to the end of the horizon and the
+    range of possible outcomes at the 10th / 50th / 90th percentile.
+  </p>
+
+  <fieldset>
+    <legend>Simulation Parameters</legend>
+    <div class="grid-2">
+      <label>Number of Simulations
+        <input type="number" id="mc-runs" value="1000" min="100" max="10000" step="100"/>
+        <small class="muted">Common: 1,000. Use 500 for quick tests, 5,000–10,000 for high-precision results. More runs = slower but smoother percentile bands.</small></label>
+      <label>Annual Return Std Dev (%, applies to all equity-like accounts)
+        <input type="number" id="mc-stddev" value="12" step="0.5"/>
+        <small class="muted">Common: 12–15% for a diversified stock portfolio (S&amp;P 500 historical ~15%). Use 8–10% for a balanced 60/40 portfolio, or 5–7% for bonds/conservative.</small></label>
+      <label>Inflation Std Dev (%)
+        <input type="number" id="mc-infl-stddev" value="1" step="0.1"/>
+        <small class="muted">Common: 1–2%. U.S. inflation has historically varied ±1–1.5% year-to-year around its mean. Use 2% if you want to stress-test for volatile inflation.</small></label>
+      <label>Random Seed (0 = random)
+        <input type="number" id="mc-seed" value="0"/>
+        <small class="muted">Common: 0 (fully random). Set a non-zero number (e.g. 42) to lock in a repeatable result — useful for comparing scenarios side-by-side.</small></label>
+    </div>
+    <button id="run-mc" class="primary">Run Simulation</button>
+    <span id="mc-status" class="muted" style="margin-left:12px;"></span>
+  </fieldset>
+
+  <div class="summary-cards">
+    <div class="card"><div class="card-label">Success Rate</div><div class="card-value" id="mc-success">—</div></div>
+    <div class="card"><div class="card-label">Median End Net Worth</div><div class="card-value" id="mc-median">—</div></div>
+    <div class="card"><div class="card-label">10th Percentile End</div><div class="card-value" id="mc-p10">—</div></div>
+    <div class="card"><div class="card-label">90th Percentile End</div><div class="card-value" id="mc-p90">—</div></div>
+    <div class="card"><div class="card-label">Worst-Case Bust Year (median of failed runs)</div><div class="card-value" id="mc-bust">—</div></div>
+  </div>
+
+  <div class="chart-container" style="height:420px;">
+    <canvas id="mcChart"></canvas>
+  </div>
+</section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

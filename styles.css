@@ -1,0 +1,138 @@
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  background: #f4f6f8;
+  color: #1f2937;
+}
+header {
+  background: #1f3a5f;
+  color: white;
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+header h1 { margin: 0; font-size: 20px; }
+.header-actions button { margin-left: 8px; }
+
+button {
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: 14px;
+}
+button.primary { background: #2563eb; color: white; border-color: #2563eb; }
+button.danger { background: #fff; color: #b91c1c; border-color: #fca5a5; }
+button.small { padding: 4px 8px; font-size: 12px; }
+
+.tabs {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  overflow-x: auto;
+}
+.tab {
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  border-bottom: 3px solid transparent;
+  padding: 14px 22px;
+  font-size: 15px;
+  color: #475569;
+  white-space: nowrap;
+}
+.tab.active {
+  color: #1f3a5f;
+  border-bottom-color: #2563eb;
+  font-weight: 600;
+}
+
+main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+h2 { margin-top: 0; }
+
+fieldset {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+legend { font-weight: 600; padding: 0 8px; color: #1f3a5f; }
+label {
+  display: block;
+  margin: 8px 0;
+  font-size: 14px;
+  color: #334155;
+}
+label small { display: block; color: #64748b; font-weight: normal; }
+input[type="number"], input[type="text"], select {
+  width: 100%;
+  max-width: 280px;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0 24px;
+}
+@media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 14px 18px;
+  border: 1px solid #e5e7eb;
+}
+.card-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+.card-value { font-size: 22px; font-weight: 600; color: #1f3a5f; margin-top: 4px; }
+
+.chart-container {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  margin-bottom: 16px;
+  height: 360px;
+}
+
+.table-wrap { overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #e5e7eb; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: left; font-size: 14px; }
+th { background: #f8fafc; font-weight: 600; color: #334155; }
+td input { max-width: 100%; }
+
+#projection-table td { font-variant-numeric: tabular-nums; }
+#projection-table tr.retired td:first-child { background: #fef3c7; }
+.negative { color: #b91c1c; }
+
+.phase-table input { max-width: 90px; }
+
+.property-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.property-card h3 { margin-top: 0; }
+.property-card .grid-2 { grid-template-columns: repeat(2, 1fr); }
+.property-card .rental-fields { display: none; padding-top: 12px; border-top: 1px dashed #e5e7eb; margin-top: 12px; }
+.property-card.is-rental .rental-fields { display: block; }
+
+.muted { color: #64748b; font-size: 13px; }
