@@ -1346,6 +1346,7 @@ function project(opts) {
       mortgageRental:  rentalMortgagePayments,
       net: nonWithdrawIncome - totalExpenses - totalTax,
       withdrawnByType, totalWithdrawn,
+      taxableGapWD: wSpend.byType["taxable"] || 0,
       ordinaryTax, ltcgTax, totalTax,
       ordTaxByBracket, ltcgTaxByBracket,
       taxableOrdinary, totalOrdinary, marginalRate: margRate,
@@ -1858,7 +1859,7 @@ function drawGapWithdrawalBreakdown(rows) {
       data: {
         labels,
         datasets: [
-          { label: "Taxable WD",       data: rows.map(r => w(r, "taxable")),       backgroundColor: "#f59e0b" },
+          { label: "Taxable Brokerage WD (gap only)", data: rows.map(r => r.taxableGapWD || 0), backgroundColor: "#f59e0b" },
           { label: "Traditional WD (above RMD)", data: rows.map(r => w(r, "ira") + w(r, "401k")), backgroundColor: "#ef4444" },
           { label: "Roth WD",          data: rows.map(r => w(r, "roth")),          backgroundColor: "#15803d" },
           { label: "Inherited IRA WD (above RMD)", data: rows.map(r => w(r, "inherited_ira")), backgroundColor: "#9a3412" },
