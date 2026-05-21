@@ -2481,41 +2481,68 @@ function renderRothRecommendation(rows) {
     .filter(a => a.type === "ira" || a.type === "401k" || a.type === "inherited_ira")
     .reduce((sum, a) => sum + (a.balance || 0), 0);
 
-  // Compute a "valley window"
   const valleyStart = olderRetire;
   const valleyEnd = rmdYear - 1;
   const valleyYears = Math.max(0, valleyEnd - valleyStart + 1);
 
-  // Look at rows during the valley and check marginal rate vs full retirement
-  const valley = rows.filter(r => r.year >= valleyStart && r.year <= valleyEnd);
-  const post   = rows.filter(r => r.year > valleyEnd);
-  const valleyMargAvg = valley.length ? Math.round(valley.reduce((s,r)=>s+r.marginalRate,0)/valley.length) : 0;
-  const postMargAvg   = post.length   ? Math.round(post.reduce((s,r)=>s+r.marginalRate,0)/post.length)     : 0;
+  // Use "no conversion" baseline so valley/post marginal rates aren't distorted
+  // by the conversion income of whatever strategy is currently active.
+  const originalStrategy = s.rothConv.strategy;
+  s.rothConv.strategy = "none";
+  const baseRows = project();
+  s.rothConv.strategy = originalStrategy;
 
-  // Suggested annual amount: enough to fill the next bracket above current valley marginal
+  const valley = baseRows.filter(r => r.year >= valleyStart && r.year <= valleyEnd);
+  const post   = baseRows.filter(r => r.year > valleyEnd);
+  const valleyMargAvg = valley.length ? Math.round(valley.reduce((a,r)=>a+r.marginalRate,0)/valley.length) : 0;
+  const postMargAvg   = post.length   ? Math.round(post.reduce((a,r)=>a+r.marginalRate,0)/post.length)     : 0;
+
+  // Run all strategies to find the one with highest end net worth (same as comparison table)
+  const strategies = ["none","fill_12","fill_22","fill_24","fill_32"];
+  const planStart = s.currentYear, planEnd = s.endYear;
+  const stratResults = strategies.map(key => {
+    s.rothConv.strategy = key;
+    const r = project();
+    const tax = r.filter(x => x.year >= planStart && x.year <= planEnd).reduce((a,x)=>a+(x.totalTax||0),0);
+    return { key, endNW: r[r.length-1]?.netWorth || 0, tax };
+  });
+  s.rothConv.strategy = originalStrategy;
+
+  const bestNW  = stratResults.reduce((b,r) => r.endNW > b.endNW ? r : b);
+  const lowestTax = stratResults.reduce((b,r) => r.tax < b.tax ? r : b);
+  const stratLabel = { none:"No Conversion", fill_12:"Fill 12%", fill_22:"Fill 22%", fill_24:"Fill 24%", fill_32:"Fill 32%" };
+
+  // Suggested bracket based on marginal rate gap (heuristic)
   let suggestedTarget = "fill_12";
   if (valleyMargAvg >= 12) suggestedTarget = "fill_22";
   if (valleyMargAvg >= 22) suggestedTarget = "fill_24";
 
-  // Estimate annual conversion = top-of-target-bracket - typical valley taxable income
   const targetTopByName = { fill_12: 94300, fill_22: 201050, fill_24: 383900, fill_32: 487450 };
   const targetTop = targetTopByName[suggestedTarget];
-  const avgValleyTaxable = valley.length ? valley.reduce((s,r)=>s+r.taxableOrdinary, 0)/valley.length : 0;
+  const avgValleyTaxable = valley.length ? valley.reduce((a,r)=>a+r.taxableOrdinary,0)/valley.length : 0;
   const annualHeadroom = Math.max(0, targetTop - avgValleyTaxable);
+
+  const nwAgree = bestNW.key === suggestedTarget;
+  const conflict = !nwAgree && bestNW.key !== suggestedTarget;
 
   el.innerHTML = `
     <strong>Tax-valley window:</strong> ${valleyStart}–${valleyEnd} (${valleyYears} years, ends when RMDs begin)<br/>
     <strong>Pretax IRA / 401(k) balance today:</strong> ${fmt(pretax)}<br/>
-    <strong>Avg marginal rate in valley:</strong> ${valleyMargAvg}%
+    <strong>Avg marginal rate in valley (no-conversion baseline):</strong> ${valleyMargAvg}%
       &nbsp;|&nbsp; <strong>after RMDs begin (${rmdYear}):</strong> ${postMargAvg}%<br/>
-    <strong>Suggested strategy:</strong> ${suggestedTarget.replace("_", " ").replace("fill", "Fill")} bracket<br/>
-    <strong>Estimated annual conversion room:</strong> ${fmt(annualHeadroom)}<br/>
+    <strong>Bracket heuristic suggests:</strong> ${stratLabel[suggestedTarget]}
+      &nbsp;·&nbsp; <strong>Est. annual headroom:</strong> ${fmt(annualHeadroom)}<br/>
+    <strong>Highest end net worth:</strong> ${stratLabel[bestNW.key]} (${fmt(bestNW.endNW)})<br/>
+    <strong>Lowest lifetime tax:</strong> ${stratLabel[lowestTax.key]} (${fmt(lowestTax.tax)})<br/>
     ${
-      valleyMargAvg < postMargAvg
-        ? `<span style="color:#15803d;">✅ Conversions look favorable — you'd be paying tax now at ~${valleyMargAvg}% to avoid ~${postMargAvg}% later.</span>`
-        : valleyMargAvg === postMargAvg && pretax > 0
-          ? `<span>⚖️ Rates appear similar — conversions still de-risk required RMDs.</span>`
-          : `<span style="color:#b91c1c;">⚠️ Valley marginal rate is no lower than post-valley — conversions may not pay off.</span>`
+      nwAgree
+        ? `<span style="color:#15803d;">✅ Both signals agree — ${stratLabel[suggestedTarget]} gives the best outcome.</span>`
+        : conflict
+          ? `<span style="color:#b45309;">⚠️ Signals conflict: the marginal-rate gap suggests <strong>${stratLabel[suggestedTarget]}</strong>,
+              but the full projection shows <strong>${stratLabel[bestNW.key]}</strong> leaves more net worth.
+              This usually means the conversion tax bill up front outweighs the rate savings —
+              consider a smaller conversion target or check your pretax balance size.</span>`
+          : `<span>⚖️ Rates appear similar — conversions may still de-risk large RMDs.</span>`
     }
   `;
 }
