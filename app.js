@@ -1421,7 +1421,7 @@ function renderCurrentPortfolio() {
 }
 
 // ===== Render Summary =====
-let assetChart, incomeBreakdownChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart;
+let assetChart, liquidBreakdownChart, incomeBreakdownChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart;
 let taxByBracketChart;
 let expenseByYearChart, realEstateEquityChart, rentalIncomeChart, accountBalancesChart;
 
@@ -1724,7 +1724,7 @@ function recalc() {
 function drawCharts(rows, lowRows, highRows) {
   const labels = rows.map(r => r.year);
   if (assetChart) assetChart.destroy();
-
+  if (liquidBreakdownChart) liquidBreakdownChart.destroy();
 
   const ctx1 = document.getElementById("assetChart").getContext("2d");
   assetChart = new Chart(ctx1, {
@@ -1797,6 +1797,32 @@ function drawCharts(rows, lowRows, highRows) {
     }
   });
 
+  const ctx1b = document.getElementById("liquidBreakdownChart").getContext("2d");
+  const pick = t => rows.map(r => (r.balancesByType && r.balancesByType[t]) || 0);
+  liquidBreakdownChart = new Chart(ctx1b, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        { label: "Taxable Brokerage", data: pick("taxable"),      borderColor: "#f59e0b", backgroundColor: "rgba(245,158,11,0.15)",  fill: true, tension: 0.2, pointRadius: 0 },
+        { label: "Traditional IRA / 401k", data: pick("traditional"), borderColor: "#ef4444", backgroundColor: "rgba(239,68,68,0.15)",   fill: true, tension: 0.2, pointRadius: 0 },
+        { label: "Roth",              data: pick("roth"),          borderColor: "#10b981", backgroundColor: "rgba(16,185,129,0.15)",  fill: true, tension: 0.2, pointRadius: 0 },
+        { label: "Inherited IRA",     data: pick("inherited_ira"), borderColor: "#c2410c", backgroundColor: "rgba(194,65,12,0.15)",   fill: true, tension: 0.2, pointRadius: 0 },
+        { label: "HSA",               data: pick("hsa"),           borderColor: "#7c3aed", backgroundColor: "rgba(124,58,237,0.15)", fill: true, tension: 0.2, pointRadius: 0 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: { display: true, text: "Liquid Assets by Account Type" },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+      },
+      scales: {
+        y: { ticks: { callback: v => fmt(v) } },
+      },
+    },
+  });
 }
 
 function drawIncomeBreakdown(rows) {
