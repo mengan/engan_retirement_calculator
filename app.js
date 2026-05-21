@@ -473,6 +473,7 @@ function renderAccounts() {
       <td><input type="number" value="${a.basis}" data-field="basis" ${a.type==='taxable'?'':'disabled'}/></td>
       <td><input type="number" step="0.1" value="${a.dividendYield ?? (a.type==='taxable'?2:0)}" data-field="dividendYield" ${a.type==='taxable'?'':'disabled'}/></td>
       <td><input type="number" value="${a.inheritanceYear || ''}" data-field="inheritanceYear" placeholder="—" ${a.type==='inherited_ira'?'':'disabled'}/></td>
+      <td><input type="number" value="${a.rmdTakenThisYear || ''}" data-field="rmdTakenThisYear" placeholder="0" ${['ira','401k','inherited_ira'].includes(a.type)?'':'disabled'}/></td>
       <td><input type="number" value="${a.contribution}" data-field="contribution"/></td>
       <td><button class="small danger" data-action="del">×</button></td>
     `;
@@ -798,10 +799,11 @@ function getTraditionalRMDDivisor(age) {
   return Math.max(2.0, 6.4 - (age - 100) * 0.3);
 }
 
-function distributeTraditionalRMD(accounts, s1Age, s2Age) {
+function distributeTraditionalRMD(accounts, s1Age, s2Age, isFirstYear = false) {
   // For each traditional IRA / 401k account, distribute (balance / divisor) into
   // taxable brokerage (it's already-taxed cash from there forward). Returns total
   // distributed; this also counts as ordinary income for the year.
+  // isFirstYear: if true, subtract any RMD already taken this year from each account.
   let total = 0;
   accounts.forEach(a => {
     if (a.type !== "ira" && a.type !== "401k") return;
@@ -809,7 +811,9 @@ function distributeTraditionalRMD(accounts, s1Age, s2Age) {
     const age = a.owner === "Spouse 2" ? s2Age : s1Age;
     const divisor = getTraditionalRMDDivisor(age);
     if (!divisor) return;
-    const rmd = Math.min(a.balance / divisor, a.balance);
+    const fullRmd = Math.min(a.balance / divisor, a.balance);
+    const alreadyTaken = isFirstYear ? Math.min(a.rmdTakenThisYear || 0, fullRmd) : 0;
+    const rmd = Math.max(0, fullRmd - alreadyTaken);
     a.balance -= rmd;
     total += rmd;
   });
@@ -854,7 +858,7 @@ function drainInheritedToTaxable(accounts, amount) {
   return drained;
 }
 
-function inheritedMandatoryDistribution(accounts, currentYear) {
+function inheritedMandatoryDistribution(accounts, currentYear, isFirstYear = false) {
   // Compute total mandatory distribution this year across all inherited IRAs.
   // inheritanceYear is the year the IRA was inherited (RMD already handled that year
   // by the benefactor / estate). Annual RMDs for the beneficiary begin the FOLLOWING
@@ -869,11 +873,9 @@ function inheritedMandatoryDistribution(accounts, currentYear) {
     const elapsed = currentYear - inhYear;
     if (elapsed <= 0) return; // inheritance year or future — no RMD yet
     const yearsLeft = 10 - elapsed;
-    if (yearsLeft <= 0) {
-      mandatory += a.balance;
-    } else {
-      mandatory += a.balance / yearsLeft;
-    }
+    const fullRmd = yearsLeft <= 0 ? a.balance : a.balance / yearsLeft;
+    const alreadyTaken = isFirstYear ? Math.min(a.rmdTakenThisYear || 0, fullRmd) : 0;
+    mandatory += Math.max(0, fullRmd - alreadyTaken);
   });
   return mandatory;
 }
@@ -1145,7 +1147,7 @@ function project(opts) {
     const ii = s.inheritedIra || {};
 
     // (1a) Traditional IRA / 401(k) RMD — required from age 73, deposited to taxable.
-    const traditionalRMD = distributeTraditionalRMD(accounts, s1Age, s2Age);
+    const traditionalRMD = distributeTraditionalRMD(accounts, s1Age, s2Age, yearsOut === 0);
 
     // Compute the bracket-fill target up front so we can use it to cap the inherited
     // mandatory distribution as well as the Roth conversion calc below.
@@ -1166,7 +1168,7 @@ function project(opts) {
     // bracket. Off by default.
     let inheritedRMD = 0;
     let inheritedBracketDrain = 0;
-    let mandatoryInherited = inheritedMandatoryDistribution(accounts, year);
+    let mandatoryInherited = inheritedMandatoryDistribution(accounts, year, yearsOut === 0);
     if (iiEarly.capAtBracketFill === true && bracketFillTarget != null) {
       const baseOrdNoDrain = (salary1 + salary2 - pretaxContribs) + rentalTaxable + traditionalRMD;
       const ssTNoDrain     = ssTaxablePortion(grossSS, baseOrdNoDrain);
