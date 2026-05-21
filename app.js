@@ -2457,8 +2457,8 @@ function renderTaxStrategyComparison() {
         ${key === currentStrategy ? ' <strong>(current)</strong>' : ''}
         ${isBest ? ' <span style="color:#15803d;">✓ highest net worth</span>' : ''}
       </td>
-      <td>${fmt(fullTax)}</td>
       <td>${fmt(endNW)}</td>
+      <td>${fmt(fullTax)}</td>
     `;
     if (isBest) tr.style.borderLeft = "4px solid #15803d";
     tbody.appendChild(tr);
