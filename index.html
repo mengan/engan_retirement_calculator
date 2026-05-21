@@ -503,11 +503,20 @@
         Re-runs the projection for each option using your current accounts, expenses,
         and withdrawal order. Current selection is highlighted.
       </p>
+      <div class="grid-2" style="margin-bottom:12px;">
+        <label>Future Tax Rate Increase (%)
+          <input type="number" id="tsc-tax-rise-pct" value="0" min="0" max="100" step="1"/>
+          <small class="muted">Adds this many percentage points to every bracket rate starting in the year below. E.g. 5 turns a 22% bracket into 27%. Common scenario: 5–10% if you expect TCJA expiration or future hikes.</small>
+        </label>
+        <label>Starting Year for Rate Increase
+          <input type="number" id="tsc-tax-rise-year" value="2026" min="2025" max="2100" step="1"/>
+          <small class="muted">Brackets are unchanged before this year. Set to a future year (e.g. 2026 for immediate, 2032 for post-TCJA) to model a tax environment change.</small>
+        </label>
+      </div>
       <table id="tax-strategy-table">
         <thead><tr>
           <th>Strategy</th>
           <th>Tax (Full Plan)<br/><small id="tsc-full-range"></small></th>
-          <th>Tax (First Half)<br/><small id="tsc-half-range"></small></th>
           <th>End Net Worth</th>
         </tr></thead>
         <tbody></tbody>

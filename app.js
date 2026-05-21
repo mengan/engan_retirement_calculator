@@ -34,6 +34,8 @@ const defaultState = () => ({
     // Bracket taxation
     useTaxBrackets: true,
     stdDeduction: 29200,
+    taxRisePct: 0,       // extra percentage points added to all bracket rates after taxRiseYear
+    taxRiseYear: 2026,   // year the rate increase takes effect
     // % of any taxable-brokerage withdrawal assumed to be realized capital gains
     // (when you don't track basis precisely). 50% is a common rough default for
     // long-held portfolios that have roughly doubled.
@@ -945,8 +947,9 @@ function project(opts) {
 
     // Brackets & deduction inflate over time
     const stdDed = (s.stdDeduction || 29200) * cumInfl;
-    const taxBrackets  = (s.taxBrackets  || []).map(b => ({ rate: b.rate, upTo: b.upTo > 0 ? b.upTo * cumInfl : 0 }));
-    const ltcgBrackets = (s.ltcgBrackets || []).map(b => ({ rate: b.rate, upTo: b.upTo > 0 ? b.upTo * cumInfl : 0 }));
+    const riseAdj = (s.taxRisePct || 0) > 0 && year >= (s.taxRiseYear || 9999) ? (s.taxRisePct || 0) : 0;
+    const taxBrackets  = (s.taxBrackets  || []).map(b => ({ rate: b.rate + riseAdj, upTo: b.upTo > 0 ? b.upTo * cumInfl : 0 }));
+    const ltcgBrackets = (s.ltcgBrackets || []).map(b => ({ rate: b.rate + riseAdj, upTo: b.upTo > 0 ? b.upTo * cumInfl : 0 }));
 
     // --- Income ---
     let salary1 = 0, salary2 = 0;
@@ -2206,6 +2209,8 @@ function renderWithdrawalsTab() {
   document.getElementById("set-tax-rate").value = state.settings.taxRate ?? 18;
   document.getElementById("set-cg-rate").value  = state.settings.cgRate  ?? 15;
   document.getElementById("set-taxable-cg-pct").value = state.settings.taxableCapGainsPct ?? 50;
+  document.getElementById("tsc-tax-rise-pct").value  = state.settings.taxRisePct  ?? 0;
+  document.getElementById("tsc-tax-rise-year").value = state.settings.taxRiseYear ?? 2026;
 
   const rc = state.settings.rothConv;
   document.getElementById("rc-strategy").value = rc.strategy || "none";
@@ -2271,6 +2276,14 @@ function wireWithdrawalsTab() {
   });
   document.getElementById("set-bracket-aware").addEventListener("change", (e) => {
     state.settings.bracketAwareWithdrawals = e.target.checked;
+    saveState(); recalc();
+  });
+  document.getElementById("tsc-tax-rise-pct").addEventListener("change", (e) => {
+    state.settings.taxRisePct = parseFloat(e.target.value) || 0;
+    saveState(); recalc();
+  });
+  document.getElementById("tsc-tax-rise-year").addEventListener("change", (e) => {
+    state.settings.taxRiseYear = parseInt(e.target.value) || 2026;
     saveState(); recalc();
   });
 
@@ -2407,13 +2420,9 @@ function renderTaxStrategyComparison() {
 
   const s = state.settings;
   const rc = s.rothConv || {};
-  // Tax window is the FULL plan horizon (currentYear → endYear), independent of the
-  // Roth conversion window. "First Half" = currentYear → halfway through the plan.
   const planStart = s.currentYear;
   const planEnd   = s.endYear;
-  const planHalf  = planStart + Math.floor((planEnd - planStart) / 2);
   document.getElementById("tsc-full-range").textContent = `${planStart}–${planEnd}`;
-  document.getElementById("tsc-half-range").textContent = `${planStart}–${planHalf}`;
 
   const currentStrategy = rc.strategy || "none";
   const originalStrategy = rc.strategy;
@@ -2424,11 +2433,8 @@ function renderTaxStrategyComparison() {
     const fullTax = rows
       .filter(r => r.year >= planStart && r.year <= planEnd)
       .reduce((sum, r) => sum + (r.totalTax || 0), 0);
-    const halfTax = rows
-      .filter(r => r.year >= planStart && r.year <= planHalf)
-      .reduce((sum, r) => sum + (r.totalTax || 0), 0);
     const endNW = rows[rows.length - 1]?.netWorth || 0;
-    return { key, label, fullTax, halfTax, endNW };
+    return { key, label, fullTax, endNW };
   });
 
   s.rothConv.strategy = originalStrategy;
@@ -2436,7 +2442,7 @@ function renderTaxStrategyComparison() {
   // Best = highest end-of-plan net worth
   const bestKey = results.reduce((b, r) => (r.endNW > b.endNW ? r : b)).key;
 
-  results.forEach(({ key, label, fullTax, halfTax, endNW }) => {
+  results.forEach(({ key, label, fullTax, endNW }) => {
     const tr = document.createElement("tr");
     if (key === currentStrategy) tr.style.background = "#dbeafe";
     const isBest = key === bestKey;
@@ -2447,7 +2453,6 @@ function renderTaxStrategyComparison() {
         ${isBest ? ' <span style="color:#15803d;">✓ highest net worth</span>' : ''}
       </td>
       <td>${fmt(fullTax)}</td>
-      <td>${fmt(halfTax)}</td>
       <td>${fmt(endNW)}</td>
     `;
     if (isBest) tr.style.borderLeft = "4px solid #15803d";
