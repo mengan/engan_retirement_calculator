@@ -2471,14 +2471,10 @@ function renderRothRecommendation(rows) {
 
   const s = state.settings;
   const olderRetire = Math.max(s.s1.retireYear, s.s2.retireYear);
-  const earlierSS = Math.min(
-    s.s1.age + (s.s1.ssAge - s.s1.age),
-    s.s2.age + (s.s2.ssAge - s.s2.age)
-  );
-  // Compute SS start year approx
-  const s1SsYear = s.currentYear + (s.s1.ssAge - s.s1.age);
-  const s2SsYear = s.currentYear + (s.s2.ssAge - s.s2.age);
-  const ssYear = Math.min(s1SsYear, s2SsYear);
+  // Tax valley ends when the first spouse hits 73 and RMDs begin
+  const s1RmdYear = s.currentYear + (73 - s.s1.age);
+  const s2RmdYear = s.currentYear + (73 - s.s2.age);
+  const rmdYear = Math.min(s1RmdYear, s2RmdYear);
 
   // Sum traditional pretax balances
   const pretax = state.accounts
@@ -2487,7 +2483,7 @@ function renderRothRecommendation(rows) {
 
   // Compute a "valley window"
   const valleyStart = olderRetire;
-  const valleyEnd = ssYear - 1;
+  const valleyEnd = rmdYear - 1;
   const valleyYears = Math.max(0, valleyEnd - valleyStart + 1);
 
   // Look at rows during the valley and check marginal rate vs full retirement
@@ -2508,10 +2504,10 @@ function renderRothRecommendation(rows) {
   const annualHeadroom = Math.max(0, targetTop - avgValleyTaxable);
 
   el.innerHTML = `
-    <strong>Tax-valley window:</strong> ${valleyStart}–${valleyEnd} (${valleyYears} years)<br/>
+    <strong>Tax-valley window:</strong> ${valleyStart}–${valleyEnd} (${valleyYears} years, ends when RMDs begin)<br/>
     <strong>Pretax IRA / 401(k) balance today:</strong> ${fmt(pretax)}<br/>
     <strong>Avg marginal rate in valley:</strong> ${valleyMargAvg}%
-      &nbsp;|&nbsp; <strong>after SS / RMDs:</strong> ${postMargAvg}%<br/>
+      &nbsp;|&nbsp; <strong>after RMDs begin (${rmdYear}):</strong> ${postMargAvg}%<br/>
     <strong>Suggested strategy:</strong> ${suggestedTarget.replace("_", " ").replace("fill", "Fill")} bracket<br/>
     <strong>Estimated annual conversion room:</strong> ${fmt(annualHeadroom)}<br/>
     ${
