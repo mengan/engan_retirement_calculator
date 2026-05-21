@@ -854,13 +854,18 @@ function drainInheritedToTaxable(accounts, amount) {
 
 function inheritedMandatoryDistribution(accounts, currentYear) {
   // Compute total mandatory distribution this year across all inherited IRAs.
-  // - If year >= inheritanceYear + 10: must fully drain.
-  // - Otherwise: distribute proportional to (balance / years_remaining) as a simplified RMD.
+  // inheritanceYear is the year the IRA was inherited (RMD already handled that year
+  // by the benefactor / estate). Annual RMDs for the beneficiary begin the FOLLOWING
+  // year (elapsed >= 1). The 10-year rule requires full drain by inheritanceYear + 10.
+  // - elapsed 0 (the inheritance year itself): no distribution.
+  // - elapsed 1..9: distribute balance / yearsLeft (years remaining in the 10-yr window).
+  // - elapsed >= 10: must fully drain.
   let mandatory = 0;
   accounts.forEach(a => {
     if (a.type !== "inherited_ira" || a.balance <= 0) return;
     const inhYear = a.inheritanceYear || (currentYear - 1);
     const elapsed = currentYear - inhYear;
+    if (elapsed <= 0) return; // inheritance year or future — no RMD yet
     const yearsLeft = 10 - elapsed;
     if (yearsLeft <= 0) {
       mandatory += a.balance;
