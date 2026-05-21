@@ -935,8 +935,17 @@ function project(opts) {
   const rows = [];
   let cumInfl = 1;  // cumulative inflation factor (1 at start)
 
+  // Fraction of the current year remaining (e.g. May 20 → ~0.618).
+  // Applied to all time-proportional flows in the first year only.
+  const now = new Date();
+  const dayOfYear = (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+    - Date.UTC(now.getFullYear(), 0, 0)) / 86400000;
+  const daysInYear = ((now.getFullYear() % 4 === 0 && (now.getFullYear() % 100 !== 0 || now.getFullYear() % 400 === 0)) ? 366 : 365);
+  const yearFracRemaining = Math.max(0, Math.min(1, (daysInYear - dayOfYear) / daysInYear));
+
   for (let year = startYear; year <= endYear; year++) {
     const yearsOut = year - startYear;
+    const frac = yearsOut === 0 ? yearFracRemaining : 1;
     const s1Age = s.s1.age + yearsOut;
     const s2Age = s.s2.age + yearsOut;
     const olderAge = Math.max(s1Age, s2Age);
@@ -954,19 +963,19 @@ function project(opts) {
     // --- Income ---
     let salary1 = 0, salary2 = 0;
     if (year < s.s1.retireYear) {
-      salary1 = s.salaryReal
+      salary1 = (s.salaryReal
         ? s.s1.salary
-        : s.s1.salary * Math.pow(1 + s.s1.salaryGrowth / 100, yearsOut);
+        : s.s1.salary * Math.pow(1 + s.s1.salaryGrowth / 100, yearsOut)) * frac;
     }
     if (year < s.s2.retireYear) {
-      salary2 = s.salaryReal
+      salary2 = (s.salaryReal
         ? s.s2.salary
-        : s.s2.salary * Math.pow(1 + s.s2.salaryGrowth / 100, yearsOut);
+        : s.s2.salary * Math.pow(1 + s.s2.salaryGrowth / 100, yearsOut)) * frac;
     }
 
     let grossSS = 0;
-    if (s1Age >= s.s1.ssAge) grossSS += s.s1.ssAmt * cumInfl;
-    if (s2Age >= s.s2.ssAge) grossSS += s.s2.ssAmt * cumInfl;
+    if (s1Age >= s.s1.ssAge) grossSS += s.s1.ssAmt * cumInfl * frac;
+    if (s2Age >= s.s2.ssAge) grossSS += s.s2.ssAmt * cumInfl * frac;
 
     // --- Rental income & property cash flow ---
     // Convention: of the gross rent collected, the configured taxablePct (default 30%)
@@ -1030,18 +1039,18 @@ function project(opts) {
       if (p.isRental) {
         const rentGrow = (s.defaultRentGrowth ?? 3);
         const grownRent = p.rent * Math.pow(1 + rentGrow / 100, yearsOut);
-        const annualRent = grownRent * 12;
+        const annualRent = grownRent * 12 * frac;
         const taxableShare = annualRent * ((p.taxablePct ?? 30) / 100);
         rentalGross   += annualRent;
         rentalTaxable += taxableShare;
         rentalNet     += taxableShare;
         // Informational only — rental mortgage is conceptually inside the 70% deduction.
         if (annualPmt > 0 && (p.loanBalance > 0 || principalPaid > 0)) {
-          rentalMortgagePayments += annualPmt;
+          rentalMortgagePayments += annualPmt * frac;
         }
       } else {
         if (annualPmt > 0 && (p.loanBalance > 0 || principalPaid > 0)) {
-          mortgagePayments += annualPmt;
+          mortgagePayments += annualPmt * frac;
         }
       }
 
@@ -1063,7 +1072,7 @@ function project(opts) {
       : phaseMultiplier(olderAge);
 
     // expenses.base is MONTHLY in today's dollars — convert to annual here.
-    let baseExp = state.expenses.base * 12 * cumInfl * phaseMult;
+    let baseExp = state.expenses.base * 12 * cumInfl * phaseMult * frac;
 
     let largeExpThisYear = 0;
     state.expenses.large.forEach(ex => {
@@ -1079,7 +1088,7 @@ function project(opts) {
                       year <= (ex.endYear   || endYear);
       if (!inRange) return;
       const annual = (ex.period === "monthly" ? ex.amount * 12 : ex.amount);
-      recurringExpThisYear += ex.inflate ? annual * cumInfl : annual;
+      recurringExpThisYear += (ex.inflate ? annual * cumInfl : annual) * frac;
     });
 
     const totalExpenses = baseExp + largeExpThisYear + recurringExpThisYear + mortgagePayments;
@@ -1094,7 +1103,7 @@ function project(opts) {
     accounts.forEach(a => {
       // Dividends are paid from PRE-growth balance (more realistic mid-year)
       if (a.type === "taxable" && a.dividendYield > 0) {
-        const div = a.balance * (a.dividendYield / 100);
+        const div = a.balance * (a.dividendYield / 100) * frac;
         dividendIncome += div;
         if (!bothRetired) {
           // Reinvested: balance grows, basis tracks the new shares.
@@ -1104,15 +1113,15 @@ function project(opts) {
         // bothRetired: dividends leave the account as cash (still taxed as qualified divs).
       }
       // All accounts use the effective return rate for this projection run.
-      a.balance *= 1 + (effReturn + returnDelta) / 100;
+      a.balance *= 1 + (effReturn + returnDelta) / 100 * frac;
       const ownerWorking =
         (a.owner === "Spouse 1" && year < s.s1.retireYear) ||
         (a.owner === "Spouse 2" && year < s.s2.retireYear) ||
         (a.owner === "Joint" && (year < s.s1.retireYear || year < s.s2.retireYear));
       if (ownerWorking && a.contribution > 0) {
-        a.balance += a.contribution;
-        if (a.type === "taxable") a.basis += a.contribution;
-        if (a.type === "ira" || a.type === "401k") pretaxContribs += a.contribution;
+        a.balance += a.contribution * frac;
+        if (a.type === "taxable") a.basis += a.contribution * frac;
+        if (a.type === "ira" || a.type === "401k") pretaxContribs += a.contribution * frac;
       }
     });
 
