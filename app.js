@@ -2280,11 +2280,16 @@ function wireWithdrawalsTab() {
   });
   document.getElementById("tsc-tax-rise-pct").addEventListener("change", (e) => {
     state.settings.taxRisePct = parseFloat(e.target.value) || 0;
-    saveState(); recalc();
+    saveState(); renderTaxStrategyComparison();
   });
   document.getElementById("tsc-tax-rise-year").addEventListener("change", (e) => {
     state.settings.taxRiseYear = parseInt(e.target.value) || 2026;
-    saveState(); recalc();
+    saveState(); renderTaxStrategyComparison();
+  });
+  document.getElementById("tsc-rerun").addEventListener("click", () => {
+    state.settings.taxRisePct  = parseFloat(document.getElementById("tsc-tax-rise-pct").value)  || 0;
+    state.settings.taxRiseYear = parseInt(document.getElementById("tsc-tax-rise-year").value) || 2026;
+    saveState(); renderTaxStrategyComparison();
   });
 
   ["rc-strategy", "rc-start", "rc-end", "rc-custom"].forEach(id => {
