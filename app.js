@@ -1424,7 +1424,7 @@ function renderCurrentPortfolio() {
 }
 
 // ===== Render Summary =====
-let assetChart, liquidBreakdownChart, incomeBreakdownChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart;
+let assetChart, liquidBreakdownChart, incomeBreakdownChart, rothConversionChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart;
 let taxByBracketChart;
 let expenseByYearChart, realEstateEquityChart, rentalIncomeChart, accountBalancesChart;
 
@@ -1655,8 +1655,7 @@ function recalc() {
     const inflows = (r.salary1 || 0) + (r.salary2 || 0)
       + (r.grossSS || 0) + (r.rentalNet || 0) + (r.dividendIncome || 0)
       + (r.saleProceeds || 0) + (r.traditionalRMD || 0)
-      + (r.inheritedRMD || 0) + (r.inheritedBracketDrain || 0)
-      + (r.rothConverted || 0);
+      + (r.inheritedRMD || 0) + (r.inheritedBracketDrain || 0);
     const outflows = (r.expenses || 0) + (r.ordinaryTax || 0) + (r.ltcgTax || 0);
     const brokerageNetFlow = inflows - outflows;
     cumBrokerageFlow += brokerageNetFlow;
@@ -1708,6 +1707,7 @@ function recalc() {
 
   drawCharts(rows, lowRows, highRows);
   drawIncomeBreakdown(rows);
+  drawRothConversions(rows);
   drawGapWithdrawalBreakdown(rows);
   drawExpenseBreakdown(rows);
   drawTaxByBracket(rows);
@@ -1846,13 +1846,40 @@ function drawIncomeBreakdown(rows) {
           { label: "Traditional IRA / 401k RMD",  data: rows.map(r => r.traditionalRMD || 0),       backgroundColor: "#dc2626" },
           { label: "Inherited IRA RMD",            data: rows.map(r => r.inheritedRMD || 0),         backgroundColor: "#b45309" },
           { label: "Inherited IRA Bracket Fill",   data: rows.map(r => r.inheritedBracketDrain || 0), backgroundColor: "#c2410c" },
-          { label: "Roth Conversion",              data: rows.map(r => r.rothConverted || 0),        backgroundColor: "#7c3aed" },
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           title: { display: true, text: "Annual Inflows by Source (stacked)" },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+        },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, ticks: { callback: v => fmt(v) } },
+        },
+      },
+    }
+  );
+}
+
+function drawRothConversions(rows) {
+  if (rothConversionChart) rothConversionChart.destroy();
+  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  rothConversionChart = new Chart(
+    document.getElementById("rothConversionChart").getContext("2d"),
+    {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          { label: "Roth Conversion", data: rows.map(r => r.rothConverted || 0), backgroundColor: "#7c3aed" },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: "Annual Roth Conversions (not cash inflow — moves pretax → Roth; tax included in outflows)" },
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
         },
         scales: {
@@ -1909,8 +1936,7 @@ function drawExpenseBreakdown(rows) {
       + (r.saleProceeds || 0)
       + (r.traditionalRMD || 0)
       + (r.inheritedRMD || 0)
-      + (r.inheritedBracketDrain || 0)
-      + (r.rothConverted || 0);
+      + (r.inheritedBracketDrain || 0);
     const outflows = (r.expenses || 0) + (r.ordinaryTax || 0) + (r.ltcgTax || 0);
     return inflows - outflows;
   });
