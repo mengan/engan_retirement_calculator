@@ -2052,12 +2052,28 @@ function renderGuardrails(rows) {
   const { rows: gRows, initialAllowedNominal, initialLiquid, retireRow } = computeGuardrails(rows);
   const s = state.settings;
 
-  const todayLiquid = gRows[0]?.liquid || 0;
+  const todayLiquid = gRows[0]?.effLiquid || gRows[0]?.liquid || 0;
   const todayAllowed = todayLiquid * (s.swr || 3.5) / 100;
 
   // For static, the "at-retirement allowed" is the nominal × swr. For others, show the same.
   document.getElementById("swr-today").textContent = fmt(todayAllowed) + "/yr";
   document.getElementById("swr-at-retire").textContent = fmt(initialAllowedNominal) + "/yr";
+
+  // Raise/cut thresholds based on current year's expenses and SWR
+  const adj = (s.swrAdjust || 10) / 100;
+  const upperBand = 1 + (s.swrUpperBand || 20) / 100;
+  const lowerBand = 1 - (s.swrLowerBand || 20) / 100;
+  const currentExpenses = gRows[0]?.expenses || 0;
+  // Cut threshold: liquid below which expense/liquid ratio exceeds swr * upperBand
+  // expense / liquid > swr * upperBand  =>  liquid < expense / (swr * upperBand)
+  const swrRate = (s.swr || 3.5) / 100;
+  const cutThreshold = swrRate * upperBand > 0 ? currentExpenses / (swrRate * upperBand) : 0;
+  // Raise threshold: liquid above which expense/liquid ratio falls below swr * lowerBand
+  const raiseThreshold = swrRate * lowerBand > 0 ? currentExpenses / (swrRate * lowerBand) : 0;
+  document.getElementById("swr-cut-threshold").textContent = fmt(cutThreshold);
+  document.getElementById("swr-raise-threshold").textContent = fmt(raiseThreshold);
+  document.getElementById("swr-adjust-pct-raise").textContent = Math.round(adj * 100);
+  document.getElementById("swr-adjust-pct-cut").textContent = Math.round(adj * 100);
 
   // Count retired years where forecast exceeds guardrail
   const retiredRows = gRows.filter(r => r.retired);
