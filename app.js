@@ -236,6 +236,11 @@ document.querySelectorAll(".tab").forEach(btn => {
   });
 });
 
+// Intro "Get Started" button navigates to General Settings
+document.getElementById("intro-start-btn").addEventListener("click", () => {
+  document.querySelector(".tab[data-tab='settings']").click();
+});
+
 // ===== Settings UI =====
 const settingsBindings = [
   ["set-current-year", "settings.currentYear", "int"],
@@ -473,7 +478,7 @@ function renderAccounts() {
       <td><input type="number" value="${a.basis}" data-field="basis" ${a.type==='taxable'?'':'disabled'}/></td>
       <td><input type="number" step="0.1" value="${a.dividendYield ?? (a.type==='taxable'?2:0)}" data-field="dividendYield" ${a.type==='taxable'?'':'disabled'}/></td>
       <td><input type="number" value="${a.inheritanceYear || ''}" data-field="inheritanceYear" placeholder="—" ${a.type==='inherited_ira'?'':'disabled'}/></td>
-      <td><input type="number" value="${a.rmdTakenThisYear || ''}" data-field="rmdTakenThisYear" placeholder="0" ${['ira','401k','inherited_ira'].includes(a.type)?'':'disabled'}/></td>
+      <td style="text-align:center">${['ira','401k','inherited_ira'].includes(a.type) ? `<input type="checkbox" data-field="rmdTakenAlready" ${a.rmdTakenAlready ? 'checked' : ''} title="Check if full RMD already taken and is in taxable balance"/>` : ''}</td>
       <td><input type="number" value="${a.contribution}" data-field="contribution"/></td>
       <td><button class="small danger" data-action="del">×</button></td>
     `;
@@ -482,6 +487,7 @@ function renderAccounts() {
         const f = inp.dataset.field;
         if (!f) return;
         if (["name","type","owner"].includes(f)) a[f] = inp.value;
+        else if (f === "rmdTakenAlready") a[f] = inp.checked;
         else a[f] = parseFloat(inp.value) || 0;
         saveState(); renderAccounts(); recalc();
       });
@@ -811,11 +817,10 @@ function distributeTraditionalRMD(accounts, s1Age, s2Age, isFirstYear = false) {
     const age = a.owner === "Spouse 2" ? s2Age : s1Age;
     const divisor = getTraditionalRMDDivisor(age);
     if (!divisor) return;
+    if (isFirstYear && a.rmdTakenAlready) return; // full RMD already taken; balance already reflects it
     const fullRmd = Math.min(a.balance / divisor, a.balance);
-    const alreadyTaken = isFirstYear ? Math.min(a.rmdTakenThisYear || 0, fullRmd) : 0;
-    const rmd = Math.max(0, fullRmd - alreadyTaken);
-    a.balance -= rmd;
-    total += rmd;
+    a.balance -= fullRmd;
+    total += fullRmd;
   });
   if (total > 0) {
     let taxable = accounts.find(a => a.type === "taxable");
@@ -872,10 +877,10 @@ function inheritedMandatoryDistribution(accounts, currentYear, isFirstYear = fal
     const inhYear = a.inheritanceYear || (currentYear - 1);
     const elapsed = currentYear - inhYear;
     if (elapsed <= 0) return; // inheritance year or future — no RMD yet
+    if (isFirstYear && a.rmdTakenAlready) return; // full RMD already taken; balance already reflects it
     const yearsLeft = 10 - elapsed;
     const fullRmd = yearsLeft <= 0 ? a.balance : a.balance / yearsLeft;
-    const alreadyTaken = isFirstYear ? Math.min(a.rmdTakenThisYear || 0, fullRmd) : 0;
-    mandatory += Math.max(0, fullRmd - alreadyTaken);
+    mandatory += fullRmd;
   });
   return mandatory;
 }
