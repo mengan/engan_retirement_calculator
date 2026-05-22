@@ -1293,14 +1293,16 @@ function project(opts) {
       }
       // All accounts use the effective return rate for this projection run.
       a.balance *= 1 + (effReturn + returnDelta) / 100 * frac;
-      const ownerWorking =
-        (a.owner === "Spouse 1" && year < s.s1.retireYear) ||
-        (s.hasSpouse2 && a.owner === "Spouse 2" && year < s.s2.retireYear) ||
-        (a.owner === "Joint" && (year < s.s1.retireYear || (s.hasSpouse2 && year < s.s2.retireYear)));
-      if (ownerWorking && a.contribution > 0) {
-        a.balance += a.contribution * frac;
-        if (a.type === "taxable") a.basis += a.contribution * frac;
-        if (a.type === "ira" || a.type === "sep_ira" || a.type === "401k") pretaxContribs += a.contribution * frac;
+      // Contribution fraction matches how much of the year the owner is working.
+      // Joint accounts use whichever spouse is still working (higher workFrac wins).
+      const contribFrac =
+        a.owner === "Spouse 1" ? s1WorkFrac :
+        a.owner === "Spouse 2" ? s2WorkFrac :
+        Math.max(s1WorkFrac, s2WorkFrac); // Joint
+      if (contribFrac > 0 && a.contribution > 0) {
+        a.balance += a.contribution * contribFrac;
+        if (a.type === "taxable") a.basis += a.contribution * contribFrac;
+        if (a.type === "ira" || a.type === "sep_ira" || a.type === "401k") pretaxContribs += a.contribution * contribFrac;
       }
     });
 
