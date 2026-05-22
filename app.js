@@ -1839,6 +1839,7 @@ document.getElementById("sum-peak").textContent = fmt(peakLiquid);
   const expLowRows  = project({ inflationPct: state.settings.defaultInflationLow });
   const expHighRows = project({ inflationPct: state.settings.defaultInflationHigh });
   drawExpensesByYear(rows, expLowRows, expHighRows);
+  drawExpenseInflationChart(rows, expLowRows, expHighRows);
   renderExpenseByYearTable(rows);
   drawAccountBalances(rows);
   drawRealEstateEquityChart(rows);
