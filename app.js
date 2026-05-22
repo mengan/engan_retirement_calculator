@@ -1629,12 +1629,9 @@ function renderRealEstateTable(rows) {
   });
 }
 
-function drawExpensesByYear(rows, lowRows, highRows) {
+function drawExpensesByYear(rows) {
   if (expenseByYearChart) expenseByYearChart.destroy();
   const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
-  const s = state.settings;
-  const lowInfl  = s.defaultInflationLow  ?? 2;
-  const highInfl = s.defaultInflationHigh ?? 4;
   expenseByYearChart = new Chart(
     document.getElementById("expenseByYearChart").getContext("2d"),
     {
@@ -1642,47 +1639,21 @@ function drawExpensesByYear(rows, lowRows, highRows) {
       data: {
         labels,
         datasets: [
-          // Stacked bars — midpoint inflation
-          { label: "Baseline",  data: rows.map(r => r.expBaseline  || 0), backgroundColor: "#3b82f6", stack: "mid" },
-          { label: "Recurring", data: rows.map(r => r.expRecurring || 0), backgroundColor: "#10b981", stack: "mid" },
-          { label: "Large",     data: rows.map(r => r.expLarge     || 0), backgroundColor: "#f59e0b", stack: "mid" },
-          { label: "Mortgage",  data: rows.map(r => r.expMortgage  || 0), backgroundColor: "#a78bfa", stack: "mid" },
-          // Overlay lines — low and high inflation totals
-          {
-            label: `Total (low inflation ${lowInfl}%)`,
-            data: (lowRows || rows).map(r => r.expenses || 0),
-            type: "line",
-            borderColor: "#15803d",
-            backgroundColor: "transparent",
-            borderWidth: 2,
-            borderDash: [5, 3],
-            pointRadius: 0,
-            tension: 0.2,
-            order: -1,
-          },
-          {
-            label: `Total (high inflation ${highInfl}%)`,
-            data: (highRows || rows).map(r => r.expenses || 0),
-            type: "line",
-            borderColor: "#b91c1c",
-            backgroundColor: "transparent",
-            borderWidth: 2,
-            borderDash: [5, 3],
-            pointRadius: 0,
-            tension: 0.2,
-            order: -1,
-          },
+          { label: "Baseline",  data: rows.map(r => r.expBaseline  || 0), backgroundColor: "#3b82f6" },
+          { label: "Recurring", data: rows.map(r => r.expRecurring || 0), backgroundColor: "#10b981" },
+          { label: "Large",     data: rows.map(r => r.expLarge     || 0), backgroundColor: "#f59e0b" },
+          { label: "Mortgage",  data: rows.map(r => r.expMortgage  || 0), backgroundColor: "#a78bfa" },
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          title: { display: true, text: "Forecasted Expenses by Year (bars = mid inflation, lines = low/high)" },
+          title: { display: true, text: "Forecasted Expenses by Year (stacked, mid inflation)" },
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
         },
         scales: {
           x: { stacked: true },
-          y: { stacked: false, ticks: { callback: v => fmt(v) } },
+          y: { stacked: true, ticks: { callback: v => fmt(v) } },
         },
       },
     }
