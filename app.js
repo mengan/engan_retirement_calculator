@@ -2000,7 +2000,7 @@ function computeGuardrails(rows) {
   const effectiveLiquid = r => r.liquid + (includeRE ? (r.rentalEquity || 0) : 0);
 
   // Find the retirement-start row to anchor static & GK methods
-  const olderRetire = Math.max(s.s1.retireYear, s.s2.retireYear);
+  const olderRetire = s.hasSpouse2 ? Math.max(s.s1.retireYear, s.s2.retireYear) : s.s1.retireYear;
   const retireRow = rows.find(r => r.year >= olderRetire) || rows[0];
   const initialLiquid = retireRow ? effectiveLiquid(retireRow) : 0;
   const initialAllowedNominal = initialLiquid * swr;
@@ -2537,7 +2537,7 @@ function renderRothRecommendation(rows) {
   if (!el) return;
 
   const s = state.settings;
-  const olderRetire = Math.max(s.s1.retireYear, s.s2.retireYear);
+  const olderRetire = s.hasSpouse2 ? Math.max(s.s1.retireYear, s.s2.retireYear) : s.s1.retireYear;
   // Tax valley ends when the first spouse hits 73 and RMDs begin
   const s1RmdYear = s.currentYear + (73 - s.s1.age);
   const s2RmdYear = s.currentYear + (73 - s.s2.age);
