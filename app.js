@@ -145,6 +145,16 @@ function migrate(s) {
   // Init recurring expenses list
   if (s.expenses && !Array.isArray(s.expenses.recurring)) s.expenses.recurring = [];
 
+  // Migrate ssOverride from annual → monthly (flag-guarded so it only runs once)
+  if (!s._ssOverrideMigrated) {
+    ["s1", "s2"].forEach(sp => {
+      if (s.settings && s.settings[sp] && s.settings[sp].ssOverride > 0) {
+        s.settings[sp].ssOverride = Math.round(s.settings[sp].ssOverride / 12);
+      }
+    });
+    s._ssOverrideMigrated = true;
+  }
+
   s.settings = { ...d.settings, ...(s.settings || {}) };
   s.settings.rothConv     = { ...d.settings.rothConv,     ...(s.settings.rothConv     || {}) };
   s.settings.inheritedIra = { ...d.settings.inheritedIra, ...(s.settings.inheritedIra || {}) };
