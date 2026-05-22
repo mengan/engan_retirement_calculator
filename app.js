@@ -2010,39 +2010,35 @@ function computeGuardrails(rows) {
 
   // Pre-compute cumulative inflation by year index relative to retirement
   const guardrailRows = rows.map((r, i) => {
+    const effLiq = effectiveLiquid(r);
     let allowed;
     if (method === "static") {
       if (i < retireIdx) {
-        // before retirement — guardrail is current-liquid × swr (just informational)
-        allowed = r.liquid * swr;
+        allowed = effLiq * swr;
       } else {
         const yearsSinceRetire = i - retireIdx;
         allowed = initialAllowedNominal * Math.pow(inflFactor, yearsSinceRetire);
       }
     } else if (method === "guyton_klinger") {
-      // Dynamic SWR with bands
-      const dyn = r.liquid * swr;
-      // Compute current WR = expense / liquid; compare to initial WR (= swr by definition)
-      const currentWR = r.liquid > 0 ? r.expenses / r.liquid : 0;
+      const dyn = effLiq * swr;
+      const currentWR = effLiq > 0 ? r.expenses / effLiq : 0;
       const upper = swr * (1 + (s.swrUpperBand || 20) / 100);
       const lower = swr * (1 - (s.swrLowerBand || 20) / 100);
       const adj = (s.swrAdjust || 10) / 100;
       if (currentWR > upper) {
-        // overspending — guardrail cuts back
         allowed = r.expenses * (1 - adj);
       } else if (currentWR < lower && r.retired) {
-        // safe to raise
         allowed = r.expenses * (1 + adj);
       } else {
         allowed = dyn;
       }
     } else {
-      // dynamic
-      allowed = r.liquid * swr;
+      allowed = effLiq * swr;
     }
     const headroom = allowed - r.expenses;
     return {
       ...r,
+      effLiquid: effLiq,
       swrAllowed: allowed,
       swrHeadroom: headroom,
       swrOver: headroom < 0,
