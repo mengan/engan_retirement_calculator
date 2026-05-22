@@ -1125,8 +1125,8 @@ function project(opts) {
       a.balance *= 1 + (effReturn + returnDelta) / 100 * frac;
       const ownerWorking =
         (a.owner === "Spouse 1" && year < s.s1.retireYear) ||
-        (a.owner === "Spouse 2" && year < s.s2.retireYear) ||
-        (a.owner === "Joint" && (year < s.s1.retireYear || year < s.s2.retireYear));
+        (s.hasSpouse2 && a.owner === "Spouse 2" && year < s.s2.retireYear) ||
+        (a.owner === "Joint" && (year < s.s1.retireYear || (s.hasSpouse2 && year < s.s2.retireYear)));
       if (ownerWorking && a.contribution > 0) {
         a.balance += a.contribution * frac;
         if (a.type === "taxable") a.basis += a.contribution * frac;
