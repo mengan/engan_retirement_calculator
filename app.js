@@ -623,7 +623,14 @@ function renderProperties() {
         <div class="grid-2">
           <label>Current Monthly Rent ($) <input type="number" value="${p.rent}" data-field="rent"/></label>
           <label>Cost Basis ($) <input type="number" value="${p.basis}" data-field="basis"/></label>
-          <label>Accumulated Depreciation Already Taken ($) <input type="number" value="${p.accumDepreciation}" data-field="accumDepreciation"/></label>
+          <label>Years of Depreciation Already Taken
+            <input type="number" min="0" max="27" step="1" value="${p.yearsDepreciated || 0}" data-field="yearsDepreciated"/>
+            <small>
+              Calculated accumulated depreciation:
+              <strong>${fmt((p.basis || 0) * 0.8 / 27.5 * (p.yearsDepreciated || 0))}</strong>
+              &nbsp;(${((p.yearsDepreciated || 0) * (p.basis || 0) * 0.8 / 27.5 / Math.max(1, (p.basis || 0) * 0.8) * 100).toFixed(1)}% of building basis)
+            </small>
+          </label>
           <label>% of Rent Collected That's Taxable
             <input type="number" step="1" min="0" max="100" value="${p.taxablePct ?? 30}" data-field="taxablePct"/>
             <small>
