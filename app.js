@@ -2163,6 +2163,7 @@ function renderGuardrailsControls() {
   document.getElementById("swr-upper").value   = state.settings.swrUpperBand;
   document.getElementById("swr-lower").value   = state.settings.swrLowerBand;
   document.getElementById("swr-adjust").value  = state.settings.swrAdjust;
+  document.getElementById("swr-include-realestate").checked = state.settings.swrIncludeRealEstate || false;
 }
 
 function wireGuardrailsTab() {
