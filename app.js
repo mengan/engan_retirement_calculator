@@ -785,7 +785,7 @@ function marginalRate(taxable, brackets) {
 // Logical withdrawal-order key → underlying account types it drains.
 const ORDER_KEY_TO_TYPES = {
   taxable:        ["taxable"],
-  roth:           ["roth"],
+  roth:           ["roth", "roth_401k"],
   traditional:    ["ira", "sep_ira", "401k"],   // pretax accounts treated identically in retirement
   inherited_ira:  ["inherited_ira"],
   hsa:            ["hsa"],
