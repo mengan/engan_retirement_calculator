@@ -2833,25 +2833,32 @@ function renderSSTab() {
     const overrideEl = document.getElementById(`${prefix}-override`);
 
     function update() {
-      const earnings = parseFloat(earningsEl.value) || 0;
-      const years    = parseFloat(yearsEl.value) || 0;
-      const claimAge = parseInt(claimEl.value) || 67;
-      const override = parseFloat(overrideEl.value) || 0;
+      const earnings   = parseFloat(earningsEl.value) || 0;
+      const yearsSoFar = parseFloat(yearsEl.value) || 0;
+      const claimAge   = parseInt(claimEl.value) || 67;
+      const override   = parseFloat(overrideEl.value) || 0;
 
       state.settings[sp].ssEstEarnings = earnings;
-      state.settings[sp].ssEstYears    = years;
+      state.settings[sp].ssEstYears    = yearsSoFar;
       state.settings[sp].ssAge         = claimAge;
       state.settings[sp].ssOverride    = override;
 
-      const fraBenefit = override > 0 ? override : estimateFRABenefit(earnings, years);
+      // Compute additional years from current year to retirement year
+      const currentYear  = state.settings.currentYear || new Date().getFullYear();
+      const retireYear   = state.settings[sp].retireYear || currentYear;
+      const yearsToRetire = Math.max(0, retireYear - currentYear);
+      const totalYears   = yearsSoFar + yearsToRetire;
+
+      const fraBenefit   = override > 0 ? override : estimateFRABenefit(earnings, totalYears);
       const finalBenefit = fraBenefit * claimAgeFactor(claimAge);
 
+      document.getElementById(`${prefix}-totalyears`).textContent = `${yearsSoFar} + ${yearsToRetire} = ${totalYears} yrs (capped at 35 for SSA average)`;
       document.getElementById(`${prefix}-fra`).textContent = fmt(fraBenefit);
       document.getElementById(`${prefix}-final`).textContent = fmt(finalBenefit) + "/yr";
 
       state.settings[sp].ssAmt = finalBenefit;
 
-      // Mirror to General Settings inputs if visible
+      // Mirror to spouse box above
       const elAmt = document.getElementById(`${sp}-ss-amt`);
       const elAge = document.getElementById(`${sp}-ss-age`);
       if (elAmt) elAmt.value = Math.round(finalBenefit);
