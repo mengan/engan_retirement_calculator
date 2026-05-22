@@ -534,7 +534,7 @@ function renderAccounts() {
         const f = inp.dataset.field;
         if (!f) return;
         if (["name","type","owner"].includes(f)) a[f] = inp.value;
-        else if (f === "rmdTakenAlready") a[f] = inp.checked;
+        else if (f === "rmdTakenAlready" || f === "excluded") a[f] = inp.checked;
         else a[f] = parseFloat(inp.value) || 0;
         saveState(); renderAccounts(); recalc();
       });
