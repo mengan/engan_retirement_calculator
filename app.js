@@ -1993,11 +1993,14 @@ function computeGuardrails(rows) {
   const s = state.settings;
   const swr = (s.swr || 3.5) / 100;
   const method = s.swrMethod || "dynamic";
+  const includeRE = s.swrIncludeRealEstate || false;
+
+  const effectiveLiquid = r => r.liquid + (includeRE ? (r.rentalEquity || 0) : 0);
 
   // Find the retirement-start row to anchor static & GK methods
   const olderRetire = Math.max(s.s1.retireYear, s.s2.retireYear);
   const retireRow = rows.find(r => r.year >= olderRetire) || rows[0];
-  const initialLiquid = retireRow ? retireRow.liquid : 0;
+  const initialLiquid = retireRow ? effectiveLiquid(retireRow) : 0;
   const initialAllowedNominal = initialLiquid * swr;
   const retireIdx = rows.indexOf(retireRow);
 
