@@ -2825,7 +2825,16 @@ function renderSSTab() {
       </div>
     </fieldset>
   `;
-  document.getElementById("ss-spouses").innerHTML = html("s1", "ss1") + (state.settings.hasSpouse2 ? html("s2", "ss2") : "");
+  document.getElementById("ss-spouses").innerHTML = `
+    <div class="muted" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;line-height:1.7;">
+      <strong style="color:#1f3a5f;">How to get the most accurate Social Security estimate:</strong>
+      <ol style="margin:6px 0 0 18px;padding:0;">
+        <li>Visit <a href="https://www.ssa.gov/myaccount" target="_blank" rel="noopener">ssa.gov/myaccount</a> to see your SSA estimated benefit at FRA.</li>
+        <li><strong>If you plan to retire before FRA with fewer than 35 years worked,</strong> the SSA number will be overstated — it assumes you keep earning your current salary until FRA. Use the estimate fields below (salary + years worked so far + retirement date) instead to get a realistic number that accounts for the early retirement zeros.</li>
+        <li><strong>If you will have 35+ years worked by retirement,</strong> the SSA number is reliable — paste it into the Manual Override field and the calculator will still apply the correct adjustment for your chosen claim age.</li>
+      </ol>
+    </div>
+  ` + html("s1", "ss1") + (state.settings.hasSpouse2 ? html("s2", "ss2") : "");
 
   function wire(sp, prefix) {
     const earningsEl = document.getElementById(`${prefix}-earnings`);
