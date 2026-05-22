@@ -364,7 +364,13 @@
   </table>
   <button id="add-account">+ Add Account</button>
 
-  <h3 style="margin-top:24px;">Projected Account Balances by Year</h3>
+  <h3 style="margin-top:24px;">Projected Account Balances by Type</h3>
+  <p class="muted">All accounts of the same type summed together (e.g. two Spouse 1 IRAs + two Spouse 2 IRAs = one Traditional IRA line).</p>
+  <div class="chart-container" style="height:360px;">
+    <canvas id="accountTypeChart"></canvas>
+  </div>
+
+  <h3 style="margin-top:24px;">Projected Account Balances by Account</h3>
   <p class="muted">Each account tracked individually. Withdrawals from accounts of the same type are distributed pro-rata by balance. Excluded accounts grow but are never drawn from.</p>
   <div class="chart-container" style="height:420px;">
     <canvas id="accountBalancesChart"></canvas>
