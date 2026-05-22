@@ -2814,7 +2814,7 @@ function renderSSTab() {
           <small>Updates "Social Security Start Age" in the spouse box above.</small></label>
         <label>Manual Override Annual Benefit ($, today)
           <input type="number" id="${prefix}-override" value="${state.settings[sp].ssOverride || 0}"/>
-          <small>0 = use estimate. If non-zero, this value is used directly as the FRA benefit.</small>
+          <small>0 = use estimate above. If non-zero, this value is used directly as the FRA benefit and overrides the estimate. For the most accurate number, log in to <a href="https://www.ssa.gov/myaccount" target="_blank" rel="noopener">ssa.gov/myaccount</a> to look up your actual estimated benefit at FRA and enter it here.</small>
         </label>
       </div>
       <div style="margin-top:8px; line-height:1.8;">
