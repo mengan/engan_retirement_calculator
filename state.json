@@ -1,7 +1,7 @@
 {
   "settings": {
     "currentYear": 2026,
-    "endYear": 2056,
+    "endYear": 2065,
     "taxRate": 18,
     "cgRate": 15,
     "salaryReal": false,
@@ -13,6 +13,8 @@
     "defaultRentGrowth": 2,
     "useTaxBrackets": true,
     "stdDeduction": 29200,
+    "taxRisePct": 10,
+    "taxRiseYear": 2038,
     "taxableCapGainsPct": 50,
     "filingStatus": "mfj",
     "taxBrackets": [
@@ -101,12 +103,12 @@
     "s2": {
       "name": "juliet ",
       "age": 54,
-      "salary": 100000,
+      "salary": 60000,
       "salaryGrowth": 2,
       "retireYear": 2028,
       "contrib": 20000,
-      "ssAge": 62,
-      "ssAmt": 18055.08,
+      "ssAge": 63,
+      "ssAmt": 19602.65828571429,
       "ssEstEarnings": 90000,
       "ssEstYears": 25,
       "ssOverride": 0
@@ -149,6 +151,27 @@
         "year": 2031,
         "amount": 100000,
         "inflate": true
+      },
+      {
+        "id": "g51jwdo7",
+        "desc": "europe",
+        "year": 2026,
+        "amount": 20000,
+        "inflate": false
+      },
+      {
+        "id": "1pvxjdt4",
+        "desc": "remodel",
+        "year": 2026,
+        "amount": 20000,
+        "inflate": false
+      },
+      {
+        "id": "btblnj87",
+        "desc": "missing rent",
+        "year": 2026,
+        "amount": 30000,
+        "inflate": false
       }
     ],
     "recurring": [
@@ -272,7 +295,8 @@
       "basis": 0,
       "returnPct": 6,
       "contribution": 0,
-      "inheritanceYear": 2026
+      "inheritanceYear": 2026,
+      "rmdTakenAlready": true
     },
     {
       "id": "uyux56qk",
@@ -311,10 +335,10 @@
       "rentGrowth": 0,
       "basis": 0,
       "sellYear": 0,
-      "accumDepreciation": 0,
       "loanPayoffYear": 2051,
       "loanPayoffMonth": 7,
-      "escrow": 1462.36
+      "escrow": 1462.36,
+      "yearsDepreciated": 0
     },
     {
       "id": "p8u0r8un",
@@ -330,11 +354,11 @@
       "rentGrowth": 3,
       "basis": 220000,
       "sellYear": 0,
-      "accumDepreciation": 60000,
       "taxablePct": 35,
       "loanPayoffYear": 2050,
       "loanPayoffMonth": 6,
-      "escrow": 908.66
+      "escrow": 908.66,
+      "yearsDepreciated": 9
     },
     {
       "id": "mamnz8s6",
@@ -350,10 +374,10 @@
       "rentGrowth": 3,
       "basis": 0,
       "sellYear": 0,
-      "accumDepreciation": 0,
       "taxablePct": 35,
       "loanPayoffYear": 2051,
-      "escrow": 1022.58
+      "escrow": 1022.58,
+      "yearsDepreciated": 0
     },
     {
       "id": "oir2dtre",
@@ -369,11 +393,11 @@
       "rentGrowth": 3,
       "basis": 0,
       "sellYear": 0,
-      "accumDepreciation": 0,
       "taxablePct": 35,
       "loanPayoffYear": 2050,
       "loanPayoffMonth": 6,
-      "escrow": 941.84
+      "escrow": 941.84,
+      "yearsDepreciated": 0
     }
   ],
   "version": 2
