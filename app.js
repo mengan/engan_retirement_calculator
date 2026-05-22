@@ -1391,6 +1391,10 @@ function project(opts) {
     const reEquity = properties.reduce((sum, p) => sum + Math.max(0, p.value - p.loanBalance), 0);
     const rentalEquity = properties.filter(p => p.isRental).reduce((sum, p) => sum + Math.max(0, p.value - p.loanBalance), 0);
 
+    // Per-account balances snapshot (keyed by account id)
+    const balancesById = {};
+    accounts.forEach(a => { balancesById[a.id] = Math.max(0, a.balance); });
+
     // Aggregate balances by account type (401k + IRA combined as "traditional")
     const sumType = (...types) => accounts
       .filter(a => types.includes(a.type))
