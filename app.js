@@ -2183,6 +2183,12 @@ function wireGuardrailsTab() {
       recalc();
     });
   });
+
+  document.getElementById("swr-include-realestate").addEventListener("change", e => {
+    state.settings.swrIncludeRealEstate = e.target.checked;
+    saveState();
+    recalc();
+  });
 }
 
 // ===== Withdrawals & Taxes tab =====
