@@ -505,6 +505,7 @@ function renderAccounts() {
       <td><input type="number" value="${a.inheritanceYear || ''}" data-field="inheritanceYear" placeholder="—" ${a.type==='inherited_ira'?'':'disabled'}/></td>
       <td style="text-align:center">${['ira','sep_ira','401k','inherited_ira'].includes(a.type) ? `<input type="checkbox" data-field="rmdTakenAlready" ${a.rmdTakenAlready ? 'checked' : ''} title="Check if full RMD already taken and is in taxable balance"/>` : ''}</td>
       <td><input type="number" value="${a.contribution}" data-field="contribution"/></td>
+      <td style="text-align:center"><input type="checkbox" data-field="excluded" ${a.excluded ? 'checked' : ''} title="Exclude from withdrawals — account still grows but is never drawn from"/></td>
       <td><button class="small danger" data-action="del">×</button></td>
     `;
 
