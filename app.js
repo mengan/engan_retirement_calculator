@@ -2272,6 +2272,8 @@ function renderGuardrails(rows) {
   const raiseThreshold = swrRate * lowerBand > 0 ? currentExpenses / (swrRate * lowerBand) : 0;
   document.getElementById("swr-cut-threshold").textContent = fmt(cutThreshold);
   document.getElementById("swr-raise-threshold").textContent = fmt(raiseThreshold);
+  document.getElementById("swr-current-liquid").textContent = fmt(gRows[0]?.liquid || 0);
+  document.getElementById("swr-current-total").textContent = fmt(gRows[0]?.netWorth || 0);
   document.getElementById("swr-adjust-pct-raise").textContent = Math.round(adj * 100);
   document.getElementById("swr-adjust-pct-cut").textContent = Math.round(adj * 100);
 
