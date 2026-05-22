@@ -1929,6 +1929,7 @@ document.getElementById("sum-peak").textContent = fmt(peakLiquid);
   drawExpensesByYear(rows);
   drawExpenseInflationChart(rows, expLowRows, expHighRows);
   renderExpenseByYearTable(rows);
+  drawAccountTypeBalances(rows);
   drawAccountBalances(rows);
   drawRealEstateEquityChart(rows);
   drawRentalIncomeChart(rows);
