@@ -1441,6 +1441,7 @@ function project(opts) {
       netWorth: liquidAssets + reEquity,
       saleProceeds,
       balancesByType,
+      balancesById,
     });
   }
   return rows;
