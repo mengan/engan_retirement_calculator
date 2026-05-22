@@ -60,7 +60,9 @@ const defaultState = () => ({
     // Roth conversion strategy
     rothConv: {
       strategy: "fill_12",     // none | fill_12 | fill_22 | fill_24 | fill_32 | custom
+      startMode: "both_retired", // both_retired | manual
       startYear: 2035,
+      endMode: "first_ss",       // first_ss | both_ss | first_rmd | both_rmd | manual
       endYear: 2042,
       customAmount: 0,
       // When true, conversions are suppressed in any year inherited IRA still has balance,
