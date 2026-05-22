@@ -547,7 +547,7 @@ function renderAccounts() {
 }
 document.getElementById("add-account").addEventListener("click", () => {
   state.accounts.push({ id: uid(), name: "New Account", type: "taxable", owner: "Joint",
-    balance: 0, basis: 0, contribution: 0, dividendYield: 2.0 });
+    balance: 0, basis: 0, contribution: 0, dividendYield: 2.0, excluded: false });
   saveState(); renderAccounts(); recalc();
 });
 
