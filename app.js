@@ -486,6 +486,7 @@ function renderAccounts() {
     const tr = document.createElement("tr");
     tr.draggable = true;
     tr.dataset.id = a.id;
+    if (a.excluded) tr.style.opacity = "0.55";
     const typeOpts = ACCOUNT_TYPES.map(([v, label]) =>
       `<option value="${v}" ${a.type === v ? "selected" : ""}>${label}</option>`).join("");
     tr.innerHTML = `
