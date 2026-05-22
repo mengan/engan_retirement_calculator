@@ -311,12 +311,11 @@ function applySpouse2Visibility() {
 }
 
 function bindSettings() {
-  // Wire hasSpouse2 checkbox separately (it's a checkbox, not in settingsBindings)
-  const sp2cb = document.getElementById("set-has-spouse2");
-  if (sp2cb) {
-    sp2cb.checked = state.settings.hasSpouse2 !== false;
-    sp2cb.addEventListener("change", () => {
-      state.settings.hasSpouse2 = sp2cb.checked;
+  // Wire spouse2 toggle button (× to disable, ✚ to re-enable)
+  const sp2btn = document.getElementById("spouse2-toggle");
+  if (sp2btn) {
+    sp2btn.addEventListener("click", () => {
+      state.settings.hasSpouse2 = !(state.settings.hasSpouse2 !== false);
       applySpouse2Visibility();
       saveState();
       recalc();
