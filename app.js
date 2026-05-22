@@ -1009,6 +1009,44 @@ function phaseMultiplier(age) {
   return 1;
 }
 
+function rothConvEffectiveYears() {
+  const s = state.settings;
+  const rc = s.rothConv || {};
+  const currentYear = s.currentYear || new Date().getFullYear();
+
+  // --- Start year ---
+  let effStart;
+  if (rc.startMode === "both_retired") {
+    effStart = s.hasSpouse2
+      ? Math.max(s.s1.retireYear, s.s2.retireYear)
+      : s.s1.retireYear;
+  } else {
+    effStart = rc.startYear || currentYear;
+  }
+
+  // --- End year ---
+  // SS claim year = retireYear + (ssAge - retireAge).  RMD starts at age 73.
+  const s1RetireAge = s.s1.retireYear - (currentYear - s.s1.age);
+  const s2RetireAge = s.hasSpouse2 ? s.s2.retireYear - (currentYear - s.s2.age) : null;
+  const s1SSYear  = s.s1.retireYear  + Math.max(0, s.s1.ssAge  - s1RetireAge);
+  const s2SSYear  = s.hasSpouse2
+    ? s.s2.retireYear + Math.max(0, s.s2.ssAge  - s2RetireAge)
+    : Infinity;
+  const s1RMDYear = currentYear + (73 - s.s1.age);
+  const s2RMDYear = s.hasSpouse2 ? currentYear + (73 - s.s2.age) : Infinity;
+
+  let effEnd;
+  switch (rc.endMode) {
+    case "first_ss":  effEnd = Math.min(s1SSYear, s2SSYear) - 1; break;
+    case "both_ss":   effEnd = Math.max(s1SSYear, s.hasSpouse2 ? s2SSYear : s1SSYear) - 1; break;
+    case "first_rmd": effEnd = Math.min(s1RMDYear, s2RMDYear) - 1; break;
+    case "both_rmd":  effEnd = Math.max(s1RMDYear, s.hasSpouse2 ? s2RMDYear : s1RMDYear) - 1; break;
+    default:          effEnd = rc.endYear || (effStart + 7);
+  }
+
+  return { effStart, effEnd, s1SSYear, s2SSYear, s1RMDYear, s2RMDYear };
+}
+
 function project(opts) {
   opts = opts || {};
   const noiseReturn = opts.noiseReturn || (() => 0);   // (yearIndex) -> percentage-point delta
