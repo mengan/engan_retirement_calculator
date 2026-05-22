@@ -167,7 +167,26 @@
       <label>Current Age <input type="number" id="s2-age" value="48" /></label>
       <label>Annual Salary ($) <input type="number" id="s2-salary" value="90000" /></label>
       <label>Salary Growth (%/yr) <input type="number" id="s2-salary-growth" value="3" step="0.1" /></label>
-      <label>Retirement Year <input type="number" id="s2-retire-year" value="2037" /></label>
+      <label>Retirement Year &amp; Month
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <input type="number" id="s2-retire-year" value="2037" style="max-width:100px;"/>
+          <select id="s2-retire-month" style="max-width:160px;">
+            <option value="1">Jan (no salary that year)</option>
+            <option value="2">Feb (1 mo)</option>
+            <option value="3">Mar (2 mo)</option>
+            <option value="4">Apr (3 mo)</option>
+            <option value="5">May (4 mo)</option>
+            <option value="6">Jun (5 mo)</option>
+            <option value="7">Jul (6 mo)</option>
+            <option value="8">Aug (7 mo)</option>
+            <option value="9">Sep (8 mo)</option>
+            <option value="10">Oct (9 mo)</option>
+            <option value="11">Nov (10 mo)</option>
+            <option value="12">Dec (11 mo)</option>
+          </select>
+        </div>
+        <small>Month retirement begins — salary and contributions are prorated to months worked that year.</small>
+      </label>
       <label>401k / Pretax Contribution ($/yr) <input type="number" id="s2-contrib" value="20000" /></label>
       <label>Social Security Start Age <input type="number" id="s2-ss-age" value="67" readonly style="background:#f8fafc;color:#64748b;" /><small>Set from Social Security section below</small></label>
       <label>Social Security Annual Benefit (today $) <input type="number" id="s2-ss-amt" value="28000" readonly style="background:#f8fafc;color:#64748b;" /><small>Calculated from Social Security section below</small></label>
