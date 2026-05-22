@@ -2540,7 +2540,7 @@ function renderRothRecommendation(rows) {
   const olderRetire = s.hasSpouse2 ? Math.max(s.s1.retireYear, s.s2.retireYear) : s.s1.retireYear;
   // Tax valley ends when the first spouse hits 73 and RMDs begin
   const s1RmdYear = s.currentYear + (73 - s.s1.age);
-  const s2RmdYear = s.currentYear + (73 - s.s2.age);
+  const s2RmdYear = s.hasSpouse2 ? s.currentYear + (73 - s.s2.age) : 9999;
   const rmdYear = Math.min(s1RmdYear, s2RmdYear);
 
   // Sum traditional pretax balances
