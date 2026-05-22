@@ -1173,7 +1173,7 @@ function project(opts) {
       if (ownerWorking && a.contribution > 0) {
         a.balance += a.contribution * frac;
         if (a.type === "taxable") a.basis += a.contribution * frac;
-        if (a.type === "ira" || a.type === "401k") pretaxContribs += a.contribution * frac;
+        if (a.type === "ira" || a.type === "sep_ira" || a.type === "401k") pretaxContribs += a.contribution * frac;
       }
     });
 
