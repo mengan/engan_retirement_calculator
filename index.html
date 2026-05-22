@@ -20,15 +20,18 @@
 </header>
 
 <nav class="tabs">
-  <button class="tab active" data-tab="summary">Summary</button>
-  <button class="tab" data-tab="settings">General Settings</button>
+  <button class="tab active" data-tab="intro">Introduction</button>
+  <div class="tab-group" data-label="Start Here">
+    <button class="tab" data-tab="settings">General Settings</button>
+    <button class="tab" data-tab="expenses">Expenses</button>
+    <button class="tab" data-tab="accounts">Investment Accounts</button>
+  </div>
   <button class="tab" data-tab="socialsecurity">Social Security</button>
-  <button class="tab" data-tab="expenses">Expenses</button>
-  <button class="tab" data-tab="accounts">Investment Accounts</button>
   <button class="tab" data-tab="realestate">Real Estate</button>
   <button class="tab" data-tab="guardrails">Guardrails (SWR)</button>
   <button class="tab" data-tab="withdrawals">Withdrawals &amp; Taxes</button>
   <button class="tab" data-tab="montecarlo">Monte Carlo</button>
+  <button class="tab" data-tab="summary">Summary</button>
 </nav>
 
 <main>
@@ -315,7 +318,7 @@
         <th>Cost Basis<br/><small>(taxable only)</small></th>
         <th>Div Yield (%)<br/><small>(taxable only)</small></th>
         <th>Inherit Year<br/><small>(inherited IRA only)</small></th>
-        <th>RMD Already Taken<br/><small>(IRA/inherited — current year)</small></th>
+        <th>RMD Taken<br/><small>this year?</small></th>
         <th>Annual Contribution<br/><small>(while working)</small></th>
         <th></th>
       </tr>
