@@ -1705,8 +1705,7 @@ function recalc() {
     : 0;
   const bust = rows.find(r => r.liquid <= 0 && r.retired);
 
-  document.getElementById("sum-current").textContent = fmt(currentTotal);
-  document.getElementById("sum-peak").textContent = fmt(peakLiquid);
+document.getElementById("sum-peak").textContent = fmt(peakLiquid);
   document.getElementById("sum-end").textContent = fmt(endAssets);
   document.getElementById("sum-burn").textContent = fmt(avgBurn) + "/yr";
   document.getElementById("sum-bust").textContent = bust ? bust.year : "Never";
