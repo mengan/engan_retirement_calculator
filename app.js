@@ -2653,7 +2653,7 @@ function renderRothRecommendation(rows) {
 
   // Sum traditional pretax balances
   const pretax = state.accounts
-    .filter(a => a.type === "ira" || a.type === "401k" || a.type === "inherited_ira")
+    .filter(a => a.type === "ira" || a.type === "sep_ira" || a.type === "401k" || a.type === "inherited_ira")
     .reduce((sum, a) => sum + (a.balance || 0), 0);
 
   const valleyStart = olderRetire;
