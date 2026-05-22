@@ -933,7 +933,7 @@ function performRothConversion(accounts, amount) {
   if (amount <= 0) return 0;
   let remaining = amount;
   let converted = 0;
-  for (const type of ["ira", "401k", "inherited_ira"]) {
+  for (const type of ["ira", "sep_ira", "401k", "inherited_ira"]) {
     if (remaining <= 0) break;
     const sources = accounts.filter(a => a.type === type && a.balance > 0);
     for (const src of sources) {
