@@ -899,7 +899,7 @@ function drainInheritedToTaxable(accounts, amount) {
   if (amount <= 0) return 0;
   let remaining = amount;
   let drained = 0;
-  const sources = accounts.filter(a => a.type === "inherited_ira" && a.balance > 0);
+  const sources = accounts.filter(a => a.type === "inherited_ira" && a.balance > 0 && !a.excluded);
   for (const src of sources) {
     if (remaining <= 0) break;
     const take = Math.min(remaining, src.balance);
