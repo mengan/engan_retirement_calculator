@@ -2772,20 +2772,19 @@ document.getElementById("run-mc").addEventListener("click", runMonteCarlo);
 
 // ===== Social Security Helpers =====
 // Simplified bend-point formula (2024-ish values, inflation-adjusted minimally)
-// Returns annual benefit at FRA (67) given avg annual indexed earnings.
-function estimateFRABenefit(avgAnnualEarnings, yearsWorked) {
+// avgAnnualEarnings: career average in today's dollars
+// totalWorkingYears: years worked so far + years until retirement (capped at 35 for SSA purposes)
+function estimateFRABenefit(avgAnnualEarnings, totalWorkingYears) {
   const wageBase = 168600; // 2024 SS wage base
   const cappedEarnings = Math.min(avgAnnualEarnings, wageBase);
-  const aime = cappedEarnings / 12;
-  // 2024 bend points: $1,174 and $7,078
+  // SSA averages over 35 years — fewer years means zero-income years drag the average down
+  const effectiveAIME = (cappedEarnings / 12) * Math.min(totalWorkingYears, 35) / 35;
   const b1 = 1174, b2 = 7078;
   let pia = 0;
-  pia += 0.90 * Math.min(aime, b1);
-  if (aime > b1) pia += 0.32 * (Math.min(aime, b2) - b1);
-  if (aime > b2) pia += 0.15 * (aime - b2);
-  // Adjustment for years worked vs ideal 35
-  const yearsFactor = Math.min(1, (yearsWorked || 35) / 35);
-  return pia * 12 * yearsFactor;
+  pia += 0.90 * Math.min(effectiveAIME, b1);
+  if (effectiveAIME > b1) pia += 0.32 * (Math.min(effectiveAIME, b2) - b1);
+  if (effectiveAIME > b2) pia += 0.15 * (effectiveAIME - b2);
+  return pia * 12;
 }
 function claimAgeFactor(claimAge) {
   // Roughly: 70% at 62, 100% at 67, 124% at 70
