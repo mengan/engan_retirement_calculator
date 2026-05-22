@@ -297,7 +297,27 @@ function setByPath(obj, path, val) {
   const parent = parts.reduce((o, k) => o[isNaN(k) ? k : parseInt(k)], obj);
   parent[isNaN(last) ? last : parseInt(last)] = val;
 }
+function applySpouse2Visibility() {
+  const has = state.settings.hasSpouse2 !== false;
+  const fs = document.getElementById("spouse2-fieldset");
+  if (fs) fs.style.display = has ? "" : "none";
+  // Re-render SS tab to show/hide spouse 2 block there too
+  renderSSTab();
+}
+
 function bindSettings() {
+  // Wire hasSpouse2 checkbox separately (it's a checkbox, not in settingsBindings)
+  const sp2cb = document.getElementById("set-has-spouse2");
+  if (sp2cb) {
+    sp2cb.checked = state.settings.hasSpouse2 !== false;
+    sp2cb.addEventListener("change", () => {
+      state.settings.hasSpouse2 = sp2cb.checked;
+      applySpouse2Visibility();
+      saveState();
+      recalc();
+    });
+  }
+
   settingsBindings.forEach(([id, path, type]) => {
     const el = document.getElementById(id);
     if (!el) return;
