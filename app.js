@@ -2854,6 +2854,8 @@ function renderSSTab() {
       const finalBenefit = fraBenefit * claimAgeFactor(claimAge);
 
       document.getElementById(`${prefix}-totalyears`).textContent = `${yearsSoFar} + ${yearsToRetire} = ${totalYears} yrs (capped at 35 for SSA average)`;
+      const warningEl = document.getElementById(`${prefix}-years-warning`);
+      if (warningEl) warningEl.style.color = totalYears < 35 ? "#b91c1c" : "#64748b";
       document.getElementById(`${prefix}-fra`).textContent = fmt(fraBenefit);
       document.getElementById(`${prefix}-final`).textContent = fmt(finalBenefit) + "/yr";
 
