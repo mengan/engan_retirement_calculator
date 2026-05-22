@@ -28,6 +28,8 @@ header h1 { margin: 0; font-size: 20px; }
   border: none;
 }
 .tip-btn:hover { background: #0070cc; }
+.tip-btn-paypal { background: #003087; }
+.tip-btn-paypal:hover { background: #001f5b; }
 
 button {
   cursor: pointer;
