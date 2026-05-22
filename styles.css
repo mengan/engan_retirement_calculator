@@ -237,6 +237,9 @@ input[type="number"], input[type="text"], select {
   padding: 12px;
   margin-bottom: 16px;
   height: 360px;
+  resize: vertical;
+  overflow: hidden;
+  min-height: 180px;
 }
 
 .table-wrap { overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #e5e7eb; }
