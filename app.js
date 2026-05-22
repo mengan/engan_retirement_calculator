@@ -1531,6 +1531,48 @@ let assetChart, liquidBreakdownChart, incomeBreakdownChart, rothConversionChart,
 let taxByBracketChart;
 let expenseByYearChart, expenseInflationChart, realEstateEquityChart, rentalIncomeChart, accountBalancesChart, accountTypeChart;
 
+function drawAccountTypeBalances(rows) {
+  if (accountTypeChart) accountTypeChart.destroy();
+  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+
+  // Only include types that have at least one account with non-zero data
+  const typeDefs = [
+    { key: "taxable",       label: "Taxable Brokerage",      color: "#f59e0b" },
+    { key: "traditional",   label: "Traditional IRA / 401(k) / SEP IRA", color: "#ef4444" },
+    { key: "roth",          label: "Roth IRA / Roth 401(k)", color: "#16a34a" },
+    { key: "inherited_ira", label: "Inherited IRA",           color: "#b45309" },
+    { key: "hsa",           label: "HSA",                     color: "#8b5cf6" },
+  ];
+
+  const datasets = typeDefs
+    .map(({ key, label, color }) => ({
+      label,
+      data: rows.map(r => (r.balancesByType && r.balancesByType[key]) || 0),
+      borderColor: color,
+      backgroundColor: "transparent",
+      borderWidth: 2,
+      tension: 0.2,
+      pointRadius: 0,
+    }))
+    .filter(ds => ds.data.some(v => v > 0));
+
+  accountTypeChart = new Chart(
+    document.getElementById("accountTypeChart").getContext("2d"),
+    {
+      type: "line",
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: "Account Balances by Type Over Time" },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+        },
+        scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
+      },
+    }
+  );
+}
+
 function drawAccountBalances(rows) {
   if (accountBalancesChart) accountBalancesChart.destroy();
   const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
