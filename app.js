@@ -1809,7 +1809,7 @@ document.getElementById("sum-peak").textContent = fmt(peakLiquid);
   drawTaxByBracket(rows);
   const expLowRows  = project({ inflationPct: state.settings.defaultInflationLow });
   const expHighRows = project({ inflationPct: state.settings.defaultInflationHigh });
-  drawExpensesByYear(rows, expLowRows, expHighRows);
+  drawExpensesByYear(rows);
   drawExpenseInflationChart(rows, expLowRows, expHighRows);
   renderExpenseByYearTable(rows);
   drawAccountBalances(rows);
