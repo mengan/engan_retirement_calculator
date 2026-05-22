@@ -790,7 +790,7 @@ const ORDER_KEY_TO_TYPES = {
   hsa:            ["hsa"],
 };
 
-const ORDINARY_INCOME_TYPES = new Set(["ira", "401k", "inherited_ira"]);
+const ORDINARY_INCOME_TYPES = new Set(["ira", "sep_ira", "401k", "inherited_ira"]);
 
 // Withdraw `amount` from accounts following `order`. Optionally caps cumulative
 // withdrawals from ordinary-income account types (traditional, inherited IRA) at
