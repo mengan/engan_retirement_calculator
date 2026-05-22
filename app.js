@@ -2639,13 +2639,16 @@ function wireWithdrawalsTab() {
     saveState(); renderTaxStrategyComparison();
   });
 
-  ["rc-strategy", "rc-start", "rc-end", "rc-custom"].forEach(id => {
+  ["rc-strategy", "rc-start-mode", "rc-start", "rc-end-mode", "rc-end", "rc-custom"].forEach(id => {
     document.getElementById(id).addEventListener("change", (e) => {
       const rc = state.settings.rothConv;
-      if (id === "rc-strategy") rc.strategy = e.target.value;
-      else if (id === "rc-start") rc.startYear = parseInt(e.target.value) || 0;
-      else if (id === "rc-end") rc.endYear = parseInt(e.target.value) || 0;
-      else if (id === "rc-custom") rc.customAmount = parseFloat(e.target.value) || 0;
+      if      (id === "rc-strategy")   rc.strategy    = e.target.value;
+      else if (id === "rc-start-mode") { rc.startMode = e.target.value; document.getElementById("rc-start").style.display = e.target.value === "manual" ? "" : "none"; }
+      else if (id === "rc-start")      rc.startYear   = parseInt(e.target.value) || 0;
+      else if (id === "rc-end-mode")   { rc.endMode   = e.target.value; document.getElementById("rc-end").style.display   = e.target.value === "manual" ? "" : "none"; }
+      else if (id === "rc-end")        rc.endYear     = parseInt(e.target.value) || 0;
+      else if (id === "rc-custom")     rc.customAmount = parseFloat(e.target.value) || 0;
+      renderRothConvEffectiveYears();
       saveState(); recalc();
     });
   });
