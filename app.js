@@ -1397,7 +1397,7 @@ function project(opts) {
     const balancesByType = {
       taxable:       sumType("taxable"),
       traditional:   sumType("ira", "sep_ira", "401k"),
-      roth:          sumType("roth"),
+      roth:          sumType("roth", "roth_401k"),
       inherited_ira: sumType("inherited_ira"),
       hsa:           sumType("hsa"),
     };
