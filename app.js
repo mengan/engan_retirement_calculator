@@ -300,8 +300,13 @@ function setByPath(obj, path, val) {
 function applySpouse2Visibility() {
   const has = state.settings.hasSpouse2 !== false;
   const fs = document.getElementById("spouse2-fieldset");
-  if (fs) fs.style.display = has ? "" : "none";
-  // Re-render SS tab to show/hide spouse 2 block there too
+  const btn = document.getElementById("spouse2-toggle");
+  if (fs) {
+    fs.style.opacity = has ? "" : "0.35";
+    fs.querySelectorAll("input").forEach(el => el.disabled = !has);
+  }
+  if (btn) btn.textContent = has ? "✕" : "✚";
+  if (btn) btn.title = has ? "Remove Spouse 2" : "Add Spouse 2";
   renderSSTab();
 }
 
