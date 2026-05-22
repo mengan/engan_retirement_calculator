@@ -682,12 +682,15 @@
       </label>
       <label>Stop conversions
         <select id="rc-end-mode">
+          <option value="first_medicare">2 years before first Medicare (recommended)</option>
+          <option value="both_medicare">2 years before both on Medicare</option>
           <option value="first_ss">Year before first Social Security</option>
           <option value="both_ss">Year before both on Social Security</option>
           <option value="first_rmd">Year before first RMD (age 73)</option>
           <option value="both_rmd">Year before both on RMDs</option>
           <option value="manual">Set year manually</option>
         </select>
+        <small style="display:block;margin-top:3px;color:#64748b;">Medicare Part B premiums use income from 2 years prior (IRMAA). Stopping conversions 2 years before Medicare eligibility (age 65) avoids inflating your premium. <strong>First Medicare</strong> is the recommended default.</small>
         <input type="number" id="rc-end" style="margin-top:4px;" placeholder="Year"/>
       </label>
       <label>Custom Amount per Year ($, today)
