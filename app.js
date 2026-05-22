@@ -955,7 +955,7 @@ function project(opts) {
     const yearsOut = year - startYear;
     const frac = yearsOut === 0 ? yearFracRemaining : 1;
     const s1Age = s.s1.age + yearsOut;
-    const s2Age = s.s2.age + yearsOut;
+    const s2Age = s.hasSpouse2 ? s.s2.age + yearsOut : s1Age;
     const olderAge = Math.max(s1Age, s2Age);
 
     // Inflation for THIS year — use effective inflation rate for the run
