@@ -2838,7 +2838,7 @@ function renderSSTab() {
     update(); // initial compute
   }
   wire("s1", "ss1");
-  wire("s2", "ss2");
+  if (state.settings.hasSpouse2) wire("s2", "ss2");
 }
 
 // ===== Initial Render =====
