@@ -407,11 +407,22 @@
         </select>
       </label>
       <label>Upper Guardrail Band (% above initial WR triggers cut)
-        <input type="number" id="swr-upper" value="20" step="1"/></label>
+        <input type="number" id="swr-upper" value="20" step="1"/>
+        <small>Recommended: 20%. When your actual withdrawal rate rises more than this % above your initial rate, spending is cut. A tighter band (10–15%) reacts sooner; a looser band (25–30%) allows more flexibility before cutting.</small>
+      </label>
       <label>Lower Guardrail Band (% below initial WR triggers raise)
-        <input type="number" id="swr-lower" value="20" step="1"/></label>
-      <label>Adjustment Size (% to cut/raise)
-        <input type="number" id="swr-adjust" value="10" step="1"/></label>
+        <input type="number" id="swr-lower" value="20" step="1"/>
+        <small>Recommended: 20%. When your portfolio grows enough that your withdrawal rate falls more than this % below your initial rate, you can safely raise spending. Matches the upper band for symmetry in most plans.</small>
+      </label>
+      <label>Adjustment Size (% to cut/raise spending)
+        <input type="number" id="swr-adjust" value="10" step="1"/>
+        <small>Recommended: 10%. When a guardrail is breached, spending is cut or raised by this percentage. Guyton-Klinger research suggests 10% keeps the plan on track without dramatic lifestyle changes.</small>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+        <input type="checkbox" id="swr-include-realestate" style="width:auto;"/>
+        Include rental property equity in liquid portfolio
+        <small style="margin:0;">When checked, real estate equity from rental properties is added to the liquid portfolio for SWR calculations. Primary residence equity is never included. Only enable if you consider rental equity readily accessible (e.g. you plan to sell).</small>
+      </label>
     </div>
   </fieldset>
 
