@@ -1073,8 +1073,9 @@ function project(opts) {
     });
 
     // --- Expenses ---
-    const bothWorking = year < s.s1.retireYear && year < s.s2.retireYear;
-    const phaseMult = bothWorking
+    // Pre-retirement multiplier applies until the first spouse retires
+    const firstRetireYear = Math.min(s.s1.retireYear, s.s2.retireYear);
+    const phaseMult = year < firstRetireYear
       ? state.expenses.preRetMult / 100
       : phaseMultiplier(olderAge);
 
