@@ -56,6 +56,7 @@ const defaultState = () => ({
     swrUpperBand: 20,         // % over initial WR → cut spending
     swrLowerBand: 20,         // % under initial WR → raise spending
     swrAdjust: 10,            // % cut/raise size
+    swrIncludeRealEstate: false,
     // Roth conversion strategy
     rothConv: {
       strategy: "fill_12",     // none | fill_12 | fill_22 | fill_24 | fill_32 | custom
