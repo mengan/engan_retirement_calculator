@@ -1330,9 +1330,8 @@ function project(opts) {
     //   Suppressed while inherited IRA has balance when startAfterInheritedDepleted=true.
 
     const hasActiveFillStrategy = rc.strategy && rc.strategy !== "none";
-    const inFillWindow = hasActiveFillStrategy
-      && year >= (rc.startYear || s.s1.retireYear)
-      && year <= (rc.endYear   || (s.s1.retireYear + 7));
+    const { effStart, effEnd } = rothConvEffectiveYears();
+    const inFillWindow = hasActiveFillStrategy && year >= effStart && year <= effEnd;
 
     if (hasActiveFillStrategy) {
       const baseOrdinary = (salary1 + salary2 - pretaxContribs) + rentalTaxable + inheritedDrained;
