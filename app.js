@@ -1498,6 +1498,7 @@ function renderCurrentPortfolio() {
     { label: "Primary Residence Equity", total: propEquity(p => !p.isRental) },
     { label: "Rental Real Estate Equity", total: propEquity(p => p.isRental) },
   ];
+  const liquid = sumOf("taxable","ira","sep_ira","401k","roth","roth_401k","inherited_ira","hsa");
   const grand = groups.reduce((s, g) => s + g.total, 0);
 
   container.innerHTML = groups
@@ -1508,6 +1509,11 @@ function renderCurrentPortfolio() {
         <div class="card-value">${fmt(g.total)}</div>
       </div>
     `).join("") + `
+    <div class="card" style="border-left:4px solid #2563eb;">
+      <div class="card-label">Current Liquid Assets</div>
+      <div class="card-value">${fmt(liquid)}</div>
+      <div class="muted" style="font-size:11px;margin-top:4px;">Investment accounts only</div>
+    </div>
     <div class="card" style="background:#1f3a5f;color:#fff;">
       <div class="card-label" style="color:#cbd5e1;">Total Net Worth</div>
       <div class="card-value" style="color:#fff;">${fmt(grand)}</div>
