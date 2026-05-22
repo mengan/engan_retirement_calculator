@@ -806,31 +806,42 @@ function withdrawFromAccounts(accounts, amount, order, capGainsPct, maxOrdinary)
     if (remaining <= 0) break;
     const types = ORDER_KEY_TO_TYPES[key] || [key];
     const buckets = accounts.filter(a => types.includes(a.type) && a.balance > 0 && !a.excluded);
-    for (const a of buckets) {
-      const type = a.type;
-      if (remaining <= 0) break;
-      let take = Math.min(remaining, a.balance);
+    // Pro-rata: spread withdrawal across all same-type buckets proportional to balance.
+    // Iterate until remaining is met or all buckets are empty (handles edge case where
+    // one bucket runs dry before the full pro-rata share is covered).
+    let safetyIter = 0;
+    while (remaining > 0.01 && buckets.some(a => a.balance > 0) && ++safetyIter < 20) {
+      const activeBuckets = buckets.filter(a => a.balance > 0);
+      const totalBal = activeBuckets.reduce((s, a) => s + a.balance, 0);
+      if (totalBal <= 0) break;
 
-      // Cap ordinary-income types when a bracket headroom is provided
-      if (maxOrdinary != null && ORDINARY_INCOME_TYPES.has(type)) {
+      let canTakeThisRound = remaining;
+      // If ordinary-income cap applies, limit how much we can take this round
+      if (maxOrdinary != null && activeBuckets.some(a => ORDINARY_INCOME_TYPES.has(a.type))) {
         const room = Math.max(0, maxOrdinary - result.ordinaryUsed);
-        take = Math.min(take, room);
-        if (take <= 0) continue;
-        result.ordinaryUsed += take;
+        canTakeThisRound = Math.min(canTakeThisRound, room);
+        if (canTakeThisRound <= 0) break;
       }
-      if (take <= 0) continue;
 
-      if (type === "taxable") {
-        const pctFrac = (capGainsPct != null ? capGainsPct : 50) / 100;
-        const basisFrac = a.balance > 0 ? Math.max(0, (a.balance - a.basis) / a.balance) : 0;
-        const gainFrac = Math.max(pctFrac, basisFrac);
-        result.gainsRealized += take * gainFrac;
-        const basisPortion = take * (a.basis / Math.max(1, a.balance));
-        a.basis = Math.max(0, a.basis - basisPortion);
+      const roundTake = Math.min(canTakeThisRound, totalBal);
+      for (const a of activeBuckets) {
+        const type = a.type;
+        const share = roundTake * (a.balance / totalBal);
+        const take = Math.min(share, a.balance);
+        if (take <= 0) continue;
+        if (ORDINARY_INCOME_TYPES.has(type)) result.ordinaryUsed += take;
+        if (type === "taxable") {
+          const pctFrac = (capGainsPct != null ? capGainsPct : 50) / 100;
+          const basisFrac = a.balance > 0 ? Math.max(0, (a.balance - a.basis) / a.balance) : 0;
+          const gainFrac = Math.max(pctFrac, basisFrac);
+          result.gainsRealized += take * gainFrac;
+          const basisPortion = take * (a.basis / Math.max(1, a.balance));
+          a.basis = Math.max(0, a.basis - basisPortion);
+        }
+        a.balance -= take;
+        remaining -= take;
+        result.byType[type] = (result.byType[type] || 0) + take;
       }
-      a.balance -= take;
-      remaining -= take;
-      result.byType[type] = (result.byType[type] || 0) + take;
     }
   }
   result.unmet = remaining;
