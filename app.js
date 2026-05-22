@@ -1359,8 +1359,8 @@ function project(opts) {
 
     rows.push({
       year, s1Age, s2Age,
-      retired: year >= Math.max(s.s1.retireYear, s.s2.retireYear),
-      partiallyRetired: year >= Math.min(s.s1.retireYear, s.s2.retireYear),
+      retired: year >= (s.hasSpouse2 ? Math.max(s.s1.retireYear, s.s2.retireYear) : s.s1.retireYear),
+      partiallyRetired: year >= (s.hasSpouse2 ? Math.min(s.s1.retireYear, s.s2.retireYear) : s.s1.retireYear),
       salary1, salary2, grossSS, ssTaxable, rentalGross, rentalNet, rentalTaxable,
       dividendIncome,
       income: nonWithdrawIncome,
