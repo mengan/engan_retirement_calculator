@@ -1397,8 +1397,6 @@ function project(opts) {
           .filter(a => a.type === "inherited_ira")
           .reduce((sum, a) => sum + a.balance, 0);
 
-        const suppressRoth = !!rc.startAfterInheritedDepleted && inhBalance > 0;
-
         // Phase A: extra inherited IRA drain (runs every year while balance > 0)
         let extraInherited = 0;
         if (inhBalance > 0 && ii.strategy !== "rmd_only") {
@@ -1420,7 +1418,15 @@ function project(opts) {
           }
         }
 
-        // Phase B: Roth conversions (only within the startYear..endYear window)
+        // Phase B: Roth conversions (only within the startYear..endYear window).
+        // suppressRoth is re-evaluated AFTER Phase A so that in the final inherited IRA
+        // year — when Phase A drains the last of the balance — the Roth conversion can
+        // immediately fill the remaining bracket headroom that same year.
+        const inhBalanceAfterDrain = accounts
+          .filter(a => a.type === "inherited_ira")
+          .reduce((sum, a) => sum + a.balance, 0);
+        const suppressRoth = !!rc.startAfterInheritedDepleted && inhBalanceAfterDrain > 0;
+
         if (inFillWindow && !suppressRoth && headroom > 0) {
           rothConverted = performRothConversion(accounts, headroom);
         }
