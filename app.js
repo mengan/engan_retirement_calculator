@@ -2806,17 +2806,19 @@ function renderSSTab() {
         <label>Average Annual Earnings (career, today $)
           <input type="number" id="${prefix}-earnings" value="${state.settings[sp].ssEstEarnings || state.settings[sp].salary}"/>
           <small>Auto-filled from salary above — edit to use a different career average.</small></label>
-        <label>Years Worked (target up to 35)
-          <input type="number" id="${prefix}-years" value="${state.settings[sp].ssEstYears || 35}"/></label>
+        <label>Years Worked So Far
+          <input type="number" id="${prefix}-years" value="${state.settings[sp].ssEstYears || 20}" min="0" max="50"/>
+          <small>Years of SS-covered work completed to date. Additional years until your retirement date (set above) will be added automatically to compute the total working years used in the SSA 35-year average.</small></label>
         <label>Claim Age (62–70)
           <input type="number" id="${prefix}-claim" value="${state.settings[sp].ssAge}" min="62" max="70"/>
           <small>Updates "Social Security Start Age" in the spouse box above.</small></label>
         <label>Manual Override Annual Benefit ($, today)
           <input type="number" id="${prefix}-override" value="${state.settings[sp].ssOverride || 0}"/>
-          <small>0 = use estimate. If non-zero, this value is used as the benefit at FRA.</small>
+          <small>0 = use estimate. If non-zero, this value is used directly as the FRA benefit.</small>
         </label>
       </div>
-      <div style="margin-top:8px;">
+      <div style="margin-top:8px; line-height:1.8;">
+        <strong>Total Working Years (so far + until retirement):</strong> <span id="${prefix}-totalyears">—</span><br/>
         <strong>Estimated Annual Benefit at FRA (67):</strong> <span id="${prefix}-fra">—</span><br/>
         <strong>Estimated Annual Benefit at Claim Age:</strong> <span id="${prefix}-final">—</span>
       </div>
