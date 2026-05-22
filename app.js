@@ -2819,6 +2819,7 @@ function renderSSTab() {
       </div>
       <div style="margin-top:8px; line-height:1.8;">
         <strong>Total Working Years (so far + until retirement):</strong> <span id="${prefix}-totalyears">—</span><br/>
+        <span id="${prefix}-years-warning" style="font-size:12px;">Retiring before 35 years of SS-covered work reduces your benefit — the SSA fills the missing years with zeros when computing your 35-year average.</span><br/>
         <strong>Estimated Annual Benefit at FRA (67):</strong> <span id="${prefix}-fra">—</span><br/>
         <strong>Estimated Annual Benefit at Claim Age:</strong> <span id="${prefix}-final">—</span>
       </div>
