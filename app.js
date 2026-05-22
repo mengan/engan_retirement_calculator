@@ -2503,7 +2503,7 @@ function renderWithdrawalRows(rows) {
   rows.forEach(r => {
     const w = r.withdrawnByType || {};
     const taxableW = w.taxable || 0;
-    const traditionalW = (w["401k"] || 0) + (w.ira || 0);
+    const traditionalW = (w["401k"] || 0) + (w.ira || 0) + (w.sep_ira || 0);
     const rothW = w.roth || 0;
     const otherW = (w.hsa || 0) + (w.inherited_ira || 0);
     const tr = document.createElement("tr");
