@@ -333,13 +333,6 @@ function bindSettings() {
       else if (type === "float") v = parseFloat(v) || 0;
       else if (type === "bool") v = v === "true";
       setByPath(state, path, v);
-      // Keep expenses.inflation in sync with the midpoint of the range
-      if (path === "settings.defaultInflationLow" || path === "settings.defaultInflationHigh") {
-        const mid = ((state.settings.defaultInflationLow || 0) + (state.settings.defaultInflationHigh || 0)) / 2;
-        state.expenses.inflation = mid;
-        const b = document.getElementById("exp-inflation");
-        if (b) b.value = mid;
-      }
       saveState();
       recalc();
     });
