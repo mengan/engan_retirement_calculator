@@ -856,7 +856,7 @@ function distributeTraditionalRMD(accounts, s1Age, s2Age, isFirstYear = false) {
   // isFirstYear: if true, subtract any RMD already taken this year from each account.
   let total = 0;
   accounts.forEach(a => {
-    if (a.type !== "ira" && a.type !== "401k") return;
+    if (a.type !== "ira" && a.type !== "sep_ira" && a.type !== "401k") return;
     if (a.balance <= 0) return;
     const age = a.owner === "Spouse 2" ? s2Age : s1Age;
     const divisor = getTraditionalRMDDivisor(age);
