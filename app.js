@@ -3047,7 +3047,7 @@ function renderSSTab() {
       const yearsToRetire = Math.max(0, retireYear - currentYear);
       const totalYears   = yearsSoFar + yearsToRetire;
 
-      const fraBenefit   = override > 0 ? override : estimateFRABenefit(earnings, totalYears);
+      const fraBenefit   = override > 0 ? override * 12 : estimateFRABenefit(earnings, totalYears);
       const finalBenefit = fraBenefit * claimAgeFactor(claimAge);
 
       document.getElementById(`${prefix}-totalyears`).textContent = `${yearsSoFar} + ${yearsToRetire} = ${totalYears} yrs (capped at 35 for SSA average)`;
