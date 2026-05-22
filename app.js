@@ -1529,7 +1529,7 @@ function renderCurrentPortfolio() {
 // ===== Render Summary =====
 let assetChart, liquidBreakdownChart, incomeBreakdownChart, rothConversionChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart;
 let taxByBracketChart;
-let expenseByYearChart, expenseInflationChart, realEstateEquityChart, rentalIncomeChart, accountBalancesChart;
+let expenseByYearChart, expenseInflationChart, realEstateEquityChart, rentalIncomeChart, accountBalancesChart, accountTypeChart;
 
 function drawAccountBalances(rows) {
   if (accountBalancesChart) accountBalancesChart.destroy();
