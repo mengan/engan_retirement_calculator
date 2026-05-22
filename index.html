@@ -673,8 +673,23 @@
         Start only after Inherited IRA is depleted
         <small style="margin:0;">Overrides Start Year — conversions wait while inherited IRA still has balance.</small>
       </label>
-      <label>Start Year <input type="number" id="rc-start"/></label>
-      <label>End Year <input type="number" id="rc-end"/></label>
+      <label>Start conversions
+        <select id="rc-start-mode">
+          <option value="both_retired">After both spouses retire</option>
+          <option value="manual">Set year manually</option>
+        </select>
+        <input type="number" id="rc-start" style="margin-top:4px;" placeholder="Year"/>
+      </label>
+      <label>Stop conversions
+        <select id="rc-end-mode">
+          <option value="first_ss">Year before first Social Security</option>
+          <option value="both_ss">Year before both on Social Security</option>
+          <option value="first_rmd">Year before first RMD (age 73)</option>
+          <option value="both_rmd">Year before both on RMDs</option>
+          <option value="manual">Set year manually</option>
+        </select>
+        <input type="number" id="rc-end" style="margin-top:4px;" placeholder="Year"/>
+      </label>
       <label>Custom Amount per Year ($, today)
         <input type="number" id="rc-custom"/></label>
 
