@@ -2274,8 +2274,11 @@ function renderGuardrails(rows) {
   // expense / liquid > swr * upperBand  =>  liquid < expense / (swr * upperBand)
   const swrRate = (s.swr || 3.5) / 100;
   const cutThreshold = swrRate * upperBand > 0 ? currentExpenses / (swrRate * upperBand) : 0;
-  // Raise threshold: liquid above which expense/liquid ratio falls below swr * lowerBand
-  const raiseThreshold = swrRate * lowerBand > 0 ? currentExpenses / (swrRate * lowerBand) : 0;
+  // Raise threshold: the higher of (a) the formula level and (b) current liquid assets —
+  // spending increases only make sense once assets grow beyond where you are today.
+  const raiseThresholdFormula = swrRate * lowerBand > 0 ? currentExpenses / (swrRate * lowerBand) : 0;
+  const currentLiquid = gRows[0]?.liquid || 0;
+  const raiseThreshold = Math.max(raiseThresholdFormula, currentLiquid);
   document.getElementById("swr-cut-threshold").textContent = fmt(cutThreshold);
   document.getElementById("swr-raise-threshold").textContent = fmt(raiseThreshold);
   document.getElementById("swr-current-liquid").textContent = fmt(gRows[0]?.liquid || 0);
