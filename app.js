@@ -1024,27 +1024,50 @@ function rothConvEffectiveYears() {
     effStart = rc.startYear || currentYear;
   }
 
-  // --- End year ---
-  // SS claim year = retireYear + (ssAge - retireAge).  RMD starts at age 73.
+  // --- Milestone years ---
   const s1RetireAge = s.s1.retireYear - (currentYear - s.s1.age);
   const s2RetireAge = s.hasSpouse2 ? s.s2.retireYear - (currentYear - s.s2.age) : null;
-  const s1SSYear  = s.s1.retireYear  + Math.max(0, s.s1.ssAge  - s1RetireAge);
-  const s2SSYear  = s.hasSpouse2
-    ? s.s2.retireYear + Math.max(0, s.s2.ssAge  - s2RetireAge)
+  const s1SSYear       = s.s1.retireYear  + Math.max(0, (s.s1.ssAge || 67) - s1RetireAge);
+  const s2SSYear       = s.hasSpouse2
+    ? s.s2.retireYear + Math.max(0, (s.s2.ssAge || 67) - s2RetireAge)
     : Infinity;
-  const s1RMDYear = currentYear + (73 - s.s1.age);
-  const s2RMDYear = s.hasSpouse2 ? currentYear + (73 - s.s2.age) : Infinity;
+  const s1RMDYear      = currentYear + (73 - s.s1.age);
+  const s2RMDYear      = s.hasSpouse2 ? currentYear + (73 - s.s2.age) : Infinity;
+  // Medicare eligibility = age 65. IRMAA lookback = 2 years.
+  // Stop conversions 2 years before Medicare starts → last conversion year = medicareYear - 3.
+  // (Income in year N affects Medicare premium in year N+2; to keep year N+2 clean, stop in year N = medicareYear-2, but
+  //  the safe practice is to stop the year BEFORE that so year medicareYear-2 income is already clean.)
+  const s1MedicareYear = currentYear + (65 - s.s1.age);
+  const s2MedicareYear = s.hasSpouse2 ? currentYear + (65 - s.s2.age) : Infinity;
 
+  // --- End year ---
   let effEnd;
   switch (rc.endMode) {
-    case "first_ss":  effEnd = Math.min(s1SSYear, s2SSYear) - 1; break;
-    case "both_ss":   effEnd = Math.max(s1SSYear, s.hasSpouse2 ? s2SSYear : s1SSYear) - 1; break;
-    case "first_rmd": effEnd = Math.min(s1RMDYear, s2RMDYear) - 1; break;
-    case "both_rmd":  effEnd = Math.max(s1RMDYear, s.hasSpouse2 ? s2RMDYear : s1RMDYear) - 1; break;
-    default:          effEnd = rc.endYear || (effStart + 7);
+    case "first_medicare": effEnd = Math.min(s1MedicareYear, s2MedicareYear) - 3; break;
+    case "both_medicare":  effEnd = Math.max(s1MedicareYear, s.hasSpouse2 ? s2MedicareYear : s1MedicareYear) - 3; break;
+    case "first_ss":       effEnd = Math.min(s1SSYear, s2SSYear) - 1; break;
+    case "both_ss":        effEnd = Math.max(s1SSYear, s.hasSpouse2 ? s2SSYear : s1SSYear) - 1; break;
+    case "first_rmd":      effEnd = Math.min(s1RMDYear, s2RMDYear) - 1; break;
+    case "both_rmd":       effEnd = Math.max(s1RMDYear, s.hasSpouse2 ? s2RMDYear : s1RMDYear) - 1; break;
+    default:               effEnd = rc.endYear || (effStart + 7);
   }
 
-  return { effStart, effEnd, s1SSYear, s2SSYear, s1RMDYear, s2RMDYear };
+  return { effStart, effEnd, s1SSYear, s2SSYear, s1RMDYear, s2RMDYear, s1MedicareYear, s2MedicareYear };
+}
+
+function renderRothConvEffectiveYears() {
+  const el = document.getElementById("rc-effective-years");
+  if (!el) return;
+  const rc = state.settings.rothConv || {};
+  if (!rc.strategy || rc.strategy === "none") { el.textContent = ""; return; }
+  const { effStart, effEnd, s1SSYear, s2SSYear, s1RMDYear, s2RMDYear, s1MedicareYear, s2MedicareYear } = rothConvEffectiveYears();
+  const s = state.settings;
+  const parts = [
+    `Effective window: <strong>${effStart} – ${effEnd}</strong> (${Math.max(0, effEnd - effStart + 1)} years)`,
+    `S1 Medicare ${s1MedicareYear} · S1 SS ${s1SSYear} · S1 RMD ${s1RMDYear}`,
+  ];
+  if (s.hasSpouse2) parts.push(`S2 Medicare ${s2MedicareYear} · S2 SS ${s2SSYear} · S2 RMD ${s2RMDYear}`);
+  el.innerHTML = parts.join("<br/>");
 }
 
 function project(opts) {
