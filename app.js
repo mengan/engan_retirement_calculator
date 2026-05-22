@@ -478,11 +478,16 @@ function renderAccounts() {
   renderAccountTotals();
   const tbody = document.querySelector("#accounts-table tbody");
   tbody.innerHTML = "";
+  let dragSrcId = null;
+
   state.accounts.forEach(a => {
     const tr = document.createElement("tr");
+    tr.draggable = true;
+    tr.dataset.id = a.id;
     const typeOpts = ACCOUNT_TYPES.map(([v, label]) =>
       `<option value="${v}" ${a.type === v ? "selected" : ""}>${label}</option>`).join("");
     tr.innerHTML = `
+      <td style="cursor:grab;text-align:center;color:#94a3b8;user-select:none;" title="Drag to reorder">&#9651;&#9661;</td>
       <td><input type="text" value="${a.name}" data-field="name"/></td>
       <td><select data-field="type">${typeOpts}</select></td>
       <td>
@@ -500,6 +505,27 @@ function renderAccounts() {
       <td><input type="number" value="${a.contribution}" data-field="contribution"/></td>
       <td><button class="small danger" data-action="del">×</button></td>
     `;
+
+    tr.addEventListener("dragstart", e => {
+      dragSrcId = a.id;
+      e.dataTransfer.effectAllowed = "move";
+      tr.style.opacity = "0.4";
+    });
+    tr.addEventListener("dragend", () => { tr.style.opacity = ""; });
+    tr.addEventListener("dragover", e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; tr.style.background = "#eff6ff"; });
+    tr.addEventListener("dragleave", () => { tr.style.background = ""; });
+    tr.addEventListener("drop", e => {
+      e.preventDefault();
+      tr.style.background = "";
+      if (dragSrcId === a.id) return;
+      const fromIdx = state.accounts.findIndex(x => x.id === dragSrcId);
+      const toIdx   = state.accounts.findIndex(x => x.id === a.id);
+      if (fromIdx < 0 || toIdx < 0) return;
+      const [moved] = state.accounts.splice(fromIdx, 1);
+      state.accounts.splice(toIdx, 0, moved);
+      saveState(); renderAccounts(); recalc();
+    });
+
     tr.querySelectorAll("input, select").forEach(inp => {
       inp.addEventListener("change", () => {
         const f = inp.dataset.field;
