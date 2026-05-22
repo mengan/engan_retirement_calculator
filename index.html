@@ -121,26 +121,89 @@
     <div class="card"><div class="card-label">Avg Burn Rate (retirement)</div><div class="card-value" id="sum-burn">$0/yr</div></div>
     <div class="card"><div class="card-label">Money-Out Year</div><div class="card-value" id="sum-bust">—</div></div>
   </div>
-  <div class="chart-container">
-    <canvas id="assetChart"></canvas>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="assetChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="assetChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
   </div>
-  <div class="chart-container">
-    <canvas id="liquidBreakdownChart"></canvas>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="liquidBreakdownChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="liquidBreakdownChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
   </div>
-  <div class="chart-container">
-    <canvas id="incomeBreakdownChart"></canvas>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="incomeBreakdownChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="incomeBreakdownChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
   </div>
-  <div class="chart-container">
-    <canvas id="rothConversionChart"></canvas>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="rothConversionChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="rothConversionChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
   </div>
-  <div class="chart-container">
-    <canvas id="expenseBreakdownChart"></canvas>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="expenseBreakdownChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="expenseBreakdownChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
   </div>
-  <div class="chart-container">
-    <canvas id="gapWithdrawalChart"></canvas>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="gapWithdrawalChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="gapWithdrawalChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
   </div>
-  <div class="chart-container">
-    <canvas id="taxByBracketChart"></canvas>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="taxByBracketChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="taxByBracketChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
   </div>
 
   <h3>Year-by-Year Projection</h3>
