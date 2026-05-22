@@ -641,8 +641,8 @@ function renderProperties() {
           </label>
           <label>Planned Sell Year (0 = never) <input type="number" value="${p.sellYear}" data-field="sellYear"/></label>
           <small style="grid-column: span 2; color:#64748b;">
-            Each year held adds ~3.636% of building basis (assume 80% of basis) to depreciation automatically.
-            On sale, capital gain = sale price − (basis − accumulated depreciation), taxed at the CG rate.
+            Annual depreciation = cost basis × 80% ÷ 27.5 years (residential IRS straight-line).
+            On sale, capital gain = sale price − (basis − total accumulated depreciation), taxed at the CG rate.
           </small>
         </div>
       </div>
