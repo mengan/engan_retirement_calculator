@@ -681,6 +681,131 @@
   </div>
 </section>
 
+<!-- SUMMARY -->
+<section id="tab-summary" class="tab-panel">
+  <h2>Current Portfolio</h2>
+  <div id="current-portfolio-cards" class="summary-cards"></div>
+
+  <h2>Portfolio Trajectory</h2>
+  <div class="summary-cards">
+    <div class="card"><div class="card-label">End of Year 1 Assets</div><div class="card-value" id="sum-current">$0</div></div>
+    <div class="card"><div class="card-label">Peak Liquid Assets</div><div class="card-value" id="sum-peak">$0</div></div>
+    <div class="card">
+      <div class="card-label">End-of-Plan Assets (mid)</div>
+      <div class="card-value" id="sum-end">$0</div>
+      <div class="muted" style="font-size:11px;margin-top:4px;">
+        Low <span id="sum-end-low">—</span> · High <span id="sum-end-high">—</span>
+      </div>
+    </div>
+    <div class="card"><div class="card-label">Avg Burn Rate (retirement)</div><div class="card-value" id="sum-burn">$0/yr</div></div>
+    <div class="card"><div class="card-label">Money-Out Year</div><div class="card-value" id="sum-bust">—</div></div>
+  </div>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="assetChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="assetChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="liquidBreakdownChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="liquidBreakdownChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="incomeBreakdownChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="incomeBreakdownChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="rothConversionChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="rothConversionChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="expenseBreakdownChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="expenseBreakdownChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="gapWithdrawalChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="gapWithdrawalChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="taxByBracketChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="taxByBracketChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
+  </div>
+
+  <h3>Year-by-Year Projection</h3>
+  <div class="table-wrap">
+    <table id="projection-table">
+      <thead>
+        <tr>
+          <th>Year</th><th>Ages</th>
+          <th>Income</th><th>Expenses</th>
+          <th>Net Cash Flow</th>
+          <th>Brokerage Net Flow<br/><small>(this year)</small></th>
+          <th>Brokerage Net Flow<br/><small>% of brokerage balance</small></th>
+          <th>Brokerage Net Flow<br/><small>(cumulative)</small></th>
+          <th>Liquid Assets</th>
+          <th>Real Estate Equity</th>
+          <th>Total Net Worth</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
 </main>
 
 <script src="app.js"></script>
