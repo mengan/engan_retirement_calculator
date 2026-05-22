@@ -785,7 +785,7 @@ function marginalRate(taxable, brackets) {
 const ORDER_KEY_TO_TYPES = {
   taxable:        ["taxable"],
   roth:           ["roth"],
-  traditional:    ["ira", "401k"],   // assume 401(k) rolled into traditional IRA at retirement
+  traditional:    ["ira", "sep_ira", "401k"],   // pretax accounts treated identically in retirement
   inherited_ira:  ["inherited_ira"],
   hsa:            ["hsa"],
 };
