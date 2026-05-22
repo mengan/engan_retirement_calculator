@@ -286,6 +286,7 @@ const settingsBindings = [
   ["s1-salary", "settings.s1.salary", "float"],
   ["s1-salary-growth", "settings.s1.salaryGrowth", "float"],
   ["s1-retire-year", "settings.s1.retireYear", "int"],
+  ["s1-retire-month", "settings.s1.retireMonth", "int"],
   ["s1-contrib", "settings.s1.contrib", "float"],
   ["s1-ss-age", "settings.s1.ssAge", "int"],
   ["s1-ss-amt", "settings.s1.ssAmt", "float"],
