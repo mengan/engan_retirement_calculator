@@ -570,10 +570,17 @@
     <fieldset>
       <legend>Inherited IRA Strategy</legend>
       <p class="muted" style="margin-top:0;">
-        The IRS requires inherited IRAs (post-2019, non-spouse) to be fully drained within 10 years.
-        Each year, a minimum proportional distribution (balance ÷ years-remaining) is taken automatically and
-        counts as ordinary income. During the bracket-fill window below, choose how to allocate the bracket
-        headroom between additional inherited IRA drain and Roth conversions.
+        Under the SECURE Act (post-2019, non-spouse beneficiaries), inherited IRAs must be fully drained
+        within <strong>10 years</strong> of the original owner's death. Every dollar distributed counts as
+        <strong>ordinary income</strong> in the year taken — so the goal is to spread distributions across
+        low-tax years rather than bunching them late and hitting a high bracket all at once.
+      </p>
+      <p class="muted" style="margin-top:0;">
+        Each year the model first takes any <strong>required minimum distribution</strong> (RMD) — a proportional
+        amount that keeps the account on track to empty by year 10. Then, during the Roth conversion bracket-fill
+        window, any remaining <strong>bracket headroom</strong> (ordinary income capacity before hitting your
+        target bracket ceiling) can be used to drain more of the inherited IRA, do Roth conversions, or both.
+        The strategy setting below controls how that headroom is split.
       </p>
       <label>Strategy
         <select id="ii-strategy">
@@ -582,6 +589,19 @@
           <option value="split_50_50">50/50 — split headroom evenly</option>
           <option value="custom">Custom split (slider below)</option>
         </select>
+        <small>
+          <strong>RMD only:</strong> Only the mandatory minimum is taken from the inherited IRA each year.
+          All remaining bracket headroom is used for Roth conversions. Best if you want to maximize Roth
+          growth and the inherited IRA balance is modest.<br/>
+          <strong>Drain first:</strong> Extra headroom goes to the inherited IRA until it's empty, then
+          switches to Roth conversions. Clears the inherited IRA faster, reducing future forced income — good
+          if the inherited balance is large or if you want it gone before RMDs on your own accounts begin.<br/>
+          <strong>50/50:</strong> Headroom is split evenly each year between draining the inherited IRA and
+          Roth conversions — a balanced middle ground.<br/>
+          <strong>Custom:</strong> You set the exact percentage of headroom directed to the inherited IRA
+          (remainder goes to Roth conversions). Use the Tax Strategy Comparison table below to find the
+          split that minimizes lifetime taxes for your situation.
+        </small>
       </label>
       <label>Custom: % of bracket headroom from Inherited IRA
         <input type="number" id="ii-split-pct" min="0" max="100" value="50"/></label>
