@@ -76,6 +76,7 @@ const defaultState = () => ({
       // respected. Turn on only if your inheritance qualifies for skipping annual RMDs.
       capAtBracketFill: false,
     },
+    hasSpouse2: true,
     s1: { name: "Spouse 1", age: 50, salary: 120000, salaryGrowth: 3, retireYear: 2035, contrib: 23000, ssAge: 67, ssAmt: 36000 },
     s2: { name: "Spouse 2", age: 48, salary: 90000,  salaryGrowth: 3, retireYear: 2037, contrib: 20000, ssAge: 67, ssAmt: 28000 },
   },
