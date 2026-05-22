@@ -366,14 +366,32 @@
 
   <h3 style="margin-top:24px;">Projected Account Balances by Type</h3>
   <p class="muted">All accounts of the same type summed together (e.g. two Spouse 1 IRAs + two Spouse 2 IRAs = one Traditional IRA line).</p>
-  <div class="chart-container" style="height:360px;">
-    <canvas id="accountTypeChart"></canvas>
+  <div class="chart-wrapper">
+    <div class="chart-container" style="height:360px;"><canvas id="accountTypeChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="accountTypeChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
   </div>
 
   <h3 style="margin-top:24px;">Projected Account Balances by Account</h3>
   <p class="muted">Each account tracked individually. Withdrawals from accounts of the same type are distributed pro-rata by balance. Excluded accounts grow but are never drawn from.</p>
-  <div class="chart-container" style="height:420px;">
-    <canvas id="accountBalancesChart"></canvas>
+  <div class="chart-wrapper">
+    <div class="chart-container" style="height:420px;"><canvas id="accountBalancesChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="accountBalancesChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
   </div>
 </section>
 
