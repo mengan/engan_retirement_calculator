@@ -15,6 +15,19 @@ header {
 }
 header h1 { margin: 0; font-size: 20px; }
 .header-actions button { margin-left: 8px; }
+.tip-btn {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 8px 14px;
+  background: #008CFF;
+  color: white;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+}
+.tip-btn:hover { background: #0070cc; }
 
 button {
   cursor: pointer;
