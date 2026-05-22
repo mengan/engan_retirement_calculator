@@ -1324,6 +1324,7 @@ function project(opts) {
 
     // Compute tax based on this year's actual ordinary + capital gains
     const ordWithdraw = (wSpend.byType["ira"] || 0)
+                     + (wSpend.byType["sep_ira"] || 0)
                      + (wSpend.byType["401k"] || 0)
                      + (wSpend.byType["inherited_ira"] || 0);
 
