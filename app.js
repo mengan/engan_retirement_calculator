@@ -1022,9 +1022,11 @@ function rothConvEffectiveYears() {
   // --- Start year ---
   let effStart;
   if (rc.startMode === "both_retired") {
-    effStart = s.hasSpouse2
-      ? Math.max(s.s1.retireYear, s.s2.retireYear)
-      : s.s1.retireYear;
+    // Use retireYear + 1 if they retire mid-year (month > 1), since partial income
+    // still flows that year. If month === 1 (Jan), the retire year itself is first full retirement year.
+    const s1Start = s.s1.retireYear + ((s.s1.retireMonth || 1) > 1 ? 1 : 0);
+    const s2Start = s.hasSpouse2 ? s.s2.retireYear + ((s.s2.retireMonth || 1) > 1 ? 1 : 0) : s1Start;
+    effStart = s.hasSpouse2 ? Math.max(s1Start, s2Start) : s1Start;
   } else {
     effStart = rc.startYear || currentYear;
   }
