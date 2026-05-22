@@ -614,7 +614,6 @@ document.getElementById("add-property").addEventListener("click", () => {
 });
 
 // ===== Header Actions =====
-document.getElementById("recalc-btn").addEventListener("click", recalc);
 document.getElementById("reset-btn").addEventListener("click", () => {
   if (!confirm("Reset all data to defaults?")) return;
   state = defaultState();
