@@ -1395,7 +1395,7 @@ function project(opts) {
       .reduce((sum, a) => sum + Math.max(0, a.balance), 0);
     const balancesByType = {
       taxable:       sumType("taxable"),
-      traditional:   sumType("ira", "401k"),
+      traditional:   sumType("ira", "sep_ira", "401k"),
       roth:          sumType("roth"),
       inherited_ira: sumType("inherited_ira"),
       hsa:           sumType("hsa"),
