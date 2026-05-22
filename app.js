@@ -2862,6 +2862,22 @@ function renderSSTab() {
 
     [earningsEl, yearsEl, claimEl, overrideEl].forEach(el => el.addEventListener("input", update));
     update(); // initial compute
+
+    // When salary changes in the spouse box above, sync earnings if user hasn't manually overridden it
+    const salaryEl = document.getElementById(`${sp}-salary`);
+    if (salaryEl) {
+      salaryEl.addEventListener("change", () => {
+        // Only auto-sync if earnings still matches the previous salary (i.e. not manually changed)
+        if (!state.settings[sp].ssEstEarningsManual) {
+          earningsEl.value = salaryEl.value;
+          update();
+        }
+      });
+    }
+    // Mark earnings as manually overridden if user edits it directly
+    earningsEl.addEventListener("change", () => {
+      state.settings[sp].ssEstEarningsManual = true;
+    });
   }
   wire("s1", "ss1");
   if (state.settings.hasSpouse2) wire("s2", "ss2");
