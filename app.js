@@ -442,6 +442,7 @@ document.getElementById("add-large-expense").addEventListener("click", () => {
 const ACCOUNT_TYPES = [
   ["taxable", "Taxable Brokerage"],
   ["ira", "Traditional IRA"],
+  ["sep_ira", "SEP IRA"],
   ["roth", "Roth IRA"],
   ["401k", "401(k) / 403(b)"],
   ["inherited_ira", "Inherited IRA"],
