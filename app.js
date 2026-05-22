@@ -1127,16 +1127,28 @@ function project(opts) {
     const ltcgBrackets = (s.ltcgBrackets || []).map(b => ({ rate: b.rate + riseAdj, upTo: b.upTo > 0 ? b.upTo * cumInfl : 0 }));
 
     // --- Income ---
+    // In the retirement year, salary is prorated by months worked (retireMonth/12).
+    // retireMonth=1 means retiring Jan 1 (no salary that year); retireMonth=12 means
+    // retiring Dec 1 (11 full months worked). For all prior years, full salary applies
+    // (subject to the standard first-year partial-year frac).
+    const s1WorkFrac = year < s.s1.retireYear ? frac
+      : year === s.s1.retireYear ? ((s.s1.retireMonth || 1) - 1) / 12
+      : 0;
+    const s2WorkFrac = !s.hasSpouse2 ? 0
+      : year < s.s2.retireYear ? frac
+      : year === s.s2.retireYear ? ((s.s2.retireMonth || 1) - 1) / 12
+      : 0;
+
     let salary1 = 0, salary2 = 0;
-    if (year < s.s1.retireYear) {
+    if (s1WorkFrac > 0) {
       salary1 = (s.salaryReal
         ? s.s1.salary
-        : s.s1.salary * Math.pow(1 + s.s1.salaryGrowth / 100, yearsOut)) * frac;
+        : s.s1.salary * Math.pow(1 + s.s1.salaryGrowth / 100, yearsOut)) * s1WorkFrac;
     }
-    if (s.hasSpouse2 && year < s.s2.retireYear) {
+    if (s2WorkFrac > 0) {
       salary2 = (s.salaryReal
         ? s.s2.salary
-        : s.s2.salary * Math.pow(1 + s.s2.salaryGrowth / 100, yearsOut)) * frac;
+        : s.s2.salary * Math.pow(1 + s.s2.salaryGrowth / 100, yearsOut)) * s2WorkFrac;
     }
 
     let grossSS = 0;
