@@ -1278,7 +1278,7 @@ function project(opts) {
     let dividendIncome = 0;  // qualified dividends from taxable accounts
     // Once both spouses are retired, dividends are paid out as cash (added to income)
     // rather than reinvested. Pre-retirement they continue to reinvest.
-    const bothRetired = year >= (s.hasSpouse2 ? Math.max(s.s1.retireYear, s.s2.retireYear) : s.s1.retireYear);
+    const bothRetired = s1WorkFrac === 0 && s2WorkFrac === 0;
     accounts.forEach(a => {
       // Dividends are paid from PRE-growth balance (more realistic mid-year)
       if (a.type === "taxable" && a.dividendYield > 0) {
