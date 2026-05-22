@@ -805,7 +805,7 @@ function withdrawFromAccounts(accounts, amount, order, capGainsPct, maxOrdinary)
   for (const key of order) {
     if (remaining <= 0) break;
     const types = ORDER_KEY_TO_TYPES[key] || [key];
-    const buckets = accounts.filter(a => types.includes(a.type) && a.balance > 0);
+    const buckets = accounts.filter(a => types.includes(a.type) && a.balance > 0 && !a.excluded);
     for (const a of buckets) {
       const type = a.type;
       if (remaining <= 0) break;
