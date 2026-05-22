@@ -159,6 +159,9 @@ function migrate(s) {
 
   s.settings = { ...d.settings, ...(s.settings || {}) };
   s.settings.rothConv     = { ...d.settings.rothConv,     ...(s.settings.rothConv     || {}) };
+  // If existing state has manual years but no mode, default to manual to preserve them
+  if (s.settings.rothConv.startMode == null) s.settings.rothConv.startMode = "manual";
+  if (s.settings.rothConv.endMode   == null) s.settings.rothConv.endMode   = "manual";
   s.settings.inheritedIra = { ...d.settings.inheritedIra, ...(s.settings.inheritedIra || {}) };
   // Flip leftover capAtBracketFill: previously defaulted to true (which violated the
   // SECURE Act annual-RMD rule for post-RBD inheritances). Reset on first load.
