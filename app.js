@@ -1003,7 +1003,10 @@ function project(opts) {
 
   // Working copies
   const accounts = state.accounts.map(a => ({ ...a }));
-  const properties = state.properties.map(p => ({ ...p, sold: false }));
+  const properties = state.properties.map(p => {
+    const annualDepr = (p.basis || 0) * 0.8 / 27.5;
+    return { ...p, sold: false, accumDepreciation: annualDepr * (p.yearsDepreciated || 0) };
+  });
 
   const rows = [];
   let cumInfl = 1;  // cumulative inflation factor (1 at start)
