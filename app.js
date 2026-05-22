@@ -2864,11 +2864,11 @@ function renderSSTab() {
 // ===== Initial Render =====
 function fullRender() {
   bindSettings();
+  applySpouse2Visibility();
   renderLargeExpenses();
   renderRecurringExpenses();
   renderAccounts();
   renderProperties();
-  renderSSTab();
   renderWithdrawalsTab();
   renderGuardrailsControls();
   recalc();
