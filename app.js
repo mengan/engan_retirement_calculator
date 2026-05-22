@@ -165,6 +165,14 @@ function migrate(s) {
     s.properties.forEach(p => {
       if (p.isRental && p.taxablePct == null) p.taxablePct = 30;
       if (p.escrow == null) p.escrow = 0;
+      // Migrate old accumDepreciation → yearsDepreciated
+      if (p.yearsDepreciated == null) {
+        const annualDepr = (p.basis || 0) * 0.8 / 27.5;
+        p.yearsDepreciated = annualDepr > 0
+          ? Math.round((p.accumDepreciation || 0) / annualDepr)
+          : 0;
+        delete p.accumDepreciation;
+      }
     });
   }
   if (!Array.isArray(s.settings.taxBrackets) || !s.settings.taxBrackets.length)
