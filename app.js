@@ -2805,11 +2805,13 @@ function renderSSTab() {
       <legend>${state.settings[sp].name}</legend>
       <div class="grid-2">
         <label>Average Annual Earnings (career, today $)
-          <input type="number" id="${prefix}-earnings" value="${state.settings[sp].ssEstEarnings || state.settings[sp].salary}"/></label>
+          <input type="number" id="${prefix}-earnings" value="${state.settings[sp].ssEstEarnings || state.settings[sp].salary}"/>
+          <small>Auto-filled from salary above — edit to use a different career average.</small></label>
         <label>Years Worked (target up to 35)
           <input type="number" id="${prefix}-years" value="${state.settings[sp].ssEstYears || 35}"/></label>
         <label>Claim Age (62–70)
-          <input type="number" id="${prefix}-claim" value="${state.settings[sp].ssAge}" min="62" max="70"/></label>
+          <input type="number" id="${prefix}-claim" value="${state.settings[sp].ssAge}" min="62" max="70"/>
+          <small>Updates "Social Security Start Age" in the spouse box above.</small></label>
         <label>Manual Override Annual Benefit ($, today)
           <input type="number" id="${prefix}-override" value="${state.settings[sp].ssOverride || 0}"/>
           <small>0 = use estimate. If non-zero, this value is used as the benefit at FRA.</small>
