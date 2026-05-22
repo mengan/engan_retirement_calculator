@@ -1689,6 +1689,67 @@ function drawExpensesByYear(rows, lowRows, highRows) {
   );
 }
 
+function drawExpenseInflationChart(rows, lowRows, highRows) {
+  if (expenseInflationChart) expenseInflationChart.destroy();
+  const s = state.settings;
+  const lowInfl  = s.defaultInflationLow  ?? 2;
+  const midInfl  = ((s.defaultInflationLow ?? 2) + (s.defaultInflationHigh ?? 4)) / 2;
+  const highInfl = s.defaultInflationHigh ?? 4;
+  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  expenseInflationChart = new Chart(
+    document.getElementById("expenseInflationChart").getContext("2d"),
+    {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: `Low inflation (${lowInfl}%)`,
+            data: (lowRows || rows).map(r => r.expenses || 0),
+            borderColor: "#15803d",
+            backgroundColor: "rgba(21,128,61,0.08)",
+            borderWidth: 2,
+            fill: "+1",
+            tension: 0.2,
+            pointRadius: 0,
+          },
+          {
+            label: `Mid inflation (${midInfl.toFixed(1)}%)`,
+            data: rows.map(r => r.expenses || 0),
+            borderColor: "#2563eb",
+            backgroundColor: "transparent",
+            borderWidth: 2,
+            borderDash: [4, 3],
+            fill: false,
+            tension: 0.2,
+            pointRadius: 0,
+          },
+          {
+            label: `High inflation (${highInfl}%)`,
+            data: (highRows || rows).map(r => r.expenses || 0),
+            borderColor: "#b91c1c",
+            backgroundColor: "rgba(185,28,28,0.08)",
+            borderWidth: 2,
+            fill: "-2",
+            tension: 0.2,
+            pointRadius: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: "Total Expense Range: Low vs Mid vs High Inflation" },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+        },
+        scales: {
+          y: { ticks: { callback: v => fmt(v) } },
+        },
+      },
+    }
+  );
+}
+
 function renderExpenseByYearTable(rows) {
   const tbody = document.querySelector("#expense-by-year-table tbody");
   if (!tbody) return;
