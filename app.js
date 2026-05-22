@@ -2828,37 +2828,37 @@ function fullRender() {
   renderGuardrailsControls();
   recalc();
 }
+// ===== Bar chart segment + total tooltip =====
+// Adds a "Total: $X" footer to any stacked bar chart tooltip
+Chart.defaults.plugins.tooltip.callbacks.footer = function(tooltipItems) {
+  if (tooltipItems.length <= 1) return undefined;
+  const chart = tooltipItems[0].chart;
+  if (chart.config.type !== "bar") return undefined;
+  const total = tooltipItems.reduce((sum, item) => sum + (item.parsed.y || 0), 0);
+  return "Total: " + fmt(total);
+};
+
 // ===== Chart zoom controls =====
-// Maps canvasId -> { ymin, ymax, xmin, xmax } overrides
 const chartZoomState = {};
 
-// chartRegistry maps canvasId -> Chart instance; we populate it by patching chart creation
-const chartRegistry = {};
-const _origChart = Chart;
-// Wrap Chart constructor to register instances by canvas id
-function Chart(...args) {
-  const instance = new _origChart(...args);
-  const canvas = args[0];
-  const id = (canvas instanceof HTMLCanvasElement ? canvas : canvas.canvas).id;
-  if (id) chartRegistry[id] = instance;
-  return instance;
+function getChartById(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  return Object.values(Chart.instances).find(c => c.canvas === canvas) || null;
 }
-Chart.prototype = _origChart.prototype;
-Object.assign(Chart, _origChart);
 
 function applyChartZoom(canvasId) {
-  const chart = chartRegistry[canvasId];
+  const chart = getChartById(canvasId);
   if (!chart) return;
   const z = chartZoomState[canvasId] || {};
-  const yScale = chart.options.scales && chart.options.scales.y;
-  const xScale = chart.options.scales && chart.options.scales.x;
-  if (yScale) {
-    yScale.min = (z.ymin !== undefined && z.ymin !== "") ? Number(z.ymin) : undefined;
-    yScale.max = (z.ymax !== undefined && z.ymax !== "") ? Number(z.ymax) : undefined;
+  const scales = chart.options.scales || {};
+  if (scales.y) {
+    scales.y.min = (z.ymin !== undefined && z.ymin !== "") ? Number(z.ymin) : undefined;
+    scales.y.max = (z.ymax !== undefined && z.ymax !== "") ? Number(z.ymax) : undefined;
   }
-  if (xScale) {
-    xScale.min = (z.xmin !== undefined && z.xmin !== "") ? Number(z.xmin) : undefined;
-    xScale.max = (z.xmax !== undefined && z.xmax !== "") ? Number(z.xmax) : undefined;
+  if (scales.x) {
+    scales.x.min = (z.xmin !== undefined && z.xmin !== "") ? Number(z.xmin) : undefined;
+    scales.x.max = (z.xmax !== undefined && z.xmax !== "") ? Number(z.xmax) : undefined;
   }
   chart.update();
 }
@@ -2883,16 +2883,6 @@ document.querySelectorAll(".chart-zoom-controls").forEach(controls => {
     });
   }
 });
-
-// ===== Bar chart segment + total tooltip =====
-// Adds a "Total: $X" footer to any bar chart tooltip that has multiple datasets
-Chart.defaults.plugins.tooltip.callbacks.footer = function(tooltipItems) {
-  if (tooltipItems.length <= 1) return;
-  const chart = tooltipItems[0].chart;
-  if (chart.config.type !== "bar") return;
-  const total = tooltipItems.reduce((sum, item) => sum + (item.parsed.y || 0), 0);
-  return "Total: " + fmt(total);
-};
 
 (async () => {
   await loadState();
