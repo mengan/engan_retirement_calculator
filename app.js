@@ -658,6 +658,8 @@ function renderProperties() {
         } else {
           p[f] = parseFloat(inp.value) || 0;
         }
+        // Re-render if yearsDepreciated or basis changed so computed display updates
+        if (f === "yearsDepreciated" || f === "basis") { saveState(); renderProperties(); recalc(); return; }
         saveState(); recalc();
       });
     });
