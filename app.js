@@ -975,7 +975,7 @@ function project(opts) {
         ? s.s1.salary
         : s.s1.salary * Math.pow(1 + s.s1.salaryGrowth / 100, yearsOut)) * frac;
     }
-    if (year < s.s2.retireYear) {
+    if (s.hasSpouse2 && year < s.s2.retireYear) {
       salary2 = (s.salaryReal
         ? s.s2.salary
         : s.s2.salary * Math.pow(1 + s.s2.salaryGrowth / 100, yearsOut)) * frac;
@@ -983,7 +983,7 @@ function project(opts) {
 
     let grossSS = 0;
     if (s1Age >= s.s1.ssAge) grossSS += s.s1.ssAmt * cumInfl * frac;
-    if (s2Age >= s.s2.ssAge) grossSS += s.s2.ssAmt * cumInfl * frac;
+    if (s.hasSpouse2 && s2Age >= s.s2.ssAge) grossSS += s.s2.ssAmt * cumInfl * frac;
 
     // --- Rental income & property cash flow ---
     // Convention: of the gross rent collected, the configured taxablePct (default 30%)
