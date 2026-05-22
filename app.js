@@ -2556,10 +2556,15 @@ function renderWithdrawalsTab() {
 
   const rc = state.settings.rothConv;
   document.getElementById("rc-strategy").value = rc.strategy || "none";
+  document.getElementById("rc-start-mode").value = rc.startMode || "manual";
   document.getElementById("rc-start").value = rc.startYear;
+  document.getElementById("rc-start").style.display = (rc.startMode === "manual" || !rc.startMode) ? "" : "none";
+  document.getElementById("rc-end-mode").value = rc.endMode || "manual";
   document.getElementById("rc-end").value = rc.endYear;
+  document.getElementById("rc-end").style.display = (rc.endMode === "manual" || !rc.endMode) ? "" : "none";
   document.getElementById("rc-custom").value = rc.customAmount;
   document.getElementById("rc-wait-inherited").checked = !!rc.startAfterInheritedDepleted;
+  renderRothConvEffectiveYears();
 
   const ii = state.settings.inheritedIra;
   document.getElementById("ii-strategy").value = ii.strategy || "fill_first";
