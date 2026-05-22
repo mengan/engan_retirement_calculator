@@ -2871,11 +2871,10 @@ function renderSSTab() {
     [earningsEl, yearsEl, claimEl, overrideEl].forEach(el => el.addEventListener("input", update));
     update(); // initial compute
 
-    // When salary changes in the spouse box above, sync earnings if user hasn't manually overridden it
+    // When salary changes in the spouse box above, sync earnings if not manually overridden
     const salaryEl = document.getElementById(`${sp}-salary`);
     if (salaryEl) {
       salaryEl.addEventListener("change", () => {
-        // Only auto-sync if earnings still matches the previous salary (i.e. not manually changed)
         if (!state.settings[sp].ssEstEarningsManual) {
           earningsEl.value = salaryEl.value;
           update();
@@ -2886,6 +2885,10 @@ function renderSSTab() {
     earningsEl.addEventListener("change", () => {
       state.settings[sp].ssEstEarningsManual = true;
     });
+
+    // When retirement year changes, recalculate SS (more/fewer working years)
+    const retireEl = document.getElementById(`${sp}-retire-year`);
+    if (retireEl) retireEl.addEventListener("change", update);
   }
   wire("s1", "ss1");
   if (state.settings.hasSpouse2) wire("s2", "ss2");
