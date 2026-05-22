@@ -36,8 +36,74 @@
 
 <main>
 
+<!-- INTRODUCTION -->
+<section id="tab-intro" class="tab-panel active">
+  <div class="intro-panel">
+    <div class="intro-hero">
+      <h2>Retirement Planning Calculator</h2>
+      <p>
+        This is a free, browser-based tool for modeling your retirement finances. Run scenarios,
+        compare strategies, and explore how your savings, expenses, Social Security, and investments
+        could play out over time. All data stays in your browser — nothing is sent to a server.
+      </p>
+    </div>
+
+    <div class="disclaimer-box">
+      <strong>&#9888; Disclaimer</strong>
+      This tool is provided for general educational and planning purposes only. It is <strong>not</strong>
+      financial, tax, or legal advice. Results are estimates based on the assumptions you enter and are
+      not guarantees of future performance. Before making any investment decisions, changes to your
+      retirement contributions, or other major financial choices, please consult a licensed financial
+      adviser, CPA, or attorney.
+    </div>
+
+    <h3 style="margin-bottom:12px; color:#1f3a5f;">How to get started</h3>
+    <ol class="steps">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>General Settings</strong>
+          <span>Enter your plan horizon, spouse details, salaries, retirement years, and default investment return and inflation ranges.</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Expenses</strong>
+          <span>Set your monthly baseline spending, add recurring expenses (healthcare, car payments), and any large one-time costs (new car, home renovation).</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Investment Accounts</strong>
+          <span>Add all your accounts — brokerage, 401(k), IRA, Roth, HSA — with current balances and ongoing contributions.</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Tune other tabs</strong>
+          <span>Refine Social Security estimates, add real estate, adjust withdrawal strategy and Roth conversion plan, set tax brackets, and run Monte Carlo simulations.</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Review the Summary</strong>
+          <span>See your full projection — asset trajectory, income sources, tax burden, and year-by-year table. Use the zoom controls on each chart to explore different time ranges and scales.</span>
+        </div>
+      </li>
+    </ol>
+
+    <div class="start-btn-row">
+      <button class="primary" id="intro-start-btn" style="padding:12px 32px; font-size:16px;">Get Started &rarr;</button>
+    </div>
+  </div>
+</section>
+
 <!-- SUMMARY -->
-<section id="tab-summary" class="tab-panel active">
+<section id="tab-summary" class="tab-panel">
   <h2>Current Portfolio</h2>
   <div id="current-portfolio-cards" class="summary-cards"></div>
 
