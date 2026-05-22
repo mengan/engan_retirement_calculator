@@ -177,7 +177,7 @@ function migrate(s) {
     // Collapse legacy "401k" + "ira" buckets into single "traditional"; dedupe.
     const out = [];
     s.settings.withdrawalOrder.forEach(k => {
-      const mapped = (k === "401k" || k === "ira") ? "traditional" : k;
+      const mapped = (k === "401k" || k === "ira" || k === "sep_ira") ? "traditional" : k;
       if (!out.includes(mapped)) out.push(mapped);
     });
     // Ensure all known buckets still appear (preserving user order)
