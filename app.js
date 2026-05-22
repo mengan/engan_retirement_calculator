@@ -274,7 +274,6 @@ const settingsBindings = [
   ["s2-ss-amt", "settings.s2.ssAmt", "float"],
 
   ["exp-base", "expenses.base", "float"],
-  ["exp-inflation", "expenses.inflation", "float"],
   ["exp-preret", "expenses.preRetMult", "float"],
 
   ["phase1-start", "expenses.phases.0.start", "int"],
