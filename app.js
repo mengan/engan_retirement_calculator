@@ -2797,7 +2797,7 @@ function renderSSTab() {
       </div>
     </fieldset>
   `;
-  document.getElementById("ss-spouses").innerHTML = html("s1", "ss1") + html("s2", "ss2");
+  document.getElementById("ss-spouses").innerHTML = html("s1", "ss1") + (state.settings.hasSpouse2 ? html("s2", "ss2") : "");
 
   function wire(sp, prefix) {
     const earningsEl = document.getElementById(`${prefix}-earnings`);
