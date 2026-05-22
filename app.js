@@ -1453,8 +1453,8 @@ function renderCurrentPortfolio() {
 
   const groups = [
     { label: "Taxable Brokerage",       total: sumOf("taxable") },
-    { label: "Traditional IRA / 401k",  total: sumOf("ira", "401k") },
-    { label: "Roth IRA",                total: sumOf("roth") },
+    { label: "Traditional IRA / 401k / SEP IRA", total: sumOf("ira", "sep_ira", "401k") },
+    { label: "Roth IRA / Roth 401(k)", total: sumOf("roth", "roth_401k") },
     { label: "Inherited IRA",           total: sumOf("inherited_ira") },
     { label: "HSA",                     total: sumOf("hsa") },
     { label: "Primary Residence Equity", total: propEquity(p => !p.isRental) },
