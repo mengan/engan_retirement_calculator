@@ -444,6 +444,7 @@ const ACCOUNT_TYPES = [
   ["ira", "Traditional IRA"],
   ["sep_ira", "SEP IRA"],
   ["roth", "Roth IRA"],
+  ["roth_401k", "Roth 401(k)"],
   ["401k", "401(k) / 403(b)"],
   ["inherited_ira", "Inherited IRA"],
   ["hsa", "HSA"],
