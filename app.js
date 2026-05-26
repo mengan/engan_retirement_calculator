@@ -2463,7 +2463,7 @@ function drawExpenseBreakdown(rows) {
 }
 
 // ===== Guardrails (SWR) tab =====
-let guardrailChart;
+let guardrailChart, guardrailLiquidChart;
 
 function computeGuardrails(rows) {
   const s = state.settings;
