@@ -2383,7 +2383,8 @@ function drawRothConversions(rows) {
 
 function drawGapWithdrawalBreakdown(rows) {
   if (expenseBreakdownChart) expenseBreakdownChart.destroy();
-  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  const dr = deflateRows(rows, summaryRealMode);
+  const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
   expenseBreakdownChart = new Chart(
     document.getElementById("expenseBreakdownChart").getContext("2d"),
     {
@@ -2391,9 +2392,9 @@ function drawGapWithdrawalBreakdown(rows) {
       data: {
         labels,
         datasets: [
-          { label: "Living Expenses",       data: rows.map(r => r.expenses),    backgroundColor: "#3b82f6" },
-          { label: "Federal Ordinary Tax",  data: rows.map(r => r.ordinaryTax), backgroundColor: "#ef4444" },
-          { label: "Federal LTCG / Div Tax",data: rows.map(r => r.ltcgTax),     backgroundColor: "#f97316" },
+          { label: "Living Expenses",       data: dr.map(r => r.expenses),    backgroundColor: "#3b82f6" },
+          { label: "Federal Ordinary Tax",  data: dr.map(r => r.ordinaryTax), backgroundColor: "#ef4444" },
+          { label: "Federal LTCG / Div Tax",data: dr.map(r => r.ltcgTax),     backgroundColor: "#f97316" },
         ],
       },
       options: {
