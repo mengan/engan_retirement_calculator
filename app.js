@@ -2162,8 +2162,55 @@ document.getElementById("sum-peak").textContent = fmt(peakLiquid);
   renderGuardrails(rows);
 }
 
+function deflateRows(rows, realMode) {
+  if (!realMode) return rows;
+  const s = state.settings;
+  const midInfl = ((s.defaultInflationLow || 0) + (s.defaultInflationHigh || 0)) / 2;
+  const startYear = s.currentYear;
+  return rows.map((r, i) => {
+    const factor = Math.pow(1 + midInfl / 100, r.year - startYear);
+    const deflate = v => (v || 0) / factor;
+    return {
+      ...r,
+      liquid: deflate(r.liquid),
+      netWorth: deflate(r.netWorth),
+      reEquity: deflate(r.reEquity),
+      income: deflate(r.income),
+      expenses: deflate(r.expenses),
+      grossSS: deflate(r.grossSS),
+      rentalNet: deflate(r.rentalNet),
+      salary1: deflate(r.salary1),
+      salary2: deflate(r.salary2),
+      dividendIncome: deflate(r.dividendIncome),
+      saleProceeds: deflate(r.saleProceeds),
+      traditionalRMD: deflate(r.traditionalRMD),
+      inheritedRMD: deflate(r.inheritedRMD),
+      inheritedBracketDrain: deflate(r.inheritedBracketDrain),
+      rothConverted: deflate(r.rothConverted),
+      ordinaryTax: deflate(r.ordinaryTax),
+      ltcgTax: deflate(r.ltcgTax),
+      expBaseline: deflate(r.expBaseline),
+      expRecurring: deflate(r.expRecurring),
+      expLarge: deflate(r.expLarge),
+      expMortgage: deflate(r.expMortgage),
+      balancesByType: r.balancesByType ? {
+        taxable: deflate(r.balancesByType.taxable),
+        traditional: deflate(r.balancesByType.traditional),
+        roth: deflate(r.balancesByType.roth),
+        inherited_ira: deflate(r.balancesByType.inherited_ira),
+        hsa: deflate(r.balancesByType.hsa),
+      } : r.balancesByType,
+      ordTaxByBracket: (r.ordTaxByBracket || []).map(v => deflate(v)),
+      ltcgTaxByBracket: (r.ltcgTaxByBracket || []).map(v => deflate(v)),
+    };
+  });
+}
+
 function drawCharts(rows, lowRows, highRows) {
-  const labels = rows.map(r => r.year);
+  const dRows = deflateRows(rows, summaryRealMode);
+  const dLow  = deflateRows(lowRows || rows, summaryRealMode);
+  const dHigh = deflateRows(highRows || rows, summaryRealMode);
+  const labels = dRows.map(r => r.year);
   if (assetChart) assetChart.destroy();
   if (liquidBreakdownChart) liquidBreakdownChart.destroy();
 
