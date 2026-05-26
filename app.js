@@ -3714,4 +3714,7 @@ document.querySelectorAll(".chart-zoom-controls").forEach(controls => {
   fullRender();
   wireWithdrawalsTab();
   wireGuardrailsTab();
+  wireHealthcareSection();
+  wirePlanToAge();
+  wireRealNominalToggle();
 })();
