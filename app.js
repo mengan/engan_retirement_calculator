@@ -1815,6 +1815,7 @@ function project(opts) {
       inheritedDrained,
       inheritedRMD,
       inheritedBracketDrain,
+      inheritedSpendWD,
       traditionalRMD,
       liquid: liquidAssets,
       rentalEquity,
