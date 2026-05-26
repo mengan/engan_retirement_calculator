@@ -2404,6 +2404,7 @@ function deflateRows(rows, realMode) {
       traditionalRMD: deflate(r.traditionalRMD),
       inheritedRMD: deflate(r.inheritedRMD),
       inheritedBracketDrain: deflate(r.inheritedBracketDrain),
+      inheritedSpendWD: deflate(r.inheritedSpendWD || 0),
       rothConverted: deflate(r.rothConverted),
       ordinaryTax: deflate(r.ordinaryTax),
       ltcgTax: deflate(r.ltcgTax),
