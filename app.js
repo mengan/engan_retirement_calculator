@@ -98,6 +98,7 @@ const defaultState = () => ({
       { id: uid(), desc: "Travel",            amount: 10000, period: "annual",  inflate: true,  startYear: 2035, endYear: 2050 },
       { id: uid(), desc: "Vehicle financing", amount: 500,  period: "monthly", inflate: false, startYear: 2032, endYear: 2039 },
     ],
+    healthcare: { enabled: false, s1Monthly: 800, s2Monthly: 700 },
   },
   accounts: [
     { id: uid(), name: "Joint Brokerage", type: "taxable",       owner: "Joint",    balance: 250000, basis: 180000, returnPct: 6, contribution: 12000, dividendYield: 2.0 },
