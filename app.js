@@ -2613,17 +2613,6 @@ function renderGuardrails(rows, lowRows, highRows) {
           pointRadius: 0,
         },
         {
-          label: `Lower Guardrail (raise +${s.swrAdjust || 10}% if below)`,
-          data: gRows.map(r => r.swrAllowed * lowerMult),
-          borderColor: "#15803d",
-          backgroundColor: "rgba(0,0,0,0)",
-          borderWidth: 1.5,
-          borderDash: [6, 3],
-          fill: false,
-          tension: 0.2,
-          pointRadius: 0,
-        },
-        {
           label: "Forecasted Expenses",
           data: gRows.map(r => r.expenses),
           borderColor: "#ef4444",
