@@ -2660,6 +2660,131 @@ function renderGuardrails(rows, lowRows, highRows) {
       scales: { y: { ticks: { callback: v => fmt(v) } } }
     }
   });
+
+  // Second chart: liquid assets vs dollar-value guardrail thresholds
+  if (guardrailLiquidChart) guardrailLiquidChart.destroy();
+  const ctx2 = document.getElementById("guardrailLiquidChart").getContext("2d");
+
+  // Per-year asset thresholds derived from each year's projected expenses
+  const cutThresholds  = gRows.map(r => swrRate * upperBand > 0 ? r.expenses / (swrRate * upperBand) : 0);
+  const raiseThresholds = gRows.map(r => swrRate * lowerBand > 0 ? r.expenses / (swrRate * lowerBand) : 0);
+
+  // Pessimistic/optimistic liquid from the low/high projection runs
+  const lowLiquid  = (lowRows  || rows).map(r => r.liquid);
+  const highLiquid = (highRows || rows).map(r => r.liquid);
+  const midLiquid  = gRows.map(r => r.liquid);
+
+  guardrailLiquidChart = new Chart(ctx2, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: `Cut-Spending Threshold (assets below = reduce by ${s.swrAdjust || 10}%)`,
+          data: cutThresholds,
+          borderColor: "#b91c1c",
+          backgroundColor: "rgba(0,0,0,0)",
+          borderWidth: 2,
+          borderDash: [6, 3],
+          fill: false,
+          tension: 0.2,
+          pointRadius: 0,
+        },
+        {
+          label: `Raise-Spending Threshold (assets above = increase by ${s.swrAdjust || 10}%)`,
+          data: raiseThresholds,
+          borderColor: "#15803d",
+          backgroundColor: "rgba(0,0,0,0)",
+          borderWidth: 2,
+          borderDash: [6, 3],
+          fill: false,
+          tension: 0.2,
+          pointRadius: 0,
+        },
+        {
+          label: "Liquid Assets — Optimistic",
+          data: highLiquid,
+          borderColor: "rgba(16,185,129,0.7)",
+          backgroundColor: "rgba(16,185,129,0.08)",
+          borderWidth: 1,
+          borderDash: [3, 3],
+          fill: false,
+          tension: 0.2,
+          pointRadius: 0,
+        },
+        {
+          label: "Liquid Assets — Mid (base case)",
+          data: midLiquid,
+          borderColor: "#2563eb",
+          backgroundColor: "rgba(37,99,235,0.10)",
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.2,
+          pointRadius: 0,
+        },
+        {
+          label: "Liquid Assets — Pessimistic",
+          data: lowLiquid,
+          borderColor: "rgba(239,68,68,0.7)",
+          backgroundColor: "rgba(0,0,0,0)",
+          borderWidth: 1,
+          borderDash: [3, 3],
+          fill: false,
+          tension: 0.2,
+          pointRadius: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: { display: true, text: "Liquid Asset Portfolio vs. Spending-Adjustment Thresholds" },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+      },
+      scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: false } },
+    }
+  });
+
+  // Crossing analysis — only check retired years
+  const crossings = [];
+  let prevCutBelow = null;
+  let prevRaiseAbove = null;
+  gRows.forEach((r, i) => {
+    if (!r.retired) { prevCutBelow = null; prevRaiseAbove = null; return; }
+    const liq = r.liquid;
+    const cut   = cutThresholds[i];
+    const raise = raiseThresholds[i];
+    const nowCutBelow    = liq < cut;
+    const nowRaiseAbove  = liq > raise;
+    if (prevCutBelow === false && nowCutBelow) {
+      crossings.push({ year: r.year, s1Age: r.s1Age, s2Age: r.s2Age, type: "cut",
+        msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets (${fmt(liq)}) fall below the cut threshold (${fmt(cut)}) — reduce spending by ${s.swrAdjust || 10}%.` });
+    } else if (prevCutBelow === true && !nowCutBelow) {
+      crossings.push({ year: r.year, s1Age: r.s1Age, s2Age: r.s2Age, type: "recover",
+        msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets (${fmt(liq)}) recover above the cut threshold (${fmt(cut)}).` });
+    }
+    if (prevRaiseAbove === false && nowRaiseAbove) {
+      crossings.push({ year: r.year, s1Age: r.s1Age, s2Age: r.s2Age, type: "raise",
+        msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets (${fmt(liq)}) rise above the raise threshold (${fmt(raise)}) — you can increase spending by ${s.swrAdjust || 10}%.` });
+    } else if (prevRaiseAbove === true && !nowRaiseAbove) {
+      crossings.push({ year: r.year, s1Age: r.s1Age, s2Age: r.s2Age, type: "drop_raise",
+        msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets (${fmt(liq)}) drop back below the raise threshold (${fmt(raise)}).` });
+    }
+    prevCutBelow   = nowCutBelow;
+    prevRaiseAbove = nowRaiseAbove;
+  });
+
+  const crossingsEl = document.getElementById("guardrail-crossings");
+  if (crossings.length === 0) {
+    crossingsEl.innerHTML = `<span style="color:#15803d;">&#10003; No guardrail crossings forecast — your projected liquid assets stay within the spending-adjustment bands throughout retirement.</span>`;
+  } else {
+    const colorOf = t => t === "cut" ? "#b91c1c" : t === "raise" ? "#15803d" : "#64748b";
+    const iconOf  = t => t === "cut" ? "&#8595; CUT" : t === "raise" ? "&#8593; RAISE" : "&#8644;";
+    crossingsEl.innerHTML = `<strong>Projected guardrail crossings (base-case scenario):</strong><ul style="margin:6px 0 0 18px; padding:0;">` +
+      crossings.map(c => `<li style="color:${colorOf(c.type)};margin-bottom:3px;"><strong>${iconOf(c.type)}</strong> ${c.msg}</li>`).join("") +
+      `</ul>`;
+  }
 }
 
 function renderGuardrailsControls() {
