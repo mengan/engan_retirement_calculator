@@ -2223,7 +2223,7 @@ function drawCharts(rows, lowRows, highRows) {
         // Band: high-net-worth fills down to low-net-worth
         {
           label: "Optimistic Net Worth",
-          data: (highRows || rows).map(r => r.netWorth),
+          data: dHigh.map(r => r.netWorth),
           borderColor: "rgba(16,185,129,0.6)",
           backgroundColor: "rgba(16,185,129,0.12)",
           borderWidth: 1,
@@ -2234,7 +2234,7 @@ function drawCharts(rows, lowRows, highRows) {
         },
         {
           label: "Pessimistic Net Worth",
-          data: (lowRows || rows).map(r => r.netWorth),
+          data: dLow.map(r => r.netWorth),
           borderColor: "rgba(239,68,68,0.6)",
           backgroundColor: "rgba(0,0,0,0)",
           borderWidth: 1,
@@ -2245,7 +2245,7 @@ function drawCharts(rows, lowRows, highRows) {
         },
         {
           label: "Liquid Assets (mid)",
-          data: rows.map(r => r.liquid),
+          data: dRows.map(r => r.liquid),
           borderColor: "#2563eb",
           backgroundColor: "rgba(37,99,235,0.15)",
           fill: true,
@@ -2253,7 +2253,7 @@ function drawCharts(rows, lowRows, highRows) {
         },
         {
           label: "Real Estate Equity",
-          data: rows.map(r => r.reEquity),
+          data: dRows.map(r => r.reEquity),
           borderColor: "#10b981",
           backgroundColor: "rgba(16,185,129,0.15)",
           fill: true,
@@ -2261,7 +2261,7 @@ function drawCharts(rows, lowRows, highRows) {
         },
         {
           label: "Total Net Worth (mid)",
-          data: rows.map(r => r.netWorth),
+          data: dRows.map(r => r.netWorth),
           borderColor: "#1f3a5f",
           backgroundColor: "rgba(31,58,95,0.0)",
           borderWidth: 3,
