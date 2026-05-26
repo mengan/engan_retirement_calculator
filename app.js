@@ -1628,8 +1628,9 @@ function project(opts) {
           .reduce((sum, a) => sum + a.balance, 0);
 
         // Phase A: extra inherited IRA drain (runs every year while balance > 0)
+        const suppressSaleYear = !!rc.skipConversionOnSaleYear && properties.some(p => p.sellYear === year && p.sellYear > 0);
         let extraInherited = 0;
-        if (inhBalance > 0 && ii.strategy !== "rmd_only") {
+        if (inhBalance > 0 && ii.strategy !== "rmd_only" && !suppressSaleYear) {
           switch (ii.strategy) {
             case "fill_first":  extraInherited = Math.min(headroom, inhBalance); break;
             case "split_50_50": extraInherited = Math.min(headroom / 2, inhBalance); break;
