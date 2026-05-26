@@ -2160,7 +2160,7 @@ document.getElementById("sum-peak").textContent = fmt(peakLiquid);
   drawWithdrawalCharts(rows);
   renderRothRecommendation(rows);
   renderTaxStrategyComparison();
-  renderGuardrails(rows);
+  renderGuardrails(rows, lowRows, highRows);
 }
 
 function deflateRows(rows, realMode) {
