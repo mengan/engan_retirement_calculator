@@ -594,6 +594,18 @@
     <canvas id="guardrailChart"></canvas>
   </div>
 
+  <h3 style="margin-top:24px;">Liquid Asset Portfolio vs. Guardrail Thresholds</h3>
+  <p class="muted" style="margin-top:0;">
+    Shows your projected liquid assets against the dollar thresholds that would trigger a spending adjustment.
+    The <strong style="color:#b91c1c;">red dashed</strong> line is the cut threshold — if your portfolio falls below it, reduce spending.
+    The <strong style="color:#15803d;">green dashed</strong> line is the raise threshold — if your portfolio rises above it, you can increase spending.
+    Both thresholds are computed each year from that year's projected expenses.
+  </p>
+  <div class="chart-container" style="height:400px;">
+    <canvas id="guardrailLiquidChart"></canvas>
+  </div>
+  <div id="guardrail-crossings" style="margin-top:12px; padding:12px 16px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; line-height:1.7;"></div>
+
   <h3>Year-by-Year</h3>
   <div class="table-wrap">
     <table id="guardrail-table">
