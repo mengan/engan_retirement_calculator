@@ -3909,6 +3909,230 @@ document.querySelectorAll(".chart-zoom-controls").forEach(controls => {
   }
 });
 
+// ===== Randomize Sample Data =====
+function userHasCustomizedAccounts() {
+  // Compare current accounts/properties to the default state.
+  // "Customized" means the user has changed a name, balance, or account type
+  // from what the factory defaults would produce, OR added/removed entries.
+  const def = defaultState();
+  const cur = state;
+
+  // Different number of accounts or properties → definitely customized
+  if (cur.accounts.length !== def.accounts.length) return true;
+  if (cur.properties.length !== def.properties.length) return true;
+
+  // Check if every account name+type+balance still matches the defaults
+  // (ids differ between instances, so compare by position)
+  for (let i = 0; i < def.accounts.length; i++) {
+    const d = def.accounts[i], c = cur.accounts[i];
+    if (c.name !== d.name || c.type !== d.type || c.balance !== d.balance) return true;
+  }
+  for (let i = 0; i < def.properties.length; i++) {
+    const d = def.properties[i], c = cur.properties[i];
+    if (c.name !== d.name || c.value !== d.value || c.isRental !== d.isRental) return true;
+  }
+  return false;
+}
+
+function generateRandomAccounts() {
+  // Produce a varied but realistic set of accounts. Values are randomized within
+  // plausible ranges so each click gives a different starting portfolio.
+  const rnd = (lo, hi, step = 1000) => Math.round((lo + Math.random() * (hi - lo)) / step) * step;
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  const s1Name = state.settings.s1.name || "Spouse 1";
+  const s2Name = state.settings.hasSpouse2 ? (state.settings.s2.name || "Spouse 2") : null;
+
+  const accounts = [];
+
+  // Taxable brokerage — joint, always present
+  const brokerBalance = rnd(50000, 400000);
+  accounts.push({
+    id: uid(), name: "Joint Brokerage", type: "taxable", owner: "Joint",
+    balance: brokerBalance,
+    basis: Math.round(brokerBalance * (0.4 + Math.random() * 0.4)),
+    returnPct: pick([5.5, 6, 6.5, 7]),
+    contribution: rnd(0, 18000, 500),
+    dividendYield: +(1.5 + Math.random() * 2).toFixed(1),
+    excluded: false,
+  });
+
+  // S1 401k
+  accounts.push({
+    id: uid(), name: `${s1Name} 401(k)`, type: "401k", owner: s1Name,
+    balance: rnd(80000, 800000),
+    basis: 0,
+    returnPct: pick([5.5, 6, 6.5, 7]),
+    contribution: rnd(10000, 23000, 500),
+    excluded: false,
+  });
+
+  // S1 Roth IRA
+  accounts.push({
+    id: uid(), name: `${s1Name} Roth IRA`, type: "roth", owner: s1Name,
+    balance: rnd(20000, 250000),
+    basis: 0,
+    returnPct: pick([6, 6.5, 7, 7.5]),
+    contribution: rnd(0, 7000, 500),
+    excluded: false,
+  });
+
+  // Optionally add S1 Traditional IRA (60% chance)
+  if (Math.random() < 0.6) {
+    accounts.push({
+      id: uid(), name: `${s1Name} IRA`, type: "ira", owner: s1Name,
+      balance: rnd(30000, 300000),
+      basis: 0,
+      returnPct: pick([5.5, 6, 6.5]),
+      contribution: 0,
+      excluded: false,
+    });
+  }
+
+  // Optionally add HSA (50% chance)
+  if (Math.random() < 0.5) {
+    accounts.push({
+      id: uid(), name: "HSA", type: "hsa", owner: s1Name,
+      balance: rnd(5000, 40000),
+      basis: 0,
+      returnPct: pick([5, 5.5, 6]),
+      contribution: rnd(0, 4150, 250),
+      excluded: false,
+    });
+  }
+
+  if (s2Name) {
+    // S2 401k or IRA
+    const s2Type = pick(["401k", "ira"]);
+    accounts.push({
+      id: uid(), name: `${s2Name} ${s2Type === "401k" ? "401(k)" : "IRA"}`, type: s2Type, owner: s2Name,
+      balance: rnd(50000, 600000),
+      basis: 0,
+      returnPct: pick([5.5, 6, 6.5]),
+      contribution: rnd(8000, 20000, 500),
+      excluded: false,
+    });
+
+    // S2 Roth IRA (70% chance)
+    if (Math.random() < 0.7) {
+      accounts.push({
+        id: uid(), name: `${s2Name} Roth IRA`, type: "roth", owner: s2Name,
+        balance: rnd(10000, 180000),
+        basis: 0,
+        returnPct: pick([6, 6.5, 7]),
+        contribution: rnd(0, 7000, 500),
+        excluded: false,
+      });
+    }
+
+    // S2 Inherited IRA (25% chance)
+    if (Math.random() < 0.25) {
+      const inhYear = state.settings.currentYear - Math.floor(1 + Math.random() * 4);
+      accounts.push({
+        id: uid(), name: `${s2Name} Inherited IRA`, type: "inherited_ira", owner: s2Name,
+        balance: rnd(40000, 250000),
+        basis: 0,
+        returnPct: pick([5, 5.5, 6]),
+        contribution: 0,
+        inheritanceYear: inhYear,
+        excluded: false,
+      });
+    }
+  }
+
+  return accounts;
+}
+
+function generateRandomProperties() {
+  const rnd = (lo, hi, step = 1000) => Math.round((lo + Math.random() * (hi - lo)) / step) * step;
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  const properties = [];
+  const currentYear = state.settings.currentYear;
+
+  // Primary home — always
+  const homeValue = rnd(300000, 900000, 5000);
+  const homeLTV   = 0.3 + Math.random() * 0.5;  // 30–80% LTV
+  const homeLoan  = Math.round(homeValue * homeLTV / 1000) * 1000;
+  const homeRate  = +(3.5 + Math.random() * 2.5).toFixed(2);
+  const homePmt   = Math.round(homeLoan * (homeRate / 100 / 12) /
+    (1 - Math.pow(1 + homeRate / 100 / 12, -360)));
+  const homePayoffYear = currentYear + Math.floor(10 + Math.random() * 20);
+  properties.push({
+    id: uid(), name: "Primary Home", type: "primary",
+    value: homeValue, loanBalance: homeLoan,
+    payment: homePmt, escrow: Math.round(homePmt * 0.2 / 10) * 10,
+    interestRate: homeRate, loanPayoffYear: homePayoffYear, loanPayoffMonth: 12,
+    appreciation: pick([2.5, 3, 3.5]),
+    isRental: false, rent: 0, rentGrowth: 3, basis: 0, sellYear: 0,
+    yearsDepreciated: 0, taxablePct: 30,
+  });
+
+  // Rental property (55% chance)
+  if (Math.random() < 0.55) {
+    const rentalValue = rnd(200000, 600000, 5000);
+    const rentalLTV   = 0.4 + Math.random() * 0.4;
+    const rentalLoan  = Math.round(rentalValue * rentalLTV / 1000) * 1000;
+    const rentalRate  = +(4.0 + Math.random() * 2.5).toFixed(2);
+    const rentalPmt   = Math.round(rentalLoan * (rentalRate / 100 / 12) /
+      (1 - Math.pow(1 + rentalRate / 100 / 12, -360)));
+    const rentalBasis  = Math.round(rentalValue * (0.55 + Math.random() * 0.25) / 1000) * 1000;
+    const yearsHeld    = Math.floor(1 + Math.random() * 15);
+    const monthlyRent  = rnd(1200, 3500, 50);
+    const rentalPayoffYear = currentYear + Math.floor(5 + Math.random() * 20);
+    const possibleSellYear = Math.random() < 0.4
+      ? currentYear + Math.floor(5 + Math.random() * 20)
+      : 0;
+    properties.push({
+      id: uid(), name: "Rental Property", type: "investment",
+      value: rentalValue, loanBalance: rentalLoan,
+      payment: rentalPmt, escrow: Math.round(rentalPmt * 0.18 / 10) * 10,
+      interestRate: rentalRate, loanPayoffYear: rentalPayoffYear, loanPayoffMonth: 12,
+      appreciation: pick([2.5, 3, 3.5]),
+      isRental: true, rent: monthlyRent, rentGrowth: 3,
+      basis: rentalBasis, sellYear: possibleSellYear,
+      yearsDepreciated: yearsHeld, taxablePct: pick([25, 30, 35]),
+    });
+  }
+
+  return properties;
+}
+
+function wireRandomizeButton() {
+  const btn    = document.getElementById("randomize-btn");
+  const status = document.getElementById("randomize-status");
+  if (!btn || !status) return;
+
+  function refresh() {
+    if (userHasCustomizedAccounts()) {
+      btn.disabled = true;
+      btn.style.opacity = "0.45";
+      btn.style.cursor  = "not-allowed";
+      status.textContent = "Disabled — you've already started entering your own data on the Investment Accounts tab.";
+      status.style.color = "#b45309";
+    } else {
+      btn.disabled = false;
+      btn.style.opacity = "";
+      btn.style.cursor  = "pointer";
+      status.textContent = "";
+    }
+  }
+
+  btn.addEventListener("click", () => {
+    if (userHasCustomizedAccounts()) return;
+    state.accounts   = generateRandomAccounts();
+    state.properties = generateRandomProperties();
+    saveState();
+    fullRender();
+    status.textContent = "Sample data loaded! Explore the tabs, then replace with your real numbers.";
+    status.style.color = "#15803d";
+    // Re-evaluate button state after render
+    refresh();
+  });
+
+  refresh();
+}
+
 (async () => {
   await loadState();
   fullRender();
@@ -3917,4 +4141,5 @@ document.querySelectorAll(".chart-zoom-controls").forEach(controls => {
   wireHealthcareSection();
   wirePlanToAge();
   wireRealNominalToggle();
+  wireRandomizeButton();
 })();
