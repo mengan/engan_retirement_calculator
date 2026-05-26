@@ -2648,7 +2648,7 @@ function drawExpenseBreakdown(rows) {
       + (r.saleProceeds || 0)
       + (r.traditionalRMD || 0)
       + (r.inheritedRMD || 0)
-      + (r.inheritedBracketDrain || 0);
+      + (r.inheritedBracketDrain || 0) + (r.inheritedSpendWD || 0);
     const outflows = (r.expenses || 0) + (r.ordinaryTax || 0) + (r.ltcgTax || 0);
     return inflows - outflows;
   });
