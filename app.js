@@ -2004,6 +2004,7 @@ function renderExpenseByYearTable(rows) {
 function recalc() {
   renderCurrentPortfolio();
   const rows = project();
+  lastRows = rows;
   const tbody = document.querySelector("#projection-table tbody");
   tbody.innerHTML = "";
   let cumBrokerageFlow = 0;
