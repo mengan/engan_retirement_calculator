@@ -3070,7 +3070,51 @@ function gaussian(rng) {
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
-let mcChart;
+let mcChart, mcRetirementChart;
+
+function drawMCRetirementHistogram(liquidArr, retireYear) {
+  const canvasEl = document.getElementById("mcRetirementChart");
+  if (!canvasEl) return;
+  if (mcRetirementChart) mcRetirementChart.destroy();
+
+  // Build histogram with $250k buckets
+  const bucketSize = 250000;
+  const maxVal = Math.max(...liquidArr, 1);
+  const numBuckets = Math.ceil(maxVal / bucketSize) + 1;
+  const counts = new Array(numBuckets).fill(0);
+  liquidArr.forEach(v => {
+    const idx = Math.max(0, Math.floor(v / bucketSize));
+    if (idx < numBuckets) counts[idx]++;
+  });
+
+  const labels = counts.map((_, i) => `${fmt(i * bucketSize)}–${fmt((i + 1) * bucketSize)}`);
+
+  mcRetirementChart = new Chart(canvasEl.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Number of Simulations",
+        data: counts,
+        backgroundColor: "rgba(37,99,235,0.65)",
+        borderColor: "#2563eb",
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        title: { display: true, text: `Liquid Asset Distribution at Retirement Year (${retireYear}) — ${liquidArr.length} simulations` },
+        tooltip: { callbacks: { label: c => `${c.parsed.y} simulations` } },
+      },
+      scales: {
+        x: { ticks: { maxRotation: 45, font: { size: 10 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+      },
+    },
+  });
+}
+
 async function runMonteCarlo() {
   const runs = parseInt(document.getElementById("mc-runs").value) || 1000;
   const stddev = parseFloat(document.getElementById("mc-stddev").value) || 0;
