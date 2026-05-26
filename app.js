@@ -2637,7 +2637,7 @@ function renderGuardrails(rows, lowRows, highRows) {
           borderWidth: 2,
           borderDash: [6, 3],
           fill: false,
-          tension: 0.2,
+          tension: 0,
           pointRadius: 0,
         },
         {
