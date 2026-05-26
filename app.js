@@ -677,7 +677,6 @@ function renderProperties() {
               is added to ordinary income in the tax calc.
             </small>
           </label>
-          <label>Planned Sell Year (0 = never) <input type="number" value="${p.sellYear}" data-field="sellYear"/></label>
           <small style="grid-column: span 2; color:#64748b;">
             Annual depreciation = cost basis × 80% ÷ 27.5 years (residential IRS straight-line).
             On sale, capital gain = sale price − (basis − total accumulated depreciation), taxed at the CG rate.
