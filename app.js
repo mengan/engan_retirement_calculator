@@ -3510,12 +3510,143 @@ function renderSSClaimingComparison() {
   container.appendChild(div);
 }
 
+// ===== Healthcare section =====
+function renderHealthcareSection() {
+  const hc = state.expenses.healthcare || {};
+  const enabled = hc.enabled || false;
+  const s = state.settings;
+
+  const s1MedicareYear = s.currentYear + (65 - s.s1.age);
+  const s2MedicareYear = s.hasSpouse2 ? s.currentYear + (65 - s.s2.age) : null;
+
+  const hcFieldset = document.getElementById("hc-fieldset");
+  if (!hcFieldset) return;
+
+  const enabledCb = document.getElementById("hc-enabled");
+  if (enabledCb) enabledCb.checked = enabled;
+
+  const fields = document.getElementById("hc-fields");
+  if (fields) fields.style.display = enabled ? "" : "none";
+
+  const s1MonthlyEl = document.getElementById("hc-s1-monthly");
+  if (s1MonthlyEl) s1MonthlyEl.value = hc.s1Monthly ?? 800;
+
+  const s2MonthlyEl = document.getElementById("hc-s2-monthly");
+  const s2Row = document.getElementById("hc-s2-row");
+  if (s2Row) s2Row.style.display = s.hasSpouse2 ? "" : "none";
+  if (s2MonthlyEl) s2MonthlyEl.value = hc.s2Monthly ?? 700;
+
+  // Show computed years
+  const yearsDisplay = document.getElementById("hc-years-display");
+  if (yearsDisplay) {
+    const s1RetY = s.s1.retireYear;
+    const s1Lines = [`S1: from ${s1RetY} to ${s1MedicareYear} (${Math.max(0, s1MedicareYear - s1RetY + 1)} years)`];
+    if (s.hasSpouse2 && s2MedicareYear) {
+      const s2RetY = s.s2.retireYear;
+      s1Lines.push(`S2: from ${s2RetY} to ${s2MedicareYear} (${Math.max(0, s2MedicareYear - s2RetY + 1)} years)`);
+    }
+    yearsDisplay.textContent = s1Lines.join("  |  ");
+  }
+}
+
+function wireHealthcareSection() {
+  const enabledCb = document.getElementById("hc-enabled");
+  if (!enabledCb) return;
+  enabledCb.addEventListener("change", () => {
+    if (!state.expenses.healthcare) state.expenses.healthcare = { enabled: false, s1Monthly: 800, s2Monthly: 700 };
+    state.expenses.healthcare.enabled = enabledCb.checked;
+    renderHealthcareSection();
+    saveState(); recalc();
+  });
+
+  const s1El = document.getElementById("hc-s1-monthly");
+  if (s1El) s1El.addEventListener("change", () => {
+    state.expenses.healthcare.s1Monthly = parseFloat(s1El.value) || 0;
+    saveState(); recalc();
+  });
+
+  const s2El = document.getElementById("hc-s2-monthly");
+  if (s2El) s2El.addEventListener("change", () => {
+    state.expenses.healthcare.s2Monthly = parseFloat(s2El.value) || 0;
+    saveState(); recalc();
+  });
+}
+
+// ===== Life Expectancy / Plan To Age =====
+function renderPlanToAge() {
+  const s = state.settings;
+  const s1PlanToAge = document.getElementById("s1-plan-to-age");
+  const s2PlanToAge = document.getElementById("s2-plan-to-age");
+  if (s1PlanToAge) s1PlanToAge.value = s.s1.planToAge ?? 90;
+  if (s2PlanToAge) s2PlanToAge.value = s.s2.planToAge ?? 90;
+  updatePlanToAgeDisplay();
+}
+
+function updatePlanToAgeDisplay() {
+  const s = state.settings;
+  const s1PlanYear = s.currentYear + ((s.s1.planToAge || 90) - s.s1.age);
+  const s2PlanYear = s.hasSpouse2 ? s.currentYear + ((s.s2.planToAge || 90) - s.s2.age) : null;
+  const computedEnd = s2PlanYear ? Math.max(s1PlanYear, s2PlanYear) : s1PlanYear;
+
+  const display = document.getElementById("plan-to-age-display");
+  if (display) {
+    let txt = `S1 reaches age ${s.s1.planToAge || 90} in ${s1PlanYear}`;
+    if (s.hasSpouse2 && s2PlanYear) txt += ` · S2 reaches age ${s.s2.planToAge || 90} in ${s2PlanYear}`;
+    txt += ` · Plan end year updated to ${computedEnd}`;
+    display.textContent = txt;
+  }
+}
+
+function wirePlanToAge() {
+  const s1El = document.getElementById("s1-plan-to-age");
+  const s2El = document.getElementById("s2-plan-to-age");
+
+  function onChange() {
+    const s = state.settings;
+    if (s1El) s.s1.planToAge = parseInt(s1El.value) || 90;
+    if (s2El) s.s2.planToAge = parseInt(s2El.value) || 90;
+
+    const s1PlanYear = s.currentYear + (s.s1.planToAge - s.s1.age);
+    const s2PlanYear = s.hasSpouse2 ? s.currentYear + (s.s2.planToAge - s.s2.age) : 0;
+    const newEndYear = s.hasSpouse2 ? Math.max(s1PlanYear, s2PlanYear) : s1PlanYear;
+    s.endYear = newEndYear;
+    const endYearInput = document.getElementById("set-end-year");
+    if (endYearInput) endYearInput.value = newEndYear;
+    updatePlanToAgeDisplay();
+    saveState(); recalc();
+  }
+
+  if (s1El) s1El.addEventListener("change", onChange);
+  if (s2El) s2El.addEventListener("change", onChange);
+}
+
+// ===== Real/Nominal toggle =====
+function wireRealNominalToggle() {
+  const radios = document.querySelectorAll("input[name='sum-display-mode']");
+  radios.forEach(r => {
+    r.addEventListener("change", () => {
+      summaryRealMode = r.value === "real";
+      if (lastRows) {
+        drawCharts(lastRows, lastLowRows, lastHighRows);
+        drawIncomeBreakdown(lastRows);
+        drawRothConversions(lastRows);
+        drawGapWithdrawalBreakdown(lastRows);
+        drawExpenseBreakdown(lastRows);
+        drawTaxByBracket(lastRows);
+        drawLiquidBreakdown(lastRows);
+      }
+    });
+  });
+}
+
 // ===== Initial Render =====
 function fullRender() {
   bindSettings();
   applySpouse2Visibility();
   renderLargeExpenses();
   renderRecurringExpenses();
+  renderHealthcareSection();
+  renderPlanToAge();
   renderAccounts();
   renderProperties();
   renderWithdrawalsTab();
