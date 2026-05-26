@@ -1251,9 +1251,12 @@ function project(opts) {
         }
       }
 
-      if (p.sellYear === year && !p.sold) {
+      if (p.sellYear === year && p.sellYear > 0 && !p.sold) {
         const adjBasis = Math.max(0, p.basis - (p.accumDepreciation || 0));
-        const gain = Math.max(0, p.value - adjBasis);
+        const rawGain = Math.max(0, p.value - adjBasis);
+        // Primary residence: $500k MFJ exclusion ($250k single) on capital gains
+        const exclusion = p.type === "primary" ? (s.hasSpouse2 ? 500000 : 250000) : 0;
+        const gain = Math.max(0, rawGain - exclusion);
         saleGain += gain;
         saleProceeds += p.value - p.loanBalance;  // gross of CG tax; tax handled below
         p.sold = true;
