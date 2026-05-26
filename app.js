@@ -1771,7 +1771,7 @@ function drawTaxByBracket(rows) {
   ordBrackets.forEach((b, i) => {
     datasets.push({
       label: `Ordinary ${b.rate}%`,
-      data: rows.map(r => (r.ordTaxByBracket && r.ordTaxByBracket[i]) || 0),
+      data: dr.map(r => (r.ordTaxByBracket && r.ordTaxByBracket[i]) || 0),
       backgroundColor: ordColors[i] || "#7f1d1d",
       stack: "tax",
     });
@@ -1779,7 +1779,7 @@ function drawTaxByBracket(rows) {
   ltcgBrackets.forEach((b, i) => {
     datasets.push({
       label: `LTCG ${b.rate}%`,
-      data: rows.map(r => (r.ltcgTaxByBracket && r.ltcgTaxByBracket[i]) || 0),
+      data: dr.map(r => (r.ltcgTaxByBracket && r.ltcgTaxByBracket[i]) || 0),
       backgroundColor: ltcgColors[i] || "#92400e",
       stack: "tax",
     });
