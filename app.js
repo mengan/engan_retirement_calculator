@@ -1655,7 +1655,8 @@ function project(opts) {
         const inhBalanceAfterDrain = accounts
           .filter(a => a.type === "inherited_ira")
           .reduce((sum, a) => sum + a.balance, 0);
-        const suppressRoth = !!rc.startAfterInheritedDepleted && inhBalanceAfterDrain > 0;
+        const suppressRoth = (!!rc.startAfterInheritedDepleted && inhBalanceAfterDrain > 0)
+          || (!!rc.skipConversionOnSaleYear && properties.some(p => p.sellYear === year && p.sellYear > 0));
 
         if (inFillWindow && !suppressRoth && headroom > 0) {
           rothConverted = performRothConversion(accounts, headroom);
