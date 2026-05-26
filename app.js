@@ -2507,40 +2507,28 @@ function computeGuardrails(rows) {
 function renderGuardrails(rows, lowRows, highRows) {
   const { rows: gRows, initialAllowedNominal, initialLiquid, retireRow } = computeGuardrails(rows);
   const s = state.settings;
+  const swrRate  = (s.swr || 3.5) / 100;
+  const adj      = (s.swrAdjust || 10) / 100;
 
-  const todayLiquid = gRows[0]?.effLiquid || gRows[0]?.liquid || 0;
-  const todayAllowed = todayLiquid * (s.swr || 3.5) / 100;
-
-  // For static, the "at-retirement allowed" is the nominal × swr. For others, show the same.
-  document.getElementById("swr-today").textContent = fmt(todayAllowed) + "/yr";
+  // Summary cards — all purely liquid-based, no expense connection
+  const todayRow    = gRows[0];
+  const todayLiquid = todayRow?.effLiquid || todayRow?.liquid || 0;
+  document.getElementById("swr-today").textContent     = fmt(todayLiquid * swrRate) + "/yr";
   document.getElementById("swr-at-retire").textContent = fmt(initialAllowedNominal) + "/yr";
+  document.getElementById("swr-current-liquid").textContent = fmt(todayRow?.liquid || 0);
+  document.getElementById("swr-current-total").textContent  = fmt(todayRow?.netWorth || 0);
 
-  // Raise/cut thresholds anchored to current liquid assets × SWR rate.
-  // This guarantees: raiseThreshold > currentLiquid > cutThreshold always.
-  // Logic: your "initial withdrawal rate" is expenses/liquid. The bands ask:
-  //   at what portfolio size does that rate cross swr×upperBand (too high → cut)
-  //   or swr×lowerBand (too low → raise)?
-  // Anchoring to currentLiquid×swrRate as the spending baseline removes noise
-  // from single-year large expenses (one-time costs, pre-retirement outliers).
-  const adj = (s.swrAdjust || 10) / 100;
-  const upperBand = 1 + (s.swrUpperBand || 20) / 100;
-  const lowerBand = 1 - (s.swrLowerBand || 20) / 100;
-  const swrRate = (s.swr || 3.5) / 100;
-  const currentLiquid = gRows[0]?.liquid || 0;
-  // raiseThreshold = currentLiquid / lowerBand  (always > currentLiquid since lowerBand < 1)
-  // cutThreshold   = currentLiquid / upperBand  (always < currentLiquid since upperBand > 1)
-  const raiseThreshold = lowerBand > 0 ? currentLiquid / lowerBand : 0;
-  const cutThreshold   = upperBand > 0 ? currentLiquid / upperBand : 0;
-  document.getElementById("swr-cut-threshold").textContent = fmt(cutThreshold);
-  document.getElementById("swr-raise-threshold").textContent = fmt(raiseThreshold);
-  document.getElementById("swr-current-liquid").textContent = fmt(gRows[0]?.liquid || 0);
-  document.getElementById("swr-current-total").textContent = fmt(gRows[0]?.netWorth || 0);
+  // Raise/cut thresholds from today's row (always > and < current liquid respectively)
+  const todayRaise = todayRow?.upperGuard || 0;
+  const todayCut   = todayRow?.lowerGuard || 0;
+  document.getElementById("swr-raise-threshold").textContent = fmt(todayRaise);
+  document.getElementById("swr-cut-threshold").textContent   = fmt(todayCut);
   document.getElementById("swr-adjust-pct-raise").textContent = Math.round(adj * 100);
-  document.getElementById("swr-adjust-pct-cut").textContent = Math.round(adj * 100);
+  document.getElementById("swr-adjust-pct-cut").textContent   = Math.round(adj * 100);
 
-  // Count retired years where forecast exceeds guardrail
+  // Overrun count: retired years where expenses exceed SWR-allowed withdrawal
   const retiredRows = gRows.filter(r => r.retired);
-  const overruns = retiredRows.filter(r => r.swrOver).length;
+  const overruns    = retiredRows.filter(r => r.swrOver).length;
   document.getElementById("swr-overruns").textContent = `${overruns} / ${retiredRows.length}`;
 
   const statusEl = document.getElementById("swr-status");
@@ -2555,6 +2543,7 @@ function renderGuardrails(rows, lowRows, highRows) {
     statusEl.style.color = "#b91c1c";
   }
 
+  // Year-by-year table
   const tbody = document.querySelector("#guardrail-table tbody");
   tbody.innerHTML = "";
   gRows.forEach(r => {
@@ -2568,6 +2557,8 @@ function renderGuardrails(rows, lowRows, highRows) {
       <td>${r.s1Age}/${r.s2Age}</td>
       <td>${fmt(r.liquid)}</td>
       <td>${fmt(r.swrAllowed)}</td>
+      <td>${fmt(r.upperGuard)}</td>
+      <td>${fmt(r.lowerGuard)}</td>
       <td>${fmt(r.expenses)}</td>
       <td class="${r.swrHeadroom < 0 ? 'negative' : ''}">${fmt(r.swrHeadroom)}</td>
       <td>${status}</td>
@@ -2575,21 +2566,21 @@ function renderGuardrails(rows, lowRows, highRows) {
     tbody.appendChild(tr);
   });
 
-  // Chart
-  if (guardrailChart) guardrailChart.destroy();
-  const ctx = document.getElementById("guardrailChart").getContext("2d");
   const labels = gRows.map(r => r.year);
-  guardrailChart = new Chart(ctx, {
+
+  // Chart 1: SWR-allowed withdrawal vs forecasted expenses — spending context only
+  if (guardrailChart) guardrailChart.destroy();
+  guardrailChart = new Chart(document.getElementById("guardrailChart").getContext("2d"), {
     type: "line",
     data: {
       labels,
       datasets: [
         {
-          label: "SWR-Allowed Spend",
+          label: `SWR-Allowed Withdrawal (${s.swr}% of liquid)`,
           data: gRows.map(r => r.swrAllowed),
           borderColor: "#2563eb",
           backgroundColor: "rgba(37,99,235,0.10)",
-          borderWidth: 3,
+          borderWidth: 2.5,
           fill: true,
           tension: 0.2,
           pointRadius: 0,
@@ -2598,7 +2589,7 @@ function renderGuardrails(rows, lowRows, highRows) {
           label: "Forecasted Expenses",
           data: gRows.map(r => r.expenses),
           borderColor: "#ef4444",
-          backgroundColor: "rgba(239,68,68,0)",
+          backgroundColor: "rgba(0,0,0,0)",
           borderWidth: 2,
           fill: false,
           tension: 0.2,
@@ -2607,65 +2598,53 @@ function renderGuardrails(rows, lowRows, highRows) {
       ],
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
-        title: { display: true, text: `Guardrails @ ${state.settings.swr}% SWR (${state.settings.swrMethod})` },
-        tooltip: {
-          callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` }
-        },
+        title: { display: true, text: `SWR-Allowed Withdrawal vs Forecasted Expenses (${s.swr}% of liquid assets)` },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
       },
-      scales: { y: { ticks: { callback: v => fmt(v) } } }
+      scales: { y: { ticks: { callback: v => fmt(v) } } },
     }
   });
 
-  // Second chart: liquid assets vs dollar-value guardrail thresholds
+  // Chart 2: liquid asset forecast + per-year guardrail bands + expenses as own line
   if (guardrailLiquidChart) guardrailLiquidChart.destroy();
-  const ctx2 = document.getElementById("guardrailLiquidChart").getContext("2d");
-
-  // Flat horizontal guardrail lines — same fixed dollar values shown in the summary cards above.
-  // Upper guardrail = raiseThreshold (portfolio is large enough to raise spending).
-  // Lower guardrail = cutThreshold   (portfolio is too small, must cut spending).
-  const flatRaise = gRows.map(() => raiseThreshold);
-  const flatCut   = gRows.map(() => cutThreshold);
-
-  // Pessimistic/optimistic liquid from the low/high projection runs
   const lowLiquid  = (lowRows  || rows).map(r => r.liquid);
   const highLiquid = (highRows || rows).map(r => r.liquid);
   const midLiquid  = gRows.map(r => r.liquid);
 
-  guardrailLiquidChart = new Chart(ctx2, {
+  guardrailLiquidChart = new Chart(document.getElementById("guardrailLiquidChart").getContext("2d"), {
     type: "line",
     data: {
       labels,
       datasets: [
         {
-          label: `Upper Guardrail (raise spending +${s.swrAdjust || 10}%)`,
-          data: flatRaise,
+          label: `Upper Guardrail — raise spending +${Math.round(adj*100)}% (liquid ÷ ${1 - (s.swrLowerBand||20)/100})`,
+          data: gRows.map(r => r.upperGuard),
           borderColor: "#15803d",
           backgroundColor: "rgba(0,0,0,0)",
           borderWidth: 2,
           borderDash: [6, 3],
           fill: false,
-          tension: 0,
+          tension: 0.2,
           pointRadius: 0,
         },
         {
-          label: `Lower Guardrail (cut spending −${s.swrAdjust || 10}%)`,
-          data: flatCut,
+          label: `Lower Guardrail — cut spending −${Math.round(adj*100)}% (liquid ÷ ${1 + (s.swrUpperBand||20)/100})`,
+          data: gRows.map(r => r.lowerGuard),
           borderColor: "#b91c1c",
           backgroundColor: "rgba(0,0,0,0)",
           borderWidth: 2,
           borderDash: [6, 3],
           fill: false,
-          tension: 0,
+          tension: 0.2,
           pointRadius: 0,
         },
         {
           label: "Liquid Assets — Optimistic",
           data: highLiquid,
           borderColor: "rgba(16,185,129,0.7)",
-          backgroundColor: "rgba(16,185,129,0.08)",
+          backgroundColor: "rgba(0,0,0,0)",
           borderWidth: 1,
           borderDash: [3, 3],
           fill: false,
@@ -2693,51 +2672,55 @@ function renderGuardrails(rows, lowRows, highRows) {
           tension: 0.2,
           pointRadius: 0,
         },
+        {
+          label: "Forecasted Expenses",
+          data: gRows.map(r => r.expenses),
+          borderColor: "#f59e0b",
+          backgroundColor: "rgba(0,0,0,0)",
+          borderWidth: 1.5,
+          borderDash: [2, 4],
+          fill: false,
+          tension: 0.2,
+          pointRadius: 0,
+        },
       ],
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
-        title: { display: true, text: "Liquid Asset Portfolio vs. Spending-Adjustment Thresholds" },
+        title: { display: true, text: "Liquid Asset Forecast vs. Guardrail Bands (guardrails track the portfolio — no expense connection)" },
         tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
       },
       scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: false } },
     }
   });
 
-  // Crossing analysis — only check retired years
+  // Crossing analysis: when does mid-case liquid cross a guardrail band?
   const crossings = [];
-  let prevCutBelow = null;
+  let prevCutBelow   = null;
   let prevRaiseAbove = null;
-  gRows.forEach((r, i) => {
+  gRows.forEach(r => {
     if (!r.retired) { prevCutBelow = null; prevRaiseAbove = null; return; }
-    const liq = r.liquid;
-    const cut   = cutThreshold;
-    const raise = raiseThreshold;
-    const nowCutBelow    = liq < cut;
-    const nowRaiseAbove  = liq > raise;
-    if (prevCutBelow === false && nowCutBelow) {
-      crossings.push({ year: r.year, s1Age: r.s1Age, s2Age: r.s2Age, type: "cut",
-        msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets (${fmt(liq)}) fall below the cut threshold (${fmt(cut)}) — reduce spending by ${s.swrAdjust || 10}%.` });
-    } else if (prevCutBelow === true && !nowCutBelow) {
-      crossings.push({ year: r.year, s1Age: r.s1Age, s2Age: r.s2Age, type: "recover",
-        msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets (${fmt(liq)}) recover above the cut threshold (${fmt(cut)}).` });
-    }
-    if (prevRaiseAbove === false && nowRaiseAbove) {
-      crossings.push({ year: r.year, s1Age: r.s1Age, s2Age: r.s2Age, type: "raise",
-        msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets (${fmt(liq)}) rise above the raise threshold (${fmt(raise)}) — you can increase spending by ${s.swrAdjust || 10}%.` });
-    } else if (prevRaiseAbove === true && !nowRaiseAbove) {
-      crossings.push({ year: r.year, s1Age: r.s1Age, s2Age: r.s2Age, type: "drop_raise",
-        msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets (${fmt(liq)}) drop back below the raise threshold (${fmt(raise)}).` });
-    }
+    const liq   = r.liquid;
+    const cut   = r.lowerGuard;
+    const raise = r.upperGuard;
+    const nowCutBelow   = liq < cut;
+    const nowRaiseAbove = liq > raise;
+    if (prevCutBelow === false && nowCutBelow)
+      crossings.push({ type: "cut",        msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets ${fmt(liq)} fall below Lower Guardrail ${fmt(cut)} — reduce spending by ${Math.round(adj*100)}%.` });
+    else if (prevCutBelow === true && !nowCutBelow)
+      crossings.push({ type: "recover",    msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets ${fmt(liq)} recover above Lower Guardrail ${fmt(cut)}.` });
+    if (prevRaiseAbove === false && nowRaiseAbove)
+      crossings.push({ type: "raise",      msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets ${fmt(liq)} rise above Upper Guardrail ${fmt(raise)} — you can increase spending by ${Math.round(adj*100)}%.` });
+    else if (prevRaiseAbove === true && !nowRaiseAbove)
+      crossings.push({ type: "drop_raise", msg: `${r.year} (ages ${r.s1Age}/${r.s2Age}): Liquid assets ${fmt(liq)} drop back below Upper Guardrail ${fmt(raise)}.` });
     prevCutBelow   = nowCutBelow;
     prevRaiseAbove = nowRaiseAbove;
   });
 
   const crossingsEl = document.getElementById("guardrail-crossings");
   if (crossings.length === 0) {
-    crossingsEl.innerHTML = `<span style="color:#15803d;">&#10003; No guardrail crossings forecast — your projected liquid assets stay within the spending-adjustment bands throughout retirement.</span>`;
+    crossingsEl.innerHTML = `<span style="color:#15803d;">&#10003; No guardrail crossings forecast — liquid assets stay within both bands throughout retirement.</span>`;
   } else {
     const colorOf = t => t === "cut" ? "#b91c1c" : t === "raise" ? "#15803d" : "#64748b";
     const iconOf  = t => t === "cut" ? "&#8595; CUT" : t === "raise" ? "&#8593; RAISE" : "&#8644;";
