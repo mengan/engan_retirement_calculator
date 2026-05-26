@@ -1265,6 +1265,66 @@ function project(opts) {
       }
     });
 
+    // --- Future property purchases ---
+    (state.futurePurchases || []).forEach(fp => {
+      if (fp.purchaseYear !== year || fp._purchased) return;
+      const purchasePrice = fp.purchasePrice || 0;
+      const downPmt = fp.fundingType === "mortgage" ? (fp.downPayment || 0) : purchasePrice;
+      const loanAmt = fp.fundingType === "mortgage" ? Math.max(0, purchasePrice - downPmt) : 0;
+      // Deduct down payment / full purchase price from taxable account
+      let remaining = downPmt;
+      for (let i = 0; i < accounts.length && remaining > 0; i++) {
+        if (accounts[i].type !== "taxable") continue;
+        const drawn = Math.min(accounts[i].balance, remaining);
+        // Realize proportional gain on the withdrawn amount
+        const gainRatio = accounts[i].balance > 0 ? (accounts[i].balance - (accounts[i].basis || 0)) / accounts[i].balance : 0;
+        saleGain += drawn * Math.max(0, gainRatio);
+        accounts[i].balance -= drawn;
+        accounts[i].basis   = Math.max(0, (accounts[i].basis || 0) - drawn * (1 - gainRatio));
+        remaining -= drawn;
+      }
+      // Compute monthly mortgage payment (30-yr amortization default)
+      let monthlyPmt = 0;
+      let loanPayoffYear = 0;
+      if (loanAmt > 0) {
+        const rate = (fp.mortgageRate || 6.5) / 100 / 12;
+        const n    = (fp.mortgageTerm || 30) * 12;
+        monthlyPmt = rate > 0 ? loanAmt * rate / (1 - Math.pow(1 + rate, -n)) : loanAmt / n;
+        loanPayoffYear = year + (fp.mortgageTerm || 30);
+      }
+      const newProp = {
+        id: uid(),
+        name: fp.name || "Future Property",
+        type: fp.propType || "primary",
+        value: purchasePrice,
+        loanBalance: loanAmt,
+        payment: monthlyPmt,
+        escrow: fp.escrow || 0,
+        interestRate: fp.mortgageRate || 6.5,
+        loanPayoffYear,
+        loanPayoffMonth: 12,
+        isRental: fp.isRental || false,
+        rent: fp.rent || 0,
+        rentGrowth: fp.rentGrowth || 3,
+        basis: fp.basis || purchasePrice,
+        sellYear: fp.sellYear || 0,
+        yearsDepreciated: 0,
+        taxablePct: fp.taxablePct ?? 30,
+        sold: false,
+        accumDepreciation: 0,
+      };
+      properties.push(newProp);
+      fp._purchased = true;
+      // In purchase year, run mortgage payment accounting for the partial year
+      if (loanAmt > 0) {
+        const pmt = monthlyPmt * 12 * frac;
+        if (newProp.isRental) rentalMortgagePayments += pmt;
+        else mortgagePayments += pmt;
+        const interest = loanAmt * (fp.mortgageRate || 6.5) / 100 * frac;
+        newProp.loanBalance = Math.max(0, loanAmt - Math.max(0, pmt - interest));
+      }
+    });
+
     // --- Expenses ---
     // Pre-retirement multiplier applies until the first spouse retires
     const firstRetireYear = s.hasSpouse2 ? Math.min(s.s1.retireYear, s.s2.retireYear) : s.s1.retireYear;
