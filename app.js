@@ -651,6 +651,10 @@ function renderProperties() {
             <option value="true" ${p.isRental?'selected':''}>Yes</option>
           </select>
         </label>
+        <label>Planned Sale Year (0 = never)
+          <input type="number" min="0" value="${p.sellYear || 0}" data-field="sellYear"/>
+          <small>${p.type === 'primary' ? 'Primary residence sale applies $500k capital gains exclusion (MFJ) on net gain.' : 'Sale proceeds (value − loan balance) deposited to taxable account.'}</small>
+        </label>
       </div>
       <div class="rental-fields">
         <h4>Rental Details</h4>
