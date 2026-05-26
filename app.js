@@ -3999,6 +3999,7 @@ function fullRender() {
   renderPlanToAge();
   renderAccounts();
   renderProperties();
+  renderFuturePurchases();
   renderWithdrawalsTab();
   renderGuardrailsControls();
   recalc();
