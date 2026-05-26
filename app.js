@@ -2702,8 +2702,8 @@ function renderGuardrails(rows, lowRows, highRows) {
   gRows.forEach(r => {
     if (!r.retired) { prevCutBelow = null; prevRaiseAbove = null; return; }
     const liq   = r.liquid;
-    const cut   = r.lowerGuard;
-    const raise = r.upperGuard;
+    const cut   = todayCut;
+    const raise = todayRaise;
     const nowCutBelow   = liq < cut;
     const nowRaiseAbove = liq > raise;
     if (prevCutBelow === false && nowCutBelow)
