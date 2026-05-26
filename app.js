@@ -2303,7 +2303,7 @@ function recalc() {
     const inflows = (r.salary1 || 0) + (r.salary2 || 0)
       + (r.grossSS || 0) + (r.rentalNet || 0) + (r.dividendIncome || 0)
       + (r.saleProceeds || 0) + (r.traditionalRMD || 0)
-      + (r.inheritedRMD || 0) + (r.inheritedBracketDrain || 0);
+      + (r.inheritedRMD || 0) + (r.inheritedBracketDrain || 0) + (r.inheritedSpendWD || 0);
     const outflows = (r.expenses || 0) + (r.ordinaryTax || 0) + (r.ltcgTax || 0);
     const brokerageNetFlow = inflows - outflows;
     cumBrokerageFlow += brokerageNetFlow;
