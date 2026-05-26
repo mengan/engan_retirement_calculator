@@ -1278,6 +1278,21 @@ function project(opts) {
       recurringExpThisYear += (ex.inflate ? annual * cumInfl : annual) * frac;
     });
 
+    // Healthcare pre-Medicare costs
+    const hc = state.expenses.healthcare || {};
+    if (hc.enabled) {
+      const s1MedicareYear = s.currentYear + (65 - s.s1.age);
+      if (year >= s.s1.retireYear && year <= s1MedicareYear) {
+        recurringExpThisYear += (hc.s1Monthly || 0) * 12 * frac;
+      }
+      if (s.hasSpouse2) {
+        const s2MedicareYear = s.currentYear + (65 - s.s2.age);
+        if (year >= s.s2.retireYear && year <= s2MedicareYear) {
+          recurringExpThisYear += (hc.s2Monthly || 0) * 12 * frac;
+        }
+      }
+    }
+
     const totalExpenses = baseExp + largeExpThisYear + recurringExpThisYear + mortgagePayments;
 
     // --- Account growth + contributions ---
