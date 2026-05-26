@@ -1116,6 +1116,8 @@ function project(opts) {
     const annualDepr = (p.basis || 0) * 0.8 / 27.5;
     return { ...p, sold: false, accumDepreciation: annualDepr * (p.yearsDepreciated || 0) };
   });
+  // Reset future-purchase injection flags so each project() run starts clean
+  (state.futurePurchases || []).forEach(fp => { fp._purchased = false; });
 
   const rows = [];
   let cumInfl = 1;  // cumulative inflation factor (1 at start)
