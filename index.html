@@ -780,6 +780,11 @@
         Start only after Inherited IRA is depleted
         <small style="margin:0;">Overrides Start Year — conversions wait while inherited IRA still has balance.</small>
       </label>
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="rc-skip-sale-year" style="width:auto;"/>
+        Skip conversion in any year a property is sold
+        <small style="margin:0;">Avoids stacking a Roth conversion on top of a large capital gain, which can push gains into the 20% LTCG bracket.</small>
+      </label>
       <label>Start conversions
         <select id="rc-start-mode">
           <option value="both_retired">After both spouses retire</option>
