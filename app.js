@@ -3281,6 +3281,10 @@ function wireWithdrawalsTab() {
     state.settings.rothConv.startAfterInheritedDepleted = e.target.checked;
     saveState(); recalc();
   });
+  document.getElementById("rc-skip-sale-year").addEventListener("change", (e) => {
+    state.settings.rothConv.skipConversionOnSaleYear = e.target.checked;
+    saveState(); recalc();
+  });
 
   ["ii-strategy", "ii-split-pct"].forEach(id => {
     document.getElementById(id).addEventListener("change", (e) => {
