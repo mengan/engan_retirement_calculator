@@ -217,6 +217,11 @@ function migrate(s) {
   if (!Array.isArray(s.expenses.phases) || s.expenses.phases.length !== 3)
     s.expenses.phases = d.expenses.phases;
   if (!Array.isArray(s.expenses.large)) s.expenses.large = [];
+  // Migrate healthcare section
+  if (!s.expenses.healthcare) s.expenses.healthcare = { enabled: false, s1Monthly: 800, s2Monthly: 700 };
+  // Migrate planToAge for life expectancy slider
+  if (s.settings.s1 && !s.settings.s1.planToAge) s.settings.s1.planToAge = 90;
+  if (s.settings.s2 && !s.settings.s2.planToAge) s.settings.s2.planToAge = 90;
   if (!Array.isArray(s.accounts)) s.accounts = d.accounts;
   if (!Array.isArray(s.properties)) s.properties = d.properties;
   return s;
