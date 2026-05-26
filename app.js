@@ -2415,11 +2415,12 @@ function drawGapWithdrawalBreakdown(rows) {
 function drawExpenseBreakdown(rows) {
   if (gapWithdrawalChart) gapWithdrawalChart.destroy();
   if (taxableBrokerageFlowChart) taxableBrokerageFlowChart.destroy();
-  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  const dr = deflateRows(rows, summaryRealMode);
+  const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
   // Net flow to/from taxable brokerage each year.
   // Positive = surplus deposited (inflows beat outflows that year).
   // Negative = deficit drawn (outflows exceed inflows, brokerage fills the gap).
-  const netFlow = rows.map(r => {
+  const netFlow = dr.map(r => {
     const inflows = (r.salary1 || 0) + (r.salary2 || 0)
       + (r.grossSS || 0)
       + (r.rentalNet || 0)
