@@ -715,6 +715,137 @@ document.getElementById("add-property").addEventListener("click", () => {
   saveState(); renderProperties(); recalc();
 });
 
+// ===== Future Property Purchases =====
+function calcMonthlyPayment(loanAmt, ratePct, termYrs) {
+  if (loanAmt <= 0) return 0;
+  const rate = ratePct / 100 / 12;
+  const n    = termYrs * 12;
+  return rate > 0 ? loanAmt * rate / (1 - Math.pow(1 + rate, -n)) : loanAmt / n;
+}
+
+function renderFuturePurchases() {
+  const container = document.getElementById("future-purchases-container");
+  container.innerHTML = "";
+  (state.futurePurchases || []).forEach(fp => {
+    const isMortgage = fp.fundingType === "mortgage";
+    const loanAmt    = isMortgage ? Math.max(0, (fp.purchasePrice||0) - (fp.downPayment||0)) : 0;
+    const monthlyPmt = isMortgage ? calcMonthlyPayment(loanAmt, fp.mortgageRate||6.5, fp.mortgageTerm||30) : 0;
+    const div = document.createElement("div");
+    div.className = "property-card" + (fp.isRental ? " is-rental" : "");
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3>${fp.name || "Future Purchase"} <span style="font-size:13px;color:#64748b;font-weight:normal;">(planned ${fp.purchaseYear||'?'})</span></h3>
+        <button class="small danger" data-action="del">Delete</button>
+      </div>
+      <div class="grid-2">
+        <label>Property Name <input type="text" value="${fp.name||''}" data-field="name"/></label>
+        <label>Purchase Year <input type="number" min="2024" max="2100" value="${fp.purchaseYear||''}" data-field="purchaseYear"/></label>
+        <label>Property Type
+          <select data-field="propType">
+            <option value="primary"    ${(fp.propType||'primary')==='primary'    ?'selected':''}>Primary Residence</option>
+            <option value="investment" ${fp.propType==='investment'?'selected':''}>Investment / Rental</option>
+            <option value="secondary"  ${fp.propType==='secondary' ?'selected':''}>Second Home / Vacation</option>
+          </select>
+        </label>
+        <label>Purchase Price ($) <input type="number" value="${fp.purchasePrice||0}" data-field="purchasePrice"/></label>
+        <label>Funding
+          <select data-field="fundingType">
+            <option value="cash"     ${(fp.fundingType||'cash')==='cash'    ?'selected':''}>All Cash (from taxable account)</option>
+            <option value="mortgage" ${fp.fundingType==='mortgage'?'selected':''}>Mortgage</option>
+          </select>
+        </label>
+        <label>Treat as Rental?
+          <select data-field="isRental">
+            <option value="false" ${!fp.isRental?'selected':''}>No</option>
+            <option value="true"  ${fp.isRental ?'selected':''}>Yes</option>
+          </select>
+        </label>
+        <label>Planned Sale Year (0 = never) <input type="number" min="0" value="${fp.sellYear||0}" data-field="sellYear"/></label>
+      </div>
+      <div class="future-mortgage-fields" style="${isMortgage?'':'display:none'}">
+        <h4>Mortgage Details</h4>
+        <div class="grid-2">
+          <label>Down Payment ($)
+            <input type="number" value="${fp.downPayment||0}" data-field="downPayment"/>
+          </label>
+          <label>Interest Rate (%)
+            <input type="number" step="0.01" value="${fp.mortgageRate||6.5}" data-field="mortgageRate"/>
+          </label>
+          <label>Term (years)
+            <input type="number" min="1" max="30" value="${fp.mortgageTerm||30}" data-field="mortgageTerm"/>
+          </label>
+          <label>Est. Monthly Payment (P&amp;I)
+            <input type="number" value="${Math.round(monthlyPmt)}" readonly style="background:#f8fafc;color:#64748b;"/>
+            <small>Loan amount: ${fmt(loanAmt)} — auto-computed from price, down payment, rate, and term.</small>
+          </label>
+          <label>Monthly Escrow ($)
+            <input type="number" value="${fp.escrow||0}" data-field="escrow"/>
+            <small>Taxes + insurance. Included in total payment shown on expenses.</small>
+          </label>
+        </div>
+      </div>
+      <div class="rental-fields">
+        <h4>Rental Details</h4>
+        <div class="grid-2">
+          <label>Starting Monthly Rent ($) <input type="number" value="${fp.rent||0}" data-field="rent"/></label>
+          <label>Cost Basis ($)
+            <input type="number" value="${fp.basis||0}" data-field="basis"/>
+            <small>Defaults to purchase price if left 0.</small>
+          </label>
+          <label>% of Rent That's Taxable
+            <input type="number" step="1" min="0" max="100" value="${fp.taxablePct??30}" data-field="taxablePct"/>
+            <small>Default 30% (70% offset by expenses/depreciation).</small>
+          </label>
+        </div>
+      </div>
+    `;
+    div.querySelectorAll("input:not([readonly]), select").forEach(inp => {
+      inp.addEventListener("change", () => {
+        const f = inp.dataset.field;
+        if (!f) return;
+        if (f === "name")        fp.name = inp.value;
+        else if (f === "fundingType") {
+          fp.fundingType = inp.value;
+          div.querySelector(".future-mortgage-fields").style.display = fp.fundingType === "mortgage" ? "" : "none";
+        }
+        else if (f === "propType")    fp.propType = inp.value;
+        else if (f === "isRental") {
+          fp.isRental = inp.value === "true";
+          div.classList.toggle("is-rental", fp.isRental);
+        }
+        else fp[f] = parseFloat(inp.value) || 0;
+        // Recompute estimated monthly payment display
+        if (["purchasePrice","downPayment","mortgageRate","mortgageTerm"].includes(f)) {
+          const la = Math.max(0, (fp.purchasePrice||0) - (fp.downPayment||0));
+          const mp = fp.fundingType === "mortgage" ? calcMonthlyPayment(la, fp.mortgageRate||6.5, fp.mortgageTerm||30) : 0;
+          div.querySelector("[data-field='downPayment']")?.closest(".future-mortgage-fields")
+            ?.querySelectorAll("input[readonly]").forEach(el => { el.value = Math.round(mp); });
+        }
+        saveState(); recalc();
+      });
+    });
+    div.querySelector("[data-action='del']").addEventListener("click", () => {
+      state.futurePurchases = (state.futurePurchases || []).filter(x => x.id !== fp.id);
+      saveState(); renderFuturePurchases(); recalc();
+    });
+    container.appendChild(div);
+  });
+}
+
+document.getElementById("add-future-purchase").addEventListener("click", () => {
+  if (!state.futurePurchases) state.futurePurchases = [];
+  const nextYear = (state.settings.currentYear || new Date().getFullYear()) + 5;
+  state.futurePurchases.push({
+    id: uid(), name: "Future Property", purchaseYear: nextYear,
+    propType: "primary", purchasePrice: 500000,
+    fundingType: "cash", downPayment: 100000,
+    mortgageRate: 6.5, mortgageTerm: 30, escrow: 0,
+    isRental: false, rent: 0, rentGrowth: 3, basis: 0,
+    sellYear: 0, taxablePct: 30,
+  });
+  saveState(); renderFuturePurchases(); recalc();
+});
+
 // ===== Header Actions =====
 document.getElementById("reset-btn").addEventListener("click", () => {
   if (!confirm("Reset all data to defaults?")) return;
