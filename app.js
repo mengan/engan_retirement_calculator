@@ -2750,25 +2750,46 @@ function renderGuardrails(rows, lowRows, highRows) {
     statusEl.style.color = "#b91c1c";
   }
 
-  // Year-by-year table
+  // Year-by-year table — guardrail columns use static thresholds to match Chart 2
   const tbody = document.querySelector("#guardrail-table tbody");
   tbody.innerHTML = "";
   gRows.forEach(r => {
     const tr = document.createElement("tr");
-    if (r.swrOver && r.retired) tr.style.background = "#fee2e2";
-    const status = r.swrOver
-      ? `<span style="color:#b91c1c;">OVER by ${fmt(-r.swrHeadroom)}</span>`
-      : `<span style="color:#15803d;">OK</span>`;
+    const liq = r.liquid;
+    const aboveRaise = r.retired && liq > todayRaise;
+    const belowCut   = r.retired && liq < todayCut;
+    const inBand     = r.retired && !aboveRaise && !belowCut;
+
+    if (belowCut)   tr.style.background = "#fee2e2";
+    else if (aboveRaise) tr.style.background = "#dcfce7";
+
+    let guardrailStatus;
+    if (!r.retired) {
+      guardrailStatus = `<span style="color:#94a3b8;">Pre-retirement</span>`;
+    } else if (aboveRaise) {
+      guardrailStatus = `<span style="color:#15803d;font-weight:600;">▲ Above upper — consider raising spending</span>`;
+    } else if (belowCut) {
+      guardrailStatus = `<span style="color:#b91c1c;font-weight:600;">▼ Below lower — reduce spending</span>`;
+    } else {
+      guardrailStatus = `<span style="color:#2563eb;">✓ In band</span>`;
+    }
+
+    const swrStatus = !r.retired
+      ? `<span style="color:#94a3b8;">—</span>`
+      : r.swrOver
+        ? `<span style="color:#b91c1c;">Over by ${fmt(-r.swrHeadroom)}</span>`
+        : `<span style="color:#15803d;">OK (${fmt(r.swrHeadroom)} headroom)</span>`;
+
     tr.innerHTML = `
       <td>${r.year}</td>
-      <td>${r.s1Age}/${r.s2Age}</td>
-      <td>${fmt(r.liquid)}</td>
+      <td>${r.s1Age}${r.s2Age ? '/'+r.s2Age : ''}</td>
+      <td><strong>${fmt(liq)}</strong></td>
+      <td style="color:#b91c1c">${fmt(todayCut)}</td>
+      <td style="color:#15803d">${fmt(todayRaise)}</td>
+      <td>${guardrailStatus}</td>
       <td>${fmt(r.swrAllowed)}</td>
-      <td>${fmt(r.upperGuard)}</td>
-      <td>${fmt(r.lowerGuard)}</td>
       <td>${fmt(r.expenses)}</td>
-      <td class="${r.swrHeadroom < 0 ? 'negative' : ''}">${fmt(r.swrHeadroom)}</td>
-      <td>${status}</td>
+      <td>${swrStatus}</td>
     `;
     tbody.appendChild(tr);
   });
