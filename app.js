@@ -165,6 +165,7 @@ function migrate(s) {
   // If existing state has manual years but no mode, default to manual to preserve them
   if (s.settings.rothConv.startMode == null) s.settings.rothConv.startMode = "manual";
   if (s.settings.rothConv.endMode   == null) s.settings.rothConv.endMode   = "manual";
+  if (s.settings.rothConv.skipConversionOnSaleYear == null) s.settings.rothConv.skipConversionOnSaleYear = true;
   // Default retireMonth to 1 for existing state without it
   if (s.settings.s1 && s.settings.s1.retireMonth == null) s.settings.s1.retireMonth = 1;
   if (s.settings.s2 && s.settings.s2.retireMonth == null) s.settings.s2.retireMonth = 1;
