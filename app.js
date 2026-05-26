@@ -68,6 +68,7 @@ const defaultState = () => ({
       // When true, conversions are suppressed in any year inherited IRA still has balance,
       // so they "kick in" the year the inherited IRA goes to zero (overrides startYear).
       startAfterInheritedDepleted: true,
+      skipConversionOnSaleYear: true,
     },
     // Inherited IRA strategy (10-year drain rule)
     inheritedIra: {
