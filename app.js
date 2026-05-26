@@ -2351,7 +2351,8 @@ function drawIncomeBreakdown(rows) {
 
 function drawRothConversions(rows) {
   if (rothConversionChart) rothConversionChart.destroy();
-  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  const dr = deflateRows(rows, summaryRealMode);
+  const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
   rothConversionChart = new Chart(
     document.getElementById("rothConversionChart").getContext("2d"),
     {
@@ -2359,7 +2360,7 @@ function drawRothConversions(rows) {
       data: {
         labels,
         datasets: [
-          { label: "Roth Conversion", data: rows.map(r => r.rothConverted || 0), backgroundColor: "#7c3aed" },
+          { label: "Roth Conversion", data: dr.map(r => r.rothConverted || 0), backgroundColor: "#7c3aed" },
         ],
       },
       options: {
