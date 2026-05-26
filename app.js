@@ -2468,54 +2468,34 @@ let guardrailChart, guardrailLiquidChart;
 function computeGuardrails(rows) {
   const s = state.settings;
   const swr = (s.swr || 3.5) / 100;
-  const method = s.swrMethod || "dynamic";
   const includeRE = s.swrIncludeRealEstate || false;
+  const upperBandMult = 1 + (s.swrUpperBand || 20) / 100;
+  const lowerBandMult = 1 - (s.swrLowerBand || 20) / 100;
 
   const effectiveLiquid = r => r.liquid + (includeRE ? (r.rentalEquity || 0) : 0);
 
-  // Find the retirement-start row to anchor static & GK methods
+  // Retirement anchor for summary cards
   const olderRetire = s.hasSpouse2 ? Math.max(s.s1.retireYear, s.s2.retireYear) : s.s1.retireYear;
   const retireRow = rows.find(r => r.year >= olderRetire) || rows[0];
   const initialLiquid = retireRow ? effectiveLiquid(retireRow) : 0;
   const initialAllowedNominal = initialLiquid * swr;
-  const retireIdx = rows.indexOf(retireRow);
 
-  // Inflation factor relative to retirement year for static method
-  const midInflG = ((s.defaultInflationLow || 0) + (s.defaultInflationHigh || 0)) / 2;
-  const inflFactor = (1 + (midInflG || 3) / 100);
-
-  // Pre-compute cumulative inflation by year index relative to retirement
-  const guardrailRows = rows.map((r, i) => {
+  // Each year: SWR-allowed = liquid × swr (pure portfolio-based, no expense connection).
+  // Upper guardrail (raise band) = liquid / lowerBandMult  — always > liquid.
+  // Lower guardrail (cut band)   = liquid / upperBandMult  — always < liquid.
+  // swrOver flags when expenses exceed the SWR-allowed amount (spending check only).
+  const guardrailRows = rows.map(r => {
     const effLiq = effectiveLiquid(r);
-    let allowed;
-    if (method === "static") {
-      if (i < retireIdx) {
-        allowed = effLiq * swr;
-      } else {
-        const yearsSinceRetire = i - retireIdx;
-        allowed = initialAllowedNominal * Math.pow(inflFactor, yearsSinceRetire);
-      }
-    } else if (method === "guyton_klinger") {
-      const dyn = effLiq * swr;
-      const currentWR = effLiq > 0 ? r.expenses / effLiq : 0;
-      const upper = swr * (1 + (s.swrUpperBand || 20) / 100);
-      const lower = swr * (1 - (s.swrLowerBand || 20) / 100);
-      const adj = (s.swrAdjust || 10) / 100;
-      if (currentWR > upper) {
-        allowed = r.expenses * (1 - adj);
-      } else if (currentWR < lower && r.retired) {
-        allowed = r.expenses * (1 + adj);
-      } else {
-        allowed = dyn;
-      }
-    } else {
-      allowed = effLiq * swr;
-    }
-    const headroom = allowed - r.expenses;
+    const swrAllowed  = effLiq * swr;
+    const upperGuard  = lowerBandMult > 0 ? effLiq / lowerBandMult : 0; // raise threshold
+    const lowerGuard  = upperBandMult > 0 ? effLiq / upperBandMult : 0; // cut threshold
+    const headroom    = swrAllowed - r.expenses;
     return {
       ...r,
       effLiquid: effLiq,
-      swrAllowed: allowed,
+      swrAllowed,
+      upperGuard,
+      lowerGuard,
       swrHeadroom: headroom,
       swrOver: headroom < 0,
     };
