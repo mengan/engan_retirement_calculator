@@ -2286,7 +2286,7 @@ function drawCharts(rows, lowRows, highRows) {
   });
 
   const ctx1b = document.getElementById("liquidBreakdownChart").getContext("2d");
-  const pick = t => rows.map(r => (r.balancesByType && r.balancesByType[t]) || 0);
+  const pick = t => dRows.map(r => (r.balancesByType && r.balancesByType[t]) || 0);
   liquidBreakdownChart = new Chart(ctx1b, {
     type: "line",
     data: {
