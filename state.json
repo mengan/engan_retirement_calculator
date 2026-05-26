@@ -74,9 +74,12 @@
     "swrUpperBand": 20,
     "swrLowerBand": 20,
     "swrAdjust": 10,
+    "swrIncludeRealEstate": false,
     "rothConv": {
       "strategy": "fill_12",
+      "startMode": "both_retired",
       "startYear": 2028,
+      "endMode": "first_ss",
       "endYear": 2041,
       "customAmount": 0,
       "startAfterInheritedDepleted": true
@@ -87,6 +90,7 @@
       "capAtBracketFill": false,
       "_capMigrated": true
     },
+    "hasSpouse2": true,
     "s1": {
       "name": "mike",
       "age": 50,
@@ -95,10 +99,11 @@
       "retireYear": 2027,
       "contrib": 10001,
       "ssAge": 70,
-      "ssAmt": 37407.758811428575,
+      "ssAmt": 45254.88411428571,
       "ssEstEarnings": 120000,
       "ssEstYears": 26,
-      "ssOverride": 0
+      "ssOverride": 0,
+      "retireMonth": 1
     },
     "s2": {
       "name": "juliet ",
@@ -108,10 +113,11 @@
       "retireYear": 2028,
       "contrib": 20000,
       "ssAge": 63,
-      "ssAmt": 19602.65828571429,
+      "ssAmt": 23095.018971428573,
       "ssEstEarnings": 90000,
       "ssEstYears": 25,
-      "ssOverride": 0
+      "ssOverride": 0,
+      "retireMonth": 1
     },
     "defaultReturn": 6,
     "defaultInflation": 3
@@ -400,5 +406,6 @@
       "yearsDepreciated": 0
     }
   ],
-  "version": 2
+  "version": 2,
+  "_ssOverrideMigrated": true
 }
