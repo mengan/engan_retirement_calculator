@@ -1757,7 +1757,8 @@ function drawAccountBalances(rows) {
 
 function drawTaxByBracket(rows) {
   if (taxByBracketChart) taxByBracketChart.destroy();
-  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  const dr = deflateRows(rows, summaryRealMode);
+  const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
   const ordBrackets  = state.settings.taxBrackets  || [];
   const ltcgBrackets = state.settings.ltcgBrackets || [];
 
