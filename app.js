@@ -1671,6 +1671,10 @@ let assetChart, liquidBreakdownChart, incomeBreakdownChart, rothConversionChart,
 let taxByBracketChart;
 let expenseByYearChart, expenseInflationChart, realEstateEquityChart, rentalIncomeChart, accountBalancesChart, accountTypeChart;
 
+// Module-level storage for last projection rows (for real/nominal toggle redraw)
+let lastRows = null, lastLowRows = null, lastHighRows = null;
+let summaryRealMode = false;
+
 function drawAccountTypeBalances(rows) {
   if (accountTypeChart) accountTypeChart.destroy();
   const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
