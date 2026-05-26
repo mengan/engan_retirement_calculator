@@ -2575,8 +2575,8 @@ function drawRothConversions(rows) {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           title: { display: true, text: [
-            "Annual Roth Conversions (not cash inflow — moves pretax → Roth; tax included in outflows)",
-            `Total converted: ${fmt(rows.reduce((s, r) => s + (r.rothConverted || 0), 0))}`,
+            `Annual Roth Conversions — Total: ${fmt(dr.reduce((s, r) => s + (r.rothConverted || 0), 0))}`,
+            "(not cash inflow — moves pretax → Roth; tax cost included in outflows)",
           ]},
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
         },
