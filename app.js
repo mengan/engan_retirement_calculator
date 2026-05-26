@@ -2057,11 +2057,15 @@ document.getElementById("sum-peak").textContent = fmt(peakLiquid);
   const s = state.settings;
   const lowRows  = project({ returnPct: s.defaultReturnLow,  inflationPct: s.defaultInflationHigh });
   const highRows = project({ returnPct: s.defaultReturnHigh, inflationPct: s.defaultInflationLow });
+  lastLowRows = lowRows; lastHighRows = highRows;
 
   const endLowEl  = document.getElementById("sum-end-low");
   const endHighEl = document.getElementById("sum-end-high");
   if (endLowEl)  endLowEl.textContent  = fmt(lowRows[lowRows.length - 1]?.netWorth || 0);
   if (endHighEl) endHighEl.textContent = fmt(highRows[highRows.length - 1]?.netWorth || 0);
+
+  // Savings Gap detection
+  renderSavingsGap(rows);
 
   drawCharts(rows, lowRows, highRows);
   drawIncomeBreakdown(rows);
