@@ -2669,6 +2669,102 @@ function drawExpenseBreakdown(rows) {
   );
 }
 
+function drawTaxableBrokerageGrowth(rows) {
+  if (taxableBrokerageGrowthChart) taxableBrokerageGrowthChart.destroy();
+  const dr = deflateRows(rows, summaryRealMode);
+  const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+
+  // For each year compute: netFlow (same definition as brokerage flow chart),
+  // investmentGrowth = change in balance − netFlow.
+  // Year 0 has no prior balance to diff against so growth = 0 there.
+  const netFlowArr   = [];
+  const growthArr    = [];
+  const balanceArr   = [];
+
+  for (let i = 0; i < dr.length; i++) {
+    const r    = dr[i];
+    const bal  = (r.balancesByType && r.balancesByType.taxable) || 0;
+    const prev = i === 0 ? bal : (dr[i-1].balancesByType && dr[i-1].balancesByType.taxable) || 0;
+
+    const inflows = (r.salary1 || 0) + (r.salary2 || 0)
+      + (r.grossSS || 0) + (r.rentalNet || 0) + (r.dividendIncome || 0)
+      + (r.saleProceeds || 0) + (r.traditionalRMD || 0)
+      + (r.inheritedRMD || 0) + (r.inheritedBracketDrain || 0);
+    const outflows = (r.expenses || 0) + (r.ordinaryTax || 0) + (r.ltcgTax || 0);
+    const netFlow  = inflows - outflows;
+
+    const deltaBalance   = i === 0 ? 0 : bal - prev;
+    const investGrowth   = i === 0 ? 0 : deltaBalance - netFlow;
+
+    netFlowArr.push(netFlow);
+    growthArr.push(investGrowth);
+    balanceArr.push(bal);
+  }
+
+  const peakBal = Math.max(...balanceArr);
+
+  taxableBrokerageGrowthChart = new Chart(
+    document.getElementById("taxableBrokerageGrowthChart").getContext("2d"),
+    {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Investment Growth",
+            data: growthArr,
+            backgroundColor: "rgba(37,99,235,0.75)",
+            stack: "components",
+            order: 2,
+          },
+          {
+            label: "Net Cash Flow (gap in/out)",
+            data: netFlowArr,
+            backgroundColor: netFlowArr.map(v => v >= 0 ? "rgba(16,185,129,0.80)" : "rgba(239,68,68,0.80)"),
+            stack: "components",
+            order: 2,
+          },
+          {
+            label: "Taxable Balance",
+            data: balanceArr,
+            type: "line",
+            borderColor: "#1f3a5f",
+            backgroundColor: "rgba(0,0,0,0)",
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.2,
+            fill: false,
+            yAxisID: "yBalance",
+            order: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: `Taxable Brokerage Growth — Peak Balance: ${fmt(peakBal)}` },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+          legend: { display: true },
+        },
+        scales: {
+          x: { stacked: true },
+          y: {
+            stacked: true,
+            title: { display: true, text: "Annual Change ($)" },
+            ticks: { callback: v => fmt(v) },
+          },
+          yBalance: {
+            position: "right",
+            title: { display: true, text: "Total Balance ($)" },
+            ticks: { callback: v => fmt(v) },
+            grid: { drawOnChartArea: false },
+          },
+        },
+      },
+    }
+  );
+}
+
 // ===== Guardrails (SWR) tab =====
 let guardrailChart, guardrailLiquidChart;
 
