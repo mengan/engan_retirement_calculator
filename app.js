@@ -3315,6 +3315,122 @@ function renderSSTab() {
   }
   wire("s1", "ss1");
   if (state.settings.hasSpouse2) wire("s2", "ss2");
+
+  // Claiming Age Comparison table
+  renderSSClaimingComparison();
+}
+
+function renderSSClaimingComparison() {
+  const container = document.getElementById("ss-spouses");
+  if (!container) return;
+
+  // Remove old comparison if present
+  const old = container.querySelector(".ss-claim-comparison");
+  if (old) old.remove();
+
+  const s = state.settings;
+  const spouses = [
+    { sp: "s1", prefix: "ss1", label: s.s1.name || "Spouse 1" },
+  ];
+  if (s.hasSpouse2) spouses.push({ sp: "s2", prefix: "ss2", label: s.s2.name || "Spouse 2" });
+
+  const div = document.createElement("div");
+  div.className = "ss-claim-comparison";
+
+  const fieldset = document.createElement("fieldset");
+  fieldset.innerHTML = `<legend>Claiming Age Comparison — Impact on Total End-of-Plan Net Worth</legend>
+    <p class="muted" style="margin-top:0;">Runs the full projection for each possible claim age (62–70). Highlighted row = highest end net worth.</p>`;
+
+  const originalStrategy = s.rothConv.strategy;
+
+  spouses.forEach(({ sp, prefix, label }) => {
+    const spouseData = s[sp];
+    const currentYear = s.currentYear || 2026;
+    const retireYear = spouseData.retireYear || currentYear;
+    const yearsToRetire = Math.max(0, retireYear - currentYear);
+    const yearsSoFar = spouseData.ssEstYears || 20;
+    const totalYears = yearsSoFar + yearsToRetire;
+    const earnings = spouseData.ssEstEarnings || spouseData.salary;
+    const override = spouseData.ssOverride || 0;
+    const fraBenefit = override > 0 ? override * 12 : estimateFRABenefit(earnings, totalYears);
+    const fraAnnual = fraBenefit;
+    const fraMonthly = fraBenefit / 12;
+
+    const h3 = document.createElement("h4");
+    h3.textContent = label;
+    h3.style.marginBottom = "8px";
+    fieldset.appendChild(h3);
+
+    const results = [];
+    const origSsAge = spouseData.ssAge;
+    const origSsAmt = spouseData.ssAmt;
+
+    for (let claimAge = 62; claimAge <= 70; claimAge++) {
+      const factor = claimAgeFactor(claimAge);
+      const annualBenefit = fraAnnual * factor;
+      const monthlyBenefit = annualBenefit / 12;
+
+      // Breakeven age vs FRA (67)
+      let breakevenAge = null;
+      if (claimAge !== 67 && Math.abs(annualBenefit - fraAnnual) > 1) {
+        // benefit_X * (A - X) = benefit_67 * (A - 67)
+        // A(benefit_X - benefit_67) = benefit_67*67 - benefit_X*X
+        const num = fraAnnual * 67 - annualBenefit * claimAge;
+        const den = fraAnnual - annualBenefit;
+        if (Math.abs(den) > 1) breakevenAge = Math.round(num / den);
+      } else if (claimAge === 67) {
+        breakevenAge = 67;
+      }
+
+      // Temporarily override to run projection
+      spouseData.ssAge = claimAge;
+      spouseData.ssAmt = annualBenefit;
+      const projRows = project();
+      const endNW = projRows[projRows.length - 1]?.netWorth || 0;
+
+      results.push({ claimAge, annualBenefit, monthlyBenefit, breakevenAge, endNW });
+    }
+
+    // Restore
+    spouseData.ssAge = origSsAge;
+    spouseData.ssAmt = origSsAmt;
+
+    const bestEndNW = Math.max(...results.map(r => r.endNW));
+
+    const table = document.createElement("table");
+    table.innerHTML = `<thead><tr>
+      <th>Claim Age</th>
+      <th>Annual Benefit</th>
+      <th>Monthly Benefit</th>
+      <th>Breakeven Age vs FRA (67)</th>
+      <th>End Net Worth</th>
+    </tr></thead><tbody></tbody>`;
+    const tbody = table.querySelector("tbody");
+
+    results.forEach(res => {
+      const tr = document.createElement("tr");
+      if (res.claimAge === origSsAge) tr.style.background = "#dbeafe";
+      if (res.endNW === bestEndNW) {
+        tr.style.background = "#d1fae5";
+        tr.style.fontWeight = "600";
+      }
+      const breakevenStr = res.claimAge === 67 ? "—" : (res.breakevenAge ? `Age ${res.breakevenAge}` : "—");
+      tr.innerHTML = `
+        <td>${res.claimAge}${res.claimAge === origSsAge ? ' (current)' : ''}${res.endNW === bestEndNW ? ' ✓ best NW' : ''}</td>
+        <td>${fmt(res.annualBenefit)}</td>
+        <td>${fmt(res.monthlyBenefit)}</td>
+        <td>${breakevenStr}</td>
+        <td>${fmt(res.endNW)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    fieldset.appendChild(table);
+    fieldset.appendChild(document.createElement("br"));
+  });
+
+  div.appendChild(fieldset);
+  container.appendChild(div);
 }
 
 // ===== Initial Render =====
