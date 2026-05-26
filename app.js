@@ -2535,19 +2535,22 @@ function renderGuardrails(rows, lowRows, highRows) {
   document.getElementById("swr-today").textContent = fmt(todayAllowed) + "/yr";
   document.getElementById("swr-at-retire").textContent = fmt(initialAllowedNominal) + "/yr";
 
-  // Raise/cut thresholds based on current year's expenses and SWR
+  // Raise/cut thresholds anchored to current liquid assets × SWR rate.
+  // This guarantees: raiseThreshold > currentLiquid > cutThreshold always.
+  // Logic: your "initial withdrawal rate" is expenses/liquid. The bands ask:
+  //   at what portfolio size does that rate cross swr×upperBand (too high → cut)
+  //   or swr×lowerBand (too low → raise)?
+  // Anchoring to currentLiquid×swrRate as the spending baseline removes noise
+  // from single-year large expenses (one-time costs, pre-retirement outliers).
   const adj = (s.swrAdjust || 10) / 100;
   const upperBand = 1 + (s.swrUpperBand || 20) / 100;
   const lowerBand = 1 - (s.swrLowerBand || 20) / 100;
-  const currentExpenses = gRows[0]?.expenses || 0;
-  // Cut threshold: liquid below which expense/liquid ratio exceeds swr * upperBand
-  // expense / liquid > swr * upperBand  =>  liquid < expense / (swr * upperBand)
   const swrRate = (s.swr || 3.5) / 100;
-  const cutThreshold = swrRate * upperBand > 0 ? currentExpenses / (swrRate * upperBand) : 0;
-  // Raise threshold: the higher of (a) the formula level and (b) current liquid assets —
-  // spending increases only make sense once assets grow beyond where you are today.
   const currentLiquid = gRows[0]?.liquid || 0;
-  const raiseThreshold = swrRate * lowerBand > 0 ? currentExpenses / (swrRate * lowerBand) : 0;
+  // raiseThreshold = currentLiquid / lowerBand  (always > currentLiquid since lowerBand < 1)
+  // cutThreshold   = currentLiquid / upperBand  (always < currentLiquid since upperBand > 1)
+  const raiseThreshold = lowerBand > 0 ? currentLiquid / lowerBand : 0;
+  const cutThreshold   = upperBand > 0 ? currentLiquid / upperBand : 0;
   document.getElementById("swr-cut-threshold").textContent = fmt(cutThreshold);
   document.getElementById("swr-raise-threshold").textContent = fmt(raiseThreshold);
   document.getElementById("swr-current-liquid").textContent = fmt(gRows[0]?.liquid || 0);
