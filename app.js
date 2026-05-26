@@ -2524,7 +2524,7 @@ function computeGuardrails(rows) {
   return { rows: guardrailRows, initialAllowedNominal, initialLiquid, retireRow };
 }
 
-function renderGuardrails(rows) {
+function renderGuardrails(rows, lowRows, highRows) {
   const { rows: gRows, initialAllowedNominal, initialLiquid, retireRow } = computeGuardrails(rows);
   const s = state.settings;
 
