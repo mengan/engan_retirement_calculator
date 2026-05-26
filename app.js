@@ -225,6 +225,13 @@ function migrate(s) {
   if (s.settings.s2 && !s.settings.s2.planToAge) s.settings.s2.planToAge = 90;
   if (!Array.isArray(s.accounts)) s.accounts = d.accounts;
   if (!Array.isArray(s.properties)) s.properties = d.properties;
+  // Migrate: add sellYear to existing non-rental properties that don't have it
+  if (Array.isArray(s.properties)) {
+    s.properties.forEach(p => {
+      if (p.sellYear == null) p.sellYear = 0;
+    });
+  }
+  if (!Array.isArray(s.futurePurchases)) s.futurePurchases = [];
   return s;
 }
 
