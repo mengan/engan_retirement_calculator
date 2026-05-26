@@ -1755,9 +1755,8 @@ function project(opts) {
     }
 
     // Any inherited IRA withdrawn for spending/taxes beyond the mandatory RMD is still
-    // ordinary income — roll it into inheritedRMD so it appears in the inflows chart.
-    const inhSpendWD = (wSpend.byType["inherited_ira"] || 0) + (wTax.byType["inherited_ira"] || 0);
-    if (inhSpendWD > 0) inheritedRMD += inhSpendWD;
+    // ordinary income — track separately so the chart shows it without inflating inheritedRMD.
+    const inheritedSpendWD = (wSpend.byType["inherited_ira"] || 0) + (wTax.byType["inherited_ira"] || 0);
 
     // Merge withdrawal totals
     const withdrawnByType = {};
