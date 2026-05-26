@@ -3633,7 +3633,6 @@ function wireRealNominalToggle() {
         drawGapWithdrawalBreakdown(lastRows);
         drawExpenseBreakdown(lastRows);
         drawTaxByBracket(lastRows);
-        drawLiquidBreakdown(lastRows);
       }
     });
   });
