@@ -265,5 +265,6 @@ td input { max-width: 100%; }
 .property-card .grid-2 { grid-template-columns: repeat(2, 1fr); }
 .property-card .rental-fields { display: none; padding-top: 12px; border-top: 1px dashed #e5e7eb; margin-top: 12px; }
 .property-card.is-rental .rental-fields { display: block; }
+.property-card .future-mortgage-fields { padding-top: 12px; border-top: 1px dashed #e5e7eb; margin-top: 12px; }
 
 .muted { color: #64748b; font-size: 13px; }
