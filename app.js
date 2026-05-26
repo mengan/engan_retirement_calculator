@@ -3147,6 +3147,39 @@ async function runMonteCarlo() {
   document.getElementById("mc-p90").textContent     = fmt(endP90);
   document.getElementById("mc-bust").textContent    = medianBust || "—";
 
+  // Color-code the success rate card
+  const successCard = document.getElementById("mc-success").closest(".card");
+  if (successCard) {
+    if (successRate >= 85) {
+      successCard.style.borderLeft = "4px solid #15803d";
+    } else if (successRate >= 70) {
+      successCard.style.borderLeft = "4px solid #b45309";
+    } else {
+      successCard.style.borderLeft = "4px solid #dc2626";
+    }
+  }
+
+  // Collect retirement-year liquid values across all runs for sequence-of-returns cards
+  const firstRetireYear = state.settings.hasSpouse2
+    ? Math.min(state.settings.s1.retireYear, state.settings.s2.retireYear)
+    : state.settings.s1.retireYear;
+  const retireYearIdx = Math.max(0, firstRetireYear - startYear);
+  const retireLiquidArr = liquidMatrix[Math.min(retireYearIdx, numYears - 1)];
+  const retP10 = pct(retireLiquidArr, 0.10);
+  const retP50 = pct(retireLiquidArr, 0.50);
+  const retP90 = pct(retireLiquidArr, 0.90);
+
+  // Update retirement-year percentile cards
+  const retP10El = document.getElementById("mc-ret-p10");
+  const retP50El = document.getElementById("mc-ret-p50");
+  const retP90El = document.getElementById("mc-ret-p90");
+  if (retP10El) retP10El.textContent = fmt(retP10);
+  if (retP50El) retP50El.textContent = fmt(retP50);
+  if (retP90El) retP90El.textContent = fmt(retP90);
+
+  // Draw retirement histogram
+  drawMCRetirementHistogram(retireLiquidArr, firstRetireYear);
+
   if (mcChart) mcChart.destroy();
   const ctx = document.getElementById("mcChart").getContext("2d");
   mcChart = new Chart(ctx, {
