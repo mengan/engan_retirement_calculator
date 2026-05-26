@@ -2551,6 +2551,7 @@ function drawIncomeBreakdown(rows) {
           { label: "Traditional IRA / 401k RMD",  data: dr.map(r => r.traditionalRMD || 0),       backgroundColor: "#dc2626" },
           { label: "Inherited IRA RMD",            data: dr.map(r => r.inheritedRMD || 0),         backgroundColor: "#b45309" },
           { label: "Inherited IRA Bracket Fill",   data: dr.map(r => r.inheritedBracketDrain || 0), backgroundColor: "#c2410c" },
+          { label: "Inherited IRA (spending WD)",  data: dr.map(r => r.inheritedSpendWD || 0),      backgroundColor: "#92400e" },
         ],
       },
       options: {
