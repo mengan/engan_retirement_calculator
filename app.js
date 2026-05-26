@@ -2688,7 +2688,7 @@ function renderGuardrails(rows, lowRows, highRows) {
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        title: { display: true, text: "Liquid Asset Forecast vs. Guardrail Bands (guardrails track the portfolio — no expense connection)" },
+        title: { display: true, text: "Liquid Asset Forecast vs. Static Guardrail Thresholds" },
         tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
       },
       scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: false } },
