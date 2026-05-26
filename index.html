@@ -883,9 +883,33 @@
     <div class="card"><div class="card-label">Worst-Case Bust Year (median of failed runs)</div><div class="card-value" id="mc-bust">—</div></div>
   </div>
 
+  <div class="summary-cards">
+    <div class="card"><div class="card-label">Retirement Year Liquid — Worst 10%</div><div class="card-value" id="mc-ret-p10">—</div><div class="muted" style="font-size:11px;margin-top:4px;">P10 liquid at retirement start</div></div>
+    <div class="card"><div class="card-label">Retirement Year Liquid — Median</div><div class="card-value" id="mc-ret-p50">—</div><div class="muted" style="font-size:11px;margin-top:4px;">P50 liquid at retirement start</div></div>
+    <div class="card"><div class="card-label">Retirement Year Liquid — Best 90%</div><div class="card-value" id="mc-ret-p90">—</div><div class="muted" style="font-size:11px;margin-top:4px;">P90 liquid at retirement start</div></div>
+  </div>
+
   <div class="chart-container" style="height:420px;">
     <canvas id="mcChart"></canvas>
   </div>
+
+  <h3 style="margin-top:24px;">Liquid Asset Distribution at Retirement Year</h3>
+  <div class="chart-container" style="height:320px;">
+    <canvas id="mcRetirementChart"></canvas>
+  </div>
+
+  <fieldset style="margin-top:16px;">
+    <legend>Sequence of Returns Risk</legend>
+    <p class="muted" style="margin:0;">
+      <strong>Sequence of returns risk</strong> is the danger that a market downturn early in retirement —
+      when your portfolio is at its peak and withdrawals begin — permanently impairs your plan even if
+      long-run average returns are fine. A bad sequence in the first 5–10 years of retirement forces you
+      to sell assets at depressed prices to cover living expenses, leaving fewer shares to recover when
+      markets rebound. The retirement-year liquid asset percentiles above show how much variability exists
+      at the most vulnerable moment: the P10 ("worst 10%") scenario represents a severely impaired starting
+      position that is very difficult to recover from, even if subsequent returns are average.
+    </p>
+  </fieldset>
 </section>
 
 <!-- SUMMARY -->
