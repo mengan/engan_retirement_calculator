@@ -2641,9 +2641,11 @@ function renderGuardrails(rows, lowRows, highRows) {
   if (guardrailLiquidChart) guardrailLiquidChart.destroy();
   const ctx2 = document.getElementById("guardrailLiquidChart").getContext("2d");
 
-  // Per-year asset thresholds derived from each year's projected expenses
-  const cutThresholds  = gRows.map(r => swrRate * upperBand > 0 ? r.expenses / (swrRate * upperBand) : 0);
-  const raiseThresholds = gRows.map(r => swrRate * lowerBand > 0 ? r.expenses / (swrRate * lowerBand) : 0);
+  // Flat horizontal guardrail lines — same fixed dollar values shown in the summary cards above.
+  // Upper guardrail = raiseThreshold (portfolio is large enough to raise spending).
+  // Lower guardrail = cutThreshold   (portfolio is too small, must cut spending).
+  const flatRaise = gRows.map(() => raiseThreshold);
+  const flatCut   = gRows.map(() => cutThreshold);
 
   // Pessimistic/optimistic liquid from the low/high projection runs
   const lowLiquid  = (lowRows  || rows).map(r => r.liquid);
@@ -2656,25 +2658,25 @@ function renderGuardrails(rows, lowRows, highRows) {
       labels,
       datasets: [
         {
-          label: `Cut-Spending Threshold (assets below = reduce by ${s.swrAdjust || 10}%)`,
-          data: cutThresholds,
-          borderColor: "#b91c1c",
-          backgroundColor: "rgba(0,0,0,0)",
-          borderWidth: 2,
-          borderDash: [6, 3],
-          fill: false,
-          tension: 0.2,
-          pointRadius: 0,
-        },
-        {
-          label: `Raise-Spending Threshold (assets above = increase by ${s.swrAdjust || 10}%)`,
-          data: raiseThresholds,
+          label: `Upper Guardrail (raise spending +${s.swrAdjust || 10}%)`,
+          data: flatRaise,
           borderColor: "#15803d",
           backgroundColor: "rgba(0,0,0,0)",
           borderWidth: 2,
           borderDash: [6, 3],
           fill: false,
-          tension: 0.2,
+          tension: 0,
+          pointRadius: 0,
+        },
+        {
+          label: `Lower Guardrail (cut spending −${s.swrAdjust || 10}%)`,
+          data: flatCut,
+          borderColor: "#b91c1c",
+          backgroundColor: "rgba(0,0,0,0)",
+          borderWidth: 2,
+          borderDash: [6, 3],
+          fill: false,
+          tension: 0,
           pointRadius: 0,
         },
         {
