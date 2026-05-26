@@ -2597,24 +2597,11 @@ function renderGuardrails(rows, lowRows, highRows) {
   if (guardrailChart) guardrailChart.destroy();
   const ctx = document.getElementById("guardrailChart").getContext("2d");
   const labels = gRows.map(r => r.year);
-  const upperMult = 1 + (s.swrUpperBand || 20) / 100;
-  const lowerMult = 1 - (s.swrLowerBand || 20) / 100;
   guardrailChart = new Chart(ctx, {
     type: "line",
     data: {
       labels,
       datasets: [
-        {
-          label: `Upper Guardrail (cut −${s.swrAdjust || 10}% if above)`,
-          data: gRows.map(r => r.swrAllowed * upperMult),
-          borderColor: "#b91c1c",
-          backgroundColor: "rgba(0,0,0,0)",
-          borderWidth: 1.5,
-          borderDash: [6, 3],
-          fill: false,
-          tension: 0.2,
-          pointRadius: 0,
-        },
         {
           label: "SWR-Allowed Spend",
           data: gRows.map(r => r.swrAllowed),
