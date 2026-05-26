@@ -2001,6 +2001,78 @@ function renderExpenseByYearTable(rows) {
     tbody.appendChild(tr);
   });
 }
+function renderSavingsGap(rows) {
+  const section = document.getElementById("savings-gap-section");
+  if (!section) return;
+  const bust = rows.find(r => r.liquid <= 0 && r.retired);
+  if (!bust) {
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "";
+  const s = state.settings;
+  const midReturn = ((s.defaultReturnLow || 0) + (s.defaultReturnHigh || 0)) / 2;
+  const midInfl   = ((s.defaultInflationLow || 0) + (s.defaultInflationHigh || 0)) / 2;
+  const r = midReturn / 100;
+
+  // Shortfall = PV today of (expenses - income) for each year after bust
+  const bustIdx = rows.indexOf(bust);
+  let pvShortfall = 0;
+  for (let i = bustIdx; i < rows.length; i++) {
+    const row = rows[i];
+    const gap = Math.max(0, row.expenses - (row.grossSS + row.rentalNet));
+    const discountFactor = Math.pow(1 + r, -(i));
+    pvShortfall += gap * discountFactor;
+  }
+
+  // PV shortfall at retirement year
+  const firstRetireYear = s.hasSpouse2 ? Math.min(s.s1.retireYear, s.s2.retireYear) : s.s1.retireYear;
+  const retireRow = rows.find(r2 => r2.year === firstRetireYear) || rows[0];
+  const retireIdx = rows.indexOf(retireRow);
+  const yearsToRetire = Math.max(1, retireIdx);
+  // PV at retirement = shortfall today discounted back (actually PV at retirement)
+  const pvAtRetirement = pvShortfall * Math.pow(1 + r, retireIdx);
+
+  // Annual savings needed: Y / annuity factor = Y * r / (((1+r)^n - 1))
+  const n = yearsToRetire;
+  const annuityFactor = n > 0 && r > 0 ? (Math.pow(1 + r, n) - 1) / r : n;
+  const annualSavingsNeeded = annuityFactor > 0 ? pvAtRetirement / annuityFactor : 0;
+
+  const bustRow = bust;
+  const s1AgeAtBust = bustRow.s1Age;
+  const s2AgeAtBust = bustRow.s2Age;
+
+  section.innerHTML = `
+    <fieldset style="border:2px solid #dc2626; background:#fef2f2; border-radius:8px; padding:16px;">
+      <legend style="color:#dc2626; font-weight:700; font-size:15px;">&#9888; Funding Gap Detected</legend>
+      <p style="margin:0 0 10px 0; color:#7f1d1d;">
+        <strong>Funds run out in ${bustRow.year}</strong> (S1 age ${s1AgeAtBust}${s.hasSpouse2 ? ` / S2 age ${s2AgeAtBust}` : ''}).
+        After this point, Social Security and rental income alone cannot cover expenses.
+      </p>
+      <div class="summary-cards" style="margin:0 0 10px 0;">
+        <div class="card" style="border-left:4px solid #dc2626;">
+          <div class="card-label">Estimated Funding Shortfall (PV today's dollars)</div>
+          <div class="card-value" style="color:#dc2626;">${fmt(pvShortfall)}</div>
+        </div>
+        <div class="card" style="border-left:4px solid #b91c1c;">
+          <div class="card-label">Additional Liquid Assets Needed at Retirement</div>
+          <div class="card-value" style="color:#b91c1c;">${fmt(pvAtRetirement)}</div>
+        </div>
+        <div class="card" style="border-left:4px solid #991b1b;">
+          <div class="card-label">Additional Annual Savings Needed (now → retirement)</div>
+          <div class="card-value" style="color:#991b1b;">${fmt(annualSavingsNeeded)}/yr</div>
+        </div>
+      </div>
+      <p class="muted" style="margin:0; font-size:12px;">
+        Estimates use mid-return rate (${midReturn.toFixed(1)}%) and mid-inflation (${midInfl.toFixed(1)}%).
+        Shortfall = PV of (expenses − SS − rental) for all years after funds run out.
+        "Needed at retirement" = shortfall grown to retirement year.
+        "Annual savings" = needed amount ÷ future-value annuity factor over ${yearsToRetire} years.
+      </p>
+    </fieldset>
+  `;
+}
+
 function recalc() {
   renderCurrentPortfolio();
   const rows = project();
