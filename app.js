@@ -2315,7 +2315,8 @@ function drawCharts(rows, lowRows, highRows) {
 
 function drawIncomeBreakdown(rows) {
   if (incomeBreakdownChart) incomeBreakdownChart.destroy();
-  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  const dr = deflateRows(rows, summaryRealMode);
+  const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
   incomeBreakdownChart = new Chart(
     document.getElementById("incomeBreakdownChart").getContext("2d"),
     {
@@ -2323,14 +2324,14 @@ function drawIncomeBreakdown(rows) {
       data: {
         labels,
         datasets: [
-          { label: "Salaries",                     data: rows.map(r => (r.salary1 || 0) + (r.salary2 || 0)), backgroundColor: "#1d4ed8" },
-          { label: "Social Security",              data: rows.map(r => r.grossSS || 0),              backgroundColor: "#0ea5e9" },
-          { label: "Rental Net",                   data: rows.map(r => r.rentalNet || 0),            backgroundColor: "#10b981" },
-          { label: "Dividends",                    data: rows.map(r => r.dividendIncome || 0),       backgroundColor: "#a78bfa" },
-          { label: "Property Sale Proceeds",       data: rows.map(r => r.saleProceeds || 0),         backgroundColor: "#84cc16" },
-          { label: "Traditional IRA / 401k RMD",  data: rows.map(r => r.traditionalRMD || 0),       backgroundColor: "#dc2626" },
-          { label: "Inherited IRA RMD",            data: rows.map(r => r.inheritedRMD || 0),         backgroundColor: "#b45309" },
-          { label: "Inherited IRA Bracket Fill",   data: rows.map(r => r.inheritedBracketDrain || 0), backgroundColor: "#c2410c" },
+          { label: "Salaries",                     data: dr.map(r => (r.salary1 || 0) + (r.salary2 || 0)), backgroundColor: "#1d4ed8" },
+          { label: "Social Security",              data: dr.map(r => r.grossSS || 0),              backgroundColor: "#0ea5e9" },
+          { label: "Rental Net",                   data: dr.map(r => r.rentalNet || 0),            backgroundColor: "#10b981" },
+          { label: "Dividends",                    data: dr.map(r => r.dividendIncome || 0),       backgroundColor: "#a78bfa" },
+          { label: "Property Sale Proceeds",       data: dr.map(r => r.saleProceeds || 0),         backgroundColor: "#84cc16" },
+          { label: "Traditional IRA / 401k RMD",  data: dr.map(r => r.traditionalRMD || 0),       backgroundColor: "#dc2626" },
+          { label: "Inherited IRA RMD",            data: dr.map(r => r.inheritedRMD || 0),         backgroundColor: "#b45309" },
+          { label: "Inherited IRA Bracket Fill",   data: dr.map(r => r.inheritedBracketDrain || 0), backgroundColor: "#c2410c" },
         ],
       },
       options: {
