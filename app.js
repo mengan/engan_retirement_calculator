@@ -3188,6 +3188,7 @@ function renderWithdrawalsTab() {
   document.getElementById("rc-end").style.display = (rc.endMode === "manual" || !rc.endMode) ? "" : "none";
   document.getElementById("rc-custom").value = rc.customAmount;
   document.getElementById("rc-wait-inherited").checked = !!rc.startAfterInheritedDepleted;
+  document.getElementById("rc-skip-sale-year").checked = rc.skipConversionOnSaleYear !== false;
   renderRothConvEffectiveYears();
 
   const ii = state.settings.inheritedIra;
