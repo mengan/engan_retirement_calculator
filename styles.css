@@ -15,6 +15,21 @@ header {
 }
 header h1 { margin: 0; font-size: 20px; }
 .header-actions button { margin-left: 8px; }
+.lang-switcher { display: flex; align-items: center; gap: 4px; margin-left: 12px; }
+.lang-btn {
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.5;
+  line-height: 1;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+.lang-btn:hover { opacity: 0.85; }
+.lang-btn.active { opacity: 1; border-color: rgba(255,255,255,0.6); }
+body.dark .lang-btn.active { border-color: rgba(147,197,253,0.6); }
 .tip-btn {
   display: inline-block;
   margin-left: 8px;
