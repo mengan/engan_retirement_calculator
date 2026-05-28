@@ -13,8 +13,8 @@
     "defaultRentGrowth": 2,
     "useTaxBrackets": true,
     "stdDeduction": 29200,
-    "taxRisePct": 10,
-    "taxRiseYear": 2038,
+    "taxRisePct": 12,
+    "taxRiseYear": 2039,
     "taxableCapGainsPct": 50,
     "filingStatus": "mfj",
     "taxBrackets": [
@@ -76,10 +76,10 @@
     "swrAdjust": 10,
     "swrIncludeRealEstate": false,
     "rothConv": {
-      "strategy": "fill_12",
+      "strategy": "fill_22",
       "startMode": "both_retired",
       "startYear": 2028,
-      "endMode": "first_ss",
+      "endMode": "both_medicare",
       "endYear": 2041,
       "customAmount": 0,
       "startAfterInheritedDepleted": true
@@ -103,7 +103,8 @@
       "ssEstEarnings": 120000,
       "ssEstYears": 26,
       "ssOverride": 0,
-      "retireMonth": 1
+      "retireMonth": 4,
+      "planToAge": 90
     },
     "s2": {
       "name": "juliet ",
@@ -111,13 +112,14 @@
       "salary": 60000,
       "salaryGrowth": 2,
       "retireYear": 2028,
-      "contrib": 20000,
+      "contrib": 15000,
       "ssAge": 63,
       "ssAmt": 23095.018971428573,
       "ssEstEarnings": 90000,
       "ssEstYears": 25,
       "ssOverride": 0,
-      "retireMonth": 1
+      "retireMonth": 7,
+      "planToAge": 90
     },
     "defaultReturn": 6,
     "defaultInflation": 3
@@ -208,7 +210,12 @@
         "startYear": 2027,
         "endYear": 2037
       }
-    ]
+    ],
+    "healthcare": {
+      "enabled": false,
+      "s1Monthly": 800,
+      "s2Monthly": 700
+    }
   },
   "accounts": [
     {
@@ -359,7 +366,7 @@
       "rent": 5001,
       "rentGrowth": 3,
       "basis": 220000,
-      "sellYear": 0,
+      "sellYear": 2031,
       "taxablePct": 35,
       "loanPayoffYear": 2050,
       "loanPayoffMonth": 6,
@@ -407,5 +414,6 @@
     }
   ],
   "version": 2,
-  "_ssOverrideMigrated": true
+  "_ssOverrideMigrated": true,
+  "futurePurchases": []
 }
