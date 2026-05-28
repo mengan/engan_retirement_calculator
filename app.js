@@ -4817,4 +4817,6 @@ function wireThemeToggle() {
   wireRealNominalToggle();
   wireRandomizeButton();
   wireThemeToggle();
+  wireModeSwitch();
+  wireFireTab();
 })();
