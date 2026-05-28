@@ -1121,6 +1121,104 @@
   </div>
 </section>
 
+<!-- FIRE OVERVIEW -->
+<section id="tab-fire-overview" class="tab-panel">
+  <div class="fire-overview-panel">
+    <div class="fire-hero">
+      <h2>Financial Independence, Retire Early (FIRE)</h2>
+      <p>FIRE is a movement built around saving and investing aggressively — typically 50–70% of income — to reach financial independence decades before traditional retirement age. The core idea: accumulate enough assets so investment returns cover your living expenses indefinitely, freeing you from needing a paycheck.</p>
+    </div>
+    <div class="fire-types-grid">
+      <div class="fire-type-card lean">
+        <div class="fire-type-header">
+          <span class="fire-icon">🪨</span>
+          <span class="fire-name">Lean FIRE</span>
+        </div>
+        <div class="fire-tagline">Bare-bones financial freedom</div>
+        <div class="fire-desc">Achieve financial independence with a very lean budget — typically under $40,000/year. Requires strict frugality and minimal discretionary spending. Popular with those who can genuinely thrive with a simple lifestyle.</div>
+        <div class="fire-target"><strong>Target &amp; SWR</strong>25× your annual lean expenses (4% SWR). Generally $500k–$1M for very low-cost lifestyles.</div>
+      </div>
+      <div class="fire-type-card classic">
+        <div class="fire-type-header">
+          <span class="fire-icon">🔥</span>
+          <span class="fire-name">Classic FIRE</span>
+        </div>
+        <div class="fire-tagline">The original formula</div>
+        <div class="fire-desc">The foundational FIRE number: accumulate 25× your expected annual expenses. Based on the Trinity Study's finding that a 4% annual withdrawal rate is historically sustainable over 30+ year retirement horizons.</div>
+        <div class="fire-target"><strong>Target &amp; SWR</strong>25× annual expenses at a 4% SWR. The benchmark most FIRE calculators use.</div>
+      </div>
+      <div class="fire-type-card coast">
+        <div class="fire-type-header">
+          <span class="fire-icon">🌊</span>
+          <span class="fire-name">Coast FIRE</span>
+        </div>
+        <div class="fire-tagline">Save hard now, coast to retirement</div>
+        <div class="fire-desc">Reach a portfolio large enough that — if you stop contributing and let it grow — it will reach your full FIRE number by traditional retirement age. After hitting Coast FIRE, you only need to earn enough to cover current living expenses (no more saving required).</div>
+        <div class="fire-target"><strong>Target &amp; SWR</strong>Full FIRE number discounted back at your expected return rate to today. The earlier you want to coast, the smaller the number.</div>
+      </div>
+      <div class="fire-type-card barista">
+        <div class="fire-type-header">
+          <span class="fire-icon">☕</span>
+          <span class="fire-name">Barista FIRE</span>
+        </div>
+        <div class="fire-tagline">Semi-retire with part-time income</div>
+        <div class="fire-desc">Retire from your full-time career but work part-time to cover a portion of expenses. The part-time income reduces the portfolio you need. Named for the idea of working a low-stress job (like a barista) that also provides benefits like health insurance.</div>
+        <div class="fire-target"><strong>Target &amp; SWR</strong>Portfolio covers (annual expenses − part-time income) × 25. Smaller target than Classic FIRE in exchange for continued part-time work.</div>
+      </div>
+      <div class="fire-type-card fat">
+        <div class="fire-type-header">
+          <span class="fire-icon">🥩</span>
+          <span class="fire-name">Fat FIRE</span>
+        </div>
+        <div class="fire-tagline">Retire with abundance</div>
+        <div class="fire-desc">Financial independence with a high income lifestyle — typically $100,000+/year in retirement spending. Requires a larger nest egg but affords travel, dining, hobbies, and a comfortable life without budget anxiety.</div>
+        <div class="fire-target"><strong>Target &amp; SWR</strong>25× a generous annual budget (typically $100k–$200k+/yr). Usually $2.5M–$5M+.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FIRE NUMBERS -->
+<section id="tab-fire-numbers" class="tab-panel">
+  <h2>My FIRE Numbers</h2>
+  <p class="muted">Based on your forecasted retirement expenses and General Settings. Adjust the inputs below to explore different scenarios.</p>
+
+  <fieldset>
+    <legend>Assumptions</legend>
+    <div class="grid-2">
+      <label>Safe Withdrawal Rate (%)
+        <input type="number" id="fire-swr" value="4" step="0.1" min="1" max="10"/>
+        <small>Classic FIRE uses 4%. A more conservative choice is 3–3.5%. Higher = smaller target but more risk.</small>
+      </label>
+      <label>Part-Time Income for Barista FIRE ($/yr, today)
+        <input type="number" id="fire-barista-income" value="0"/>
+        <small>Annual income from part-time work in today's dollars. Defaults to 25% of your combined pre-retirement salary from General Settings.</small>
+      </label>
+      <label>Coast FIRE — Expected Annual Return (%)
+        <input type="number" id="fire-coast-return" value="7" step="0.1"/>
+        <small>Growth rate used to discount the full FIRE number back to today. Your traditional retirement age is derived from General Settings.</small>
+      </label>
+      <label>Fat FIRE Annual Spending ($/yr, today)
+        <input type="number" id="fire-fat-spending" value="150000" step="5000"/>
+        <small>Define your "Fat FIRE" lifestyle budget. Default $150,000/yr.</small>
+      </label>
+    </div>
+  </fieldset>
+
+  <div id="fire-results" class="fire-results-grid"></div>
+
+  <h3 style="margin-top:24px;">FIRE Number Comparison</h3>
+  <div class="chart-container" style="height:360px;">
+    <canvas id="fireNumbersChart"></canvas>
+  </div>
+
+  <h3 style="margin-top:24px;">Coast FIRE — Portfolio Growth to FIRE Number</h3>
+  <p class="muted">Starting from your current liquid assets, this shows how your portfolio grows at your expected return rate. The year the line crosses the Classic FIRE number is when you've hit Coast FIRE.</p>
+  <div class="chart-container" style="height:320px;">
+    <canvas id="coastFireChart"></canvas>
+  </div>
+</section>
+
 </main>
 
 <script src="app.js"></script>
