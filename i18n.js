@@ -927,5 +927,9 @@ zh: {
   "chart.mcP50": "P50（中位数）",
   "chart.mcP90": "P90（最佳90%）",
   "chart.mcHistogram": "模拟次数",
+
+  // Mode switcher
+  "mode.nestEggLast": "📊 我的储蓄能用多久？",
+  "mode.fireNumber": "🎯 我需要攒多少钱？",
 },
 };
