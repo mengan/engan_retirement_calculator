@@ -4436,6 +4436,353 @@ function wireRandomizeButton() {
   refresh();
 }
 
+// ===== FIRE Calculator =====
+
+let currentMode = "nest-egg-last";
+
+function applyMode(mode) {
+  currentMode = mode;
+  localStorage.setItem("calc-mode", mode);
+
+  // Update mode-btn active states
+  document.querySelectorAll(".mode-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.mode === mode);
+  });
+
+  // Tabs to show/hide
+  const lastTabs = ["accounts", "realestate", "guardrails", "withdrawals", "montecarlo", "summary"];
+  const fireTabs = ["fire-overview", "fire-numbers"];
+
+  lastTabs.forEach(tab => {
+    const btn = document.querySelector(`.tab[data-tab="${tab}"]`);
+    if (btn) btn.style.display = mode === "nest-egg-last" ? "" : "none";
+  });
+  fireTabs.forEach(tab => {
+    const btn = document.querySelector(`.tab[data-tab="${tab}"]`);
+    if (btn) btn.style.display = mode === "fire-number" ? "" : "none";
+  });
+
+  // In fire-number mode, hide accounts + realestate inside the tab-group
+  const tabGroup = document.querySelector('.tab-group[data-label="Start Here"]');
+  if (tabGroup) {
+    ["accounts", "realestate"].forEach(tab => {
+      const btn = tabGroup.querySelector(`.tab[data-tab="${tab}"]`);
+      if (btn) btn.style.display = mode === "fire-number" ? "none" : "";
+    });
+  }
+
+  // If currently on a hidden tab, redirect to intro
+  const activeTab = document.querySelector(".tab.active");
+  if (activeTab) {
+    const activeTabName = activeTab.dataset.tab;
+    const isHidden = (mode === "fire-number" && lastTabs.includes(activeTabName)) ||
+                     (mode === "nest-egg-last" && fireTabs.includes(activeTabName));
+    if (isHidden) {
+      document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      const introBtn = document.querySelector(".tab[data-tab='intro']");
+      if (introBtn) introBtn.classList.add("active");
+      const introPanel = document.getElementById("tab-intro");
+      if (introPanel) introPanel.classList.add("active");
+    }
+  }
+
+  // If switching to fire-number mode, initialise and render fire numbers
+  if (mode === "fire-number") {
+    initFireInputDefaults();
+    renderFireNumbers();
+  }
+}
+
+function wireModeSwitch() {
+  const saved = localStorage.getItem("calc-mode") || "nest-egg-last";
+  applyMode(saved);
+  document.querySelectorAll(".mode-btn").forEach(btn => {
+    btn.addEventListener("click", () => applyMode(btn.dataset.mode));
+  });
+}
+
+function wireFireTab() {
+  ["fire-swr", "fire-barista-income", "fire-coast-return", "fire-fat-spending"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", () => renderFireNumbers());
+  });
+
+  // Also trigger render + defaults when the fire-numbers tab is clicked
+  const fireNumBtn = document.querySelector(".tab[data-tab='fire-numbers']");
+  if (fireNumBtn) {
+    fireNumBtn.addEventListener("click", () => {
+      initFireInputDefaults();
+      renderFireNumbers();
+    });
+  }
+}
+
+function initFireInputDefaults() {
+  const s = state.settings;
+  const s1Sal = s.s1 ? (s.s1.salary || 0) : 0;
+  const s2Sal = s.hasSpouse2 && s.s2 ? (s.s2.salary || 0) : 0;
+  const defaultBarista = Math.round((s1Sal + s2Sal) * 0.25);
+  const baristaInput = document.getElementById("fire-barista-income");
+  if (baristaInput && (!baristaInput.value || parseFloat(baristaInput.value) === 0)) {
+    baristaInput.value = defaultBarista;
+  }
+}
+
+function computeFireNumbers() {
+  const s = state.settings;
+
+  // Annual retirement expenses from projection, or estimate
+  let annualExpenses;
+  const retireYear = Math.min(
+    s.s1 ? (s.s1.retireYear || 2035) : 2035,
+    s.hasSpouse2 && s.s2 ? (s.s2.retireYear || 2035) : 9999
+  );
+  if (lastRows && lastRows.length > 0) {
+    const retireRow = lastRows.find(r => r.year === retireYear)
+      || lastRows.find(r => r.retired)
+      || lastRows[0];
+    annualExpenses = retireRow ? retireRow.expenses : (s.expenses ? s.expenses.base * 12 : 7500 * 12);
+  } else {
+    const baseMonthly = (state.expenses && state.expenses.base) ? state.expenses.base : 7500;
+    annualExpenses = baseMonthly * 12;
+  }
+
+  const fireSWR = (parseFloat(document.getElementById("fire-swr")?.value) || 4) / 100;
+  const baristaIncome = parseFloat(document.getElementById("fire-barista-income")?.value) || 0;
+  const coastReturn = (parseFloat(document.getElementById("fire-coast-return")?.value) || 7) / 100;
+  const fatSpending = parseFloat(document.getElementById("fire-fat-spending")?.value) || 150000;
+
+  // Years until traditional retirement age (65) for the younger spouse
+  const currentYear = s.currentYear || 2026;
+  const s1Age = s.s1 ? (s.s1.age || 50) : 50;
+  const s2Age = s.hasSpouse2 && s.s2 ? (s.s2.age || s1Age) : s1Age;
+  const youngerAge = Math.min(s1Age, s2Age);
+  const yearsToTraditionalRetire = Math.max(1, 65 - youngerAge);
+
+  // Classic FIRE
+  const classicFire = annualExpenses / fireSWR;
+
+  // Lean FIRE: 85% of expenses
+  const leanFire = (annualExpenses * 0.85) / fireSWR;
+
+  // Fat FIRE
+  const fatFire = fatSpending / fireSWR;
+
+  // Barista FIRE: deficit after part-time income
+  const baristaDeficit = Math.max(0, annualExpenses - baristaIncome);
+  const baristaFire = baristaDeficit / fireSWR;
+
+  // Coast FIRE: classic target discounted back by years to traditional retirement
+  const coastFire = classicFire / Math.pow(1 + coastReturn, yearsToTraditionalRetire);
+
+  // Current liquid assets from accounts
+  let currentLiquid = 0;
+  if (state.accounts) {
+    currentLiquid = state.accounts
+      .filter(a => !a.exclude)
+      .reduce((sum, a) => sum + (a.balance || 0), 0);
+  }
+
+  return {
+    classicFire, leanFire, fatFire, baristaFire, coastFire,
+    annualExpenses, baristaIncome, currentLiquid,
+    yearsToTraditionalRetire, fireSWR, fatSpending, coastReturn, currentYear
+  };
+}
+
+let fireNumbersChartInst = null;
+let coastFireChartInst = null;
+
+function renderFireNumbers() {
+  const nums = computeFireNumbers();
+  const container = document.getElementById("fire-results");
+  if (!container) return;
+
+  const fireSWR = nums.fireSWR;
+  const multiplier = Math.round((1 / fireSWR) * 100) / 100;
+
+  const types = [
+    {
+      key: "lean",
+      icon: "🪨",
+      label: "Lean FIRE",
+      value: nums.leanFire,
+      desc: `${fmt(nums.annualExpenses * 0.85)}/yr × ${multiplier}× = ${fmt(nums.leanFire)}`
+    },
+    {
+      key: "classic",
+      icon: "🔥",
+      label: "Classic FIRE",
+      value: nums.classicFire,
+      desc: `${fmt(nums.annualExpenses)}/yr × 25× at 4% SWR`
+    },
+    {
+      key: "coast",
+      icon: "🌊",
+      label: "Coast FIRE",
+      value: nums.coastFire,
+      desc: `Reach ${fmt(nums.classicFire)} by age 65 — need ${fmt(nums.coastFire)} today`
+    },
+    {
+      key: "barista",
+      icon: "☕",
+      label: "Barista FIRE",
+      value: nums.baristaFire,
+      desc: `${fmt(nums.annualExpenses)}/yr − ${fmt(nums.baristaIncome)} part-time = ${fmt(Math.max(0, nums.annualExpenses - nums.baristaIncome))}/yr from portfolio`
+    },
+    {
+      key: "fat",
+      icon: "🥩",
+      label: "Fat FIRE",
+      value: nums.fatFire,
+      desc: `${fmt(nums.fatSpending)}/yr lifestyle × ${multiplier}×`
+    },
+  ];
+
+  container.innerHTML = types.map(t => {
+    const achieved = nums.currentLiquid >= t.value;
+    const statusClass = achieved ? "achieved" : "gap";
+    const statusText = achieved
+      ? "ACHIEVED ✓"
+      : `Gap: ${fmt(t.value - nums.currentLiquid)}`;
+    return `
+      <div class="fire-result-card ${t.key}">
+        <div class="fire-rc-header">
+          <span class="fire-rc-icon">${t.icon}</span>
+          <span class="fire-rc-label">${t.label}</span>
+        </div>
+        <div class="fire-rc-value">${fmt(t.value)}</div>
+        <span class="fire-rc-status ${statusClass}">${statusText}</span>
+        <div class="fire-rc-desc">${t.desc}</div>
+      </div>
+    `;
+  }).join("");
+
+  // Bar chart: FIRE Number Comparison
+  const barCanvas = document.getElementById("fireNumbersChart");
+  if (barCanvas) {
+    if (fireNumbersChartInst) { fireNumbersChartInst.destroy(); fireNumbersChartInst = null; }
+    const isDark = document.body.classList.contains("dark");
+    const textColor = isDark ? "#94a3b8" : "#666";
+    const gridColor = isDark ? "#334155" : "rgba(0,0,0,0.1)";
+
+    fireNumbersChartInst = new Chart(barCanvas, {
+      type: "bar",
+      data: {
+        labels: types.map(t => t.label),
+        datasets: [
+          {
+            label: "FIRE Number",
+            data: types.map(t => t.value),
+            backgroundColor: ["#64748b", "#f97316", "#0ea5e9", "#22c55e", "#a855f7"],
+            borderRadius: 6,
+          },
+          {
+            label: "Current Liquid Assets",
+            data: types.map(() => nums.currentLiquid),
+            backgroundColor: "rgba(0,0,0,0)",
+            borderColor: "#ef4444",
+            borderWidth: 2,
+            borderDash: [6, 3],
+            type: "line",
+            pointRadius: 0,
+            order: 0,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: textColor } },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${fmt(ctx.raw)}`
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: textColor }, grid: { color: gridColor } },
+          y: {
+            ticks: { color: textColor, callback: v => "$" + (v >= 1e6 ? (v/1e6).toFixed(1)+"M" : (v/1e3).toFixed(0)+"k") },
+            grid: { color: gridColor }
+          }
+        }
+      }
+    });
+  }
+
+  // Coast FIRE line chart
+  const coastCanvas = document.getElementById("coastFireChart");
+  if (coastCanvas) {
+    if (coastFireChartInst) { coastFireChartInst.destroy(); coastFireChartInst = null; }
+    const isDark = document.body.classList.contains("dark");
+    const textColor = isDark ? "#94a3b8" : "#666";
+    const gridColor = isDark ? "#334155" : "rgba(0,0,0,0.1)";
+
+    const endYear = 2065;
+    const startYear = nums.currentYear;
+    const years = [];
+    const portfolioValues = [];
+    const classicFireLine = [];
+
+    for (let yr = startYear; yr <= endYear; yr++) {
+      years.push(yr);
+      const yearsElapsed = yr - startYear;
+      portfolioValues.push(nums.currentLiquid * Math.pow(1 + nums.coastReturn, yearsElapsed));
+      classicFireLine.push(nums.classicFire);
+    }
+
+    coastFireChartInst = new Chart(coastCanvas, {
+      type: "line",
+      data: {
+        labels: years,
+        datasets: [
+          {
+            label: "Portfolio Growth",
+            data: portfolioValues,
+            borderColor: "#0ea5e9",
+            backgroundColor: "rgba(14,165,233,0.1)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            borderWidth: 2,
+          },
+          {
+            label: "Classic FIRE Target",
+            data: classicFireLine,
+            borderColor: "#f97316",
+            borderDash: [6, 3],
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: textColor } },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${fmt(ctx.raw)}`
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: textColor, maxTicksLimit: 10 }, grid: { color: gridColor } },
+          y: {
+            ticks: { color: textColor, callback: v => "$" + (v >= 1e6 ? (v/1e6).toFixed(1)+"M" : (v/1e3).toFixed(0)+"k") },
+            grid: { color: gridColor }
+          }
+        }
+      }
+    });
+  }
+}
+
 // ===== Theme (light / dark) =====
 function applyTheme(mode) {
   document.body.classList.toggle("dark", mode === "dark");
