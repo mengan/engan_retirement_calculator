@@ -626,6 +626,10 @@ es: {
   "chart.mcP50": "P50 (Mediana)",
   "chart.mcP90": "P90 (Mejor 90%)",
   "chart.mcHistogram": "Simulaciones",
+
+  // Mode switcher
+  "mode.nestEggLast": "📊 ¿Cuánto durará mi dinero?",
+  "mode.fireNumber": "🎯 ¿Cuánto necesito ahorrar?",
 },
 
 // ─────────────────────────────────────────────────────────────────────────────
