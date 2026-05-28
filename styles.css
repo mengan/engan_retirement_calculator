@@ -15,6 +15,7 @@ header {
 }
 header h1 { margin: 0; font-size: 20px; }
 .header-actions button { margin-left: 8px; }
+.header-theme-toggle { display: flex; align-items: center; gap: 10px; margin-right: 12px; }
 .lang-switcher { display: flex; align-items: center; gap: 4px; margin-left: 12px; }
 .lang-btn {
   background: transparent;
