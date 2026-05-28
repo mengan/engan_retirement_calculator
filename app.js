@@ -4753,7 +4753,7 @@ function renderFireNumbers() {
     for (let yr = startYear; yr <= endYear; yr++) {
       years.push(yr);
       const yearsElapsed = yr - startYear;
-      portfolioValues.push(nums.currentLiquid * Math.pow(1 + nums.coastReturn, yearsElapsed));
+      portfolioValues.push(nums.currentAssets * Math.pow(1 + nums.coastReturn, yearsElapsed));
       classicFireLine.push(nums.classicFire);
     }
 
