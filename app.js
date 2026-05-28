@@ -4808,6 +4808,74 @@ function renderFireNumbers() {
   }
 }
 
+// ===== i18n =====
+let currentLang = "en";
+
+function t(key) {
+  const dict = (window.I18N && window.I18N[currentLang]) || {};
+  const fallback = (window.I18N && window.I18N["en"]) || {};
+  return dict[key] || fallback[key] || key;
+}
+
+function applyLang(lang) {
+  currentLang = lang;
+  localStorage.setItem("lang", lang);
+
+  // Update active flag button
+  document.querySelectorAll(".lang-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.lang === lang);
+  });
+
+  // Update all [data-i18n] text content
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    const val = t(key);
+    // If the element has child elements (e.g. a button with an icon span),
+    // only update a text node if one exists, otherwise set textContent directly
+    const hasChildren = el.children.length > 0;
+    if (hasChildren) {
+      // Find and update direct text nodes only
+      for (const node of el.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+          node.textContent = val;
+          break;
+        }
+      }
+      // If no text node found, just set it
+      if (!Array.from(el.childNodes).some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim())) {
+        el.textContent = val;
+      }
+    } else {
+      el.textContent = val;
+    }
+  });
+
+  // Update [data-i18n-attr] — format: "attrName:i18nKey"
+  document.querySelectorAll("[data-i18n-attr]").forEach(el => {
+    el.getAttribute("data-i18n-attr").split(";").forEach(pair => {
+      const [attr, key] = pair.split(":");
+      if (attr && key) el.setAttribute(attr.trim(), t(key.trim()));
+    });
+  });
+
+  // Update <html lang> attribute
+  document.documentElement.lang = lang;
+}
+
+function wireLangSwitcher() {
+  // Detect browser language on first visit
+  const saved = localStorage.getItem("lang");
+  let lang = saved;
+  if (!lang) {
+    const browser = (navigator.language || "en").toLowerCase().slice(0, 2);
+    lang = ["en", "es", "zh"].includes(browser) ? browser : "en";
+  }
+  applyLang(lang);
+  document.querySelectorAll(".lang-btn").forEach(btn => {
+    btn.addEventListener("click", () => applyLang(btn.dataset.lang));
+  });
+}
+
 // ===== Theme (light / dark) =====
 function applyTheme(mode) {
   document.body.classList.toggle("dark", mode === "dark");
