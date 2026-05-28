@@ -4664,11 +4664,11 @@ function renderFireNumbers() {
   ];
 
   container.innerHTML = types.map(t => {
-    const achieved = nums.currentLiquid >= t.value;
+    const achieved = nums.currentAssets >= t.value;
     const statusClass = achieved ? "achieved" : "gap";
     const statusText = achieved
       ? "ACHIEVED ✓"
-      : `Gap: ${fmt(t.value - nums.currentLiquid)}`;
+      : `Gap: ${fmt(t.value - nums.currentAssets)}`;
     return `
       <div class="fire-result-card ${t.key}">
         <div class="fire-rc-header">
