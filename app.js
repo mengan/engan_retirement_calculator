@@ -4507,6 +4507,8 @@ function wireFireTab() {
     const el = document.getElementById(id);
     if (el) el.addEventListener("input", () => renderFireNumbers());
   });
+  const rentalChk = document.getElementById("fire-include-rental-equity");
+  if (rentalChk) rentalChk.addEventListener("change", () => renderFireNumbers());
 
   // Also trigger render + defaults when the fire-numbers tab is clicked
   const fireNumBtn = document.querySelector(".tab[data-tab='fire-numbers']");
