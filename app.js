@@ -4419,6 +4419,30 @@ function wireRandomizeButton() {
   refresh();
 }
 
+// ===== Theme (light / dark) =====
+function applyTheme(mode) {
+  document.body.classList.toggle("dark", mode === "dark");
+  // Update Chart.js global defaults so new/redrawn charts match
+  const isDark = mode === "dark";
+  Chart.defaults.color          = isDark ? "#94a3b8" : "#666";
+  Chart.defaults.borderColor    = isDark ? "#334155" : "rgba(0,0,0,0.1)";
+  Chart.defaults.backgroundColor = isDark ? "#1e293b" : "white";
+  // Redraw all charts if data is available
+  if (lastRows) recalc();
+}
+
+function wireThemeToggle() {
+  const saved = localStorage.getItem("theme") || "light";
+  document.getElementById(saved === "dark" ? "theme-dark" : "theme-light").checked = true;
+  applyTheme(saved);
+  document.querySelectorAll("input[name='theme']").forEach(radio => {
+    radio.addEventListener("change", () => {
+      localStorage.setItem("theme", radio.value);
+      applyTheme(radio.value);
+    });
+  });
+}
+
 (async () => {
   await loadState();
   fullRender();
@@ -4428,4 +4452,5 @@ function wireRandomizeButton() {
   wirePlanToAge();
   wireRealNominalToggle();
   wireRandomizeButton();
+  wireThemeToggle();
 })();
