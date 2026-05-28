@@ -4584,9 +4584,23 @@ function computeFireNumbers() {
       .reduce((sum, a) => sum + (a.balance || 0), 0);
   }
 
+  // Rental property equity (value − loan balance), excluding primary residence
+  let rentalEquity = 0;
+  if (state.properties) {
+    state.properties.forEach(p => {
+      if (p.type !== "primary" && p.value > 0) {
+        rentalEquity += Math.max(0, (p.value || 0) - (p.loanBalance || 0));
+      }
+    });
+  }
+
+  const includeRentalEquity = document.getElementById("fire-include-rental-equity")?.checked !== false;
+  const currentAssets = currentLiquid + (includeRentalEquity ? rentalEquity : 0);
+
   return {
     classicFire, leanFire, fatFire, baristaFire, coastFire,
-    annualExpenses, baristaIncome, currentLiquid,
+    annualExpenses, baristaIncome, currentLiquid, rentalEquity,
+    currentAssets, includeRentalEquity,
     yearsToTraditionalRetire, fireSWR, fatSpending, coastReturn, currentYear
   };
 }
