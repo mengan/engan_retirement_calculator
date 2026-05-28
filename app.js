@@ -4613,6 +4613,15 @@ function renderFireNumbers() {
   const container = document.getElementById("fire-results");
   if (!container) return;
 
+  // Assets summary line
+  const summary = document.getElementById("fire-assets-summary");
+  if (summary) {
+    const rentalPart = nums.rentalEquity > 0
+      ? ` + ${fmt(nums.rentalEquity)} rental equity${nums.includeRentalEquity ? "" : " (excluded)"}`
+      : "";
+    summary.textContent = `Current assets used for comparison: ${fmt(nums.currentLiquid)} liquid${rentalPart} = ${fmt(nums.currentAssets)} total`;
+  }
+
   const fireSWR = nums.fireSWR;
   const multiplier = Math.round((1 / fireSWR) * 100) / 100;
 
