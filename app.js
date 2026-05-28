@@ -4702,8 +4702,8 @@ function renderFireNumbers() {
             borderRadius: 6,
           },
           {
-            label: "Current Liquid Assets",
-            data: types.map(() => nums.currentLiquid),
+            label: nums.includeRentalEquity ? "Current Assets (liquid + rental equity)" : "Current Liquid Assets",
+            data: types.map(() => nums.currentAssets),
             backgroundColor: "rgba(0,0,0,0)",
             borderColor: "#ef4444",
             borderWidth: 2,
