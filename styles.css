@@ -268,3 +268,46 @@ td input { max-width: 100%; }
 .property-card .future-mortgage-fields { padding-top: 12px; border-top: 1px dashed #e5e7eb; margin-top: 12px; }
 
 .muted { color: #64748b; font-size: 13px; }
+
+/* ===== Dark Mode ===== */
+body.dark {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+body.dark header { background: #0f2240; }
+body.dark .tabs { background: #1e293b; border-bottom-color: #334155; }
+body.dark .tab-group { border-right-color: #334155; }
+body.dark .tab-group::before { color: #64748b; }
+body.dark .tab { color: #94a3b8; }
+body.dark .tab.active { color: #93c5fd; border-bottom-color: #3b82f6; }
+body.dark fieldset { background: #1e293b; border-color: #334155; }
+body.dark legend { color: #93c5fd; }
+body.dark label { color: #cbd5e1; }
+body.dark label small { color: #94a3b8; }
+body.dark input[type="number"], body.dark input[type="text"], body.dark select {
+  background: #0f172a; color: #e2e8f0; border-color: #475569;
+}
+body.dark input[type="number"]:read-only, body.dark input[type="text"]:read-only {
+  background: #1e293b; color: #94a3b8;
+}
+body.dark button { background: #1e293b; color: #e2e8f0; border-color: #475569; }
+body.dark button.primary { background: #2563eb; color: white; border-color: #2563eb; }
+body.dark button.danger { background: #1e293b; color: #fca5a5; border-color: #7f1d1d; }
+body.dark .card { background: #1e293b; border-color: #334155; }
+body.dark .card-label { color: #94a3b8; }
+body.dark .card-value { color: #93c5fd; }
+body.dark .chart-container { background: #1e293b; border-color: #334155; }
+body.dark .chart-zoom-controls { background: #1e293b; border-color: #334155; color: #94a3b8; }
+body.dark .chart-zoom-controls label { color: #94a3b8; }
+body.dark .table-wrap { background: #1e293b; border-color: #334155; }
+body.dark table th { background: #0f172a; color: #94a3b8; }
+body.dark table td { border-bottom-color: #334155; }
+body.dark .property-card { background: #1e293b; border-color: #334155; }
+body.dark .property-card .rental-fields { border-top-color: #334155; }
+body.dark .property-card .future-mortgage-fields { border-top-color: #334155; }
+body.dark .muted { color: #64748b; }
+body.dark .summary-cards .card { background: #1e293b; }
+body.dark #projection-table tr.retired td:first-child { background: #422006; }
+body.dark .intro-panel .disclaimer-box { background: #422006; border-color: #92400e; color: #fde68a; }
+body.dark .intro-panel .steps li { background: #1e293b; border-color: #334155; }
+body.dark .intro-panel .steps li .step-body span { color: #94a3b8; }
