@@ -1203,8 +1203,14 @@
         <small>Define your "Fat FIRE" lifestyle budget. Default $150,000/yr.</small>
       </label>
     </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+      <input type="checkbox" id="fire-include-rental-equity" style="width:auto;" checked/>
+      Include rental property equity in current assets
+      <small style="margin:0;">When checked, equity from rental properties (value minus loan balance) is added to your liquid assets for FIRE achievement comparison. Primary residence equity is never included.</small>
+    </label>
   </fieldset>
 
+  <div id="fire-assets-summary" class="muted" style="font-size:13px;padding:8px 12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:16px;"></div>
   <div id="fire-results" class="fire-results-grid"></div>
 
   <h3 style="margin-top:24px;">FIRE Number Comparison</h3>
