@@ -4912,4 +4912,5 @@ function wireThemeToggle() {
   wireThemeToggle();
   wireModeSwitch();
   wireFireTab();
+  wireLangSwitcher();
 })();
