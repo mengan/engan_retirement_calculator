@@ -325,6 +325,10 @@ en: {
   "chart.mcP50": "P50 (Median)",
   "chart.mcP90": "P90 (Best 90%)",
   "chart.mcHistogram": "Simulations",
+
+  // Mode switcher
+  "mode.nestEggLast": "📊 How long will my nest egg last?",
+  "mode.fireNumber": "🎯 How big of a nest egg do I need?",
 },
 
 // ─────────────────────────────────────────────────────────────────────────────
