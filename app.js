@@ -285,6 +285,23 @@ document.getElementById("intro-start-btn").addEventListener("click", () => {
   document.querySelector(".tab[data-tab='settings']").click();
 });
 
+document.getElementById("share-btn").addEventListener("click", () => {
+  const url   = "https://mengan.github.io/engan_retirement_calculator/";
+  const subj  = encodeURIComponent("Free Retirement Calculator — check this out");
+  const body  = encodeURIComponent(
+    "Hi,\n\nI wanted to share a free retirement planning calculator I've been using. " +
+    "It models your full retirement picture — investment accounts, Social Security, " +
+    "rental income, Roth conversions, required minimum distributions, property sales, " +
+    "Monte Carlo simulations, and more. Everything runs in your browser and nothing is " +
+    "sent to a server.\n\n" +
+    "Check it out here:\n" + url + "\n\n" +
+    "You can enter your own accounts, income, expenses, and properties to see a " +
+    "year-by-year projection through retirement. It's completely free.\n\n" +
+    "Hope you find it useful!"
+  );
+  window.location.href = `mailto:?subject=${subj}&body=${body}`;
+});
+
 // ===== Settings UI =====
 const settingsBindings = [
   ["set-current-year", "settings.currentYear", "int"],
