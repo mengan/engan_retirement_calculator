@@ -4198,10 +4198,15 @@ function fullRender() {
 // ===== Bar chart segment + total tooltip =====
 // Adds a "Total: $X" footer to any stacked bar chart tooltip
 Chart.defaults.plugins.tooltip.callbacks.footer = function(tooltipItems) {
-  if (tooltipItems.length <= 1) return undefined;
+  if (!tooltipItems.length) return undefined;
   const chart = tooltipItems[0].chart;
   if (chart.config.type !== "bar") return undefined;
-  const total = tooltipItems.reduce((sum, item) => sum + (item.parsed.y || 0), 0);
+  const dataIndex = tooltipItems[0].dataIndex;
+  const total = chart.data.datasets.reduce((sum, ds) => {
+    const v = ds.data[dataIndex];
+    return sum + (typeof v === "number" && v > 0 ? v : 0);
+  }, 0);
+  if (!total) return undefined;
   return "Total: " + fmt(total);
 };
 
