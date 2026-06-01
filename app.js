@@ -74,6 +74,7 @@ const defaultState = () => ({
     inheritedIra: {
       strategy: "fill_first",  // rmd_only | fill_first | split_50_50 | custom | even_drain
       splitPct: 50,            // when strategy === custom: % of bracket headroom from inherited IRA
+      iiTarget: "same",        // same | fill_12 | fill_22 | fill_24 | fill_32 — bracket ceiling for inherited IRA drain (independent of Roth conv target)
       // Opt-in: cap the mandatory inherited drain at the Roth bracket-fill target.
       // Off by default so the IRS annual-RMD obligation (for post-RBD inheritances) is
       // respected. Turn on only if your inheritance qualifies for skipping annual RMDs.
