@@ -2375,6 +2375,7 @@ document.getElementById("sum-peak").textContent = fmt(peakLiquid);
   renderSavingsGap(rows);
 
   drawCharts(rows, lowRows, highRows);
+  drawAllAssetsBreakdown(rows);
   drawIncomeBreakdown(rows);
   drawRothConversions(rows);
   drawGapWithdrawalBreakdown(rows);
