@@ -1630,64 +1630,70 @@ function project(opts) {
     //   Suppressed while inherited IRA has balance when startAfterInheritedDepleted=true.
 
     const hasActiveFillStrategy = rc.strategy && rc.strategy !== "none";
+    const hasActiveIiTarget = ii.strategy !== "rmd_only" && iiBracketFillTarget != null;
     const { effStart, effEnd } = rothConvEffectiveYears();
     const inFillWindow = hasActiveFillStrategy && year >= effStart && year <= effEnd;
+    const suppressSaleYear = !!rc.skipConversionOnSaleYear && properties.some(p => p.sellYear === year && p.sellYear > 0);
 
-    if (hasActiveFillStrategy) {
+    // Phase A: extra inherited IRA drain — uses its own bracket target (iiTarget), which
+    // may be set higher than the Roth conv target to drain faster. Runs every year while
+    // a balance remains, independent of the Roth conversion window.
+    if (hasActiveIiTarget) {
+      const baseOrdinary = (salary1 + salary2 - pretaxContribs) + rentalTaxable + inheritedDrained;
+      const ssT = ssTaxablePortion(grossSS, baseOrdinary);
+      const baseTaxable = Math.max(0, baseOrdinary + ssT - stdDed);
+      let iiHeadroom = Math.max(0, iiBracketFillTarget - baseTaxable);
+
+      const inhBalance = accounts
+        .filter(a => a.type === "inherited_ira")
+        .reduce((sum, a) => sum + a.balance, 0);
+
+      let extraInherited = 0;
+      if (iiHeadroom > 0 && inhBalance > 0 && !suppressSaleYear) {
+        switch (ii.strategy) {
+          case "fill_first":  extraInherited = Math.min(iiHeadroom, inhBalance); break;
+          case "split_50_50": extraInherited = Math.min(iiHeadroom / 2, inhBalance); break;
+          case "custom": {
+            const inhPct = (ii.splitPct ?? 50) / 100;
+            extraInherited = Math.min(iiHeadroom * inhPct, inhBalance);
+            break;
+          }
+          default: extraInherited = Math.min(iiHeadroom, inhBalance);
+        }
+        if (extraInherited > 0) {
+          const actuallyDrained = drainInheritedToTaxable(accounts, extraInherited);
+          inheritedBracketDrain += actuallyDrained;
+          inheritedDrained += actuallyDrained;
+        }
+      }
+    }
+
+    // Phase B: Roth conversions — uses the Roth conv bracket target, only within window.
+    if (hasActiveFillStrategy && inFillWindow) {
       const baseOrdinary = (salary1 + salary2 - pretaxContribs) + rentalTaxable + inheritedDrained;
       const ssT = ssTaxablePortion(grossSS, baseOrdinary);
       const baseTaxable = Math.max(0, baseOrdinary + ssT - stdDed);
 
-      let target = null;
-      if      (rc.strategy === "fill_12") target = 94300  * cumInfl;
-      else if (rc.strategy === "fill_22") target = 201050 * cumInfl;
-      else if (rc.strategy === "fill_24") target = 383900 * cumInfl;
-      else if (rc.strategy === "fill_32") target = 487450 * cumInfl;
+      let rcTarget = null;
+      if      (rc.strategy === "fill_12") rcTarget = 94300  * cumInfl;
+      else if (rc.strategy === "fill_22") rcTarget = 201050 * cumInfl;
+      else if (rc.strategy === "fill_24") rcTarget = 383900 * cumInfl;
+      else if (rc.strategy === "fill_32") rcTarget = 487450 * cumInfl;
 
       let headroom = 0;
       if (rc.strategy === "custom") headroom = rc.customAmount || 0;
-      else if (target != null)      headroom = Math.max(0, target - baseTaxable);
+      else if (rcTarget != null)    headroom = Math.max(0, rcTarget - baseTaxable);
 
-      if (headroom > 0) {
-        const inhBalance = accounts
-          .filter(a => a.type === "inherited_ira")
-          .reduce((sum, a) => sum + a.balance, 0);
+      // suppressRoth re-evaluated after Phase A so the final inherited IRA year can
+      // immediately fill remaining Roth headroom in the same year.
+      const inhBalanceAfterDrain = accounts
+        .filter(a => a.type === "inherited_ira")
+        .reduce((sum, a) => sum + a.balance, 0);
+      const suppressRoth = (!!rc.startAfterInheritedDepleted && inhBalanceAfterDrain > 0)
+        || suppressSaleYear;
 
-        // Phase A: extra inherited IRA drain (runs every year while balance > 0)
-        const suppressSaleYear = !!rc.skipConversionOnSaleYear && properties.some(p => p.sellYear === year && p.sellYear > 0);
-        let extraInherited = 0;
-        if (inhBalance > 0 && ii.strategy !== "rmd_only" && !suppressSaleYear) {
-          switch (ii.strategy) {
-            case "fill_first":  extraInherited = Math.min(headroom, inhBalance); break;
-            case "split_50_50": extraInherited = Math.min(headroom / 2, inhBalance); break;
-            case "custom": {
-              const inhPct = (ii.splitPct ?? 50) / 100;
-              extraInherited = Math.min(headroom * inhPct, inhBalance);
-              break;
-            }
-            default: extraInherited = Math.min(headroom, inhBalance);
-          }
-          if (extraInherited > 0) {
-            const actuallyDrained = drainInheritedToTaxable(accounts, extraInherited);
-            inheritedBracketDrain += actuallyDrained;
-            inheritedDrained += actuallyDrained;
-            headroom = Math.max(0, headroom - actuallyDrained);
-          }
-        }
-
-        // Phase B: Roth conversions (only within the startYear..endYear window).
-        // suppressRoth is re-evaluated AFTER Phase A so that in the final inherited IRA
-        // year — when Phase A drains the last of the balance — the Roth conversion can
-        // immediately fill the remaining bracket headroom that same year.
-        const inhBalanceAfterDrain = accounts
-          .filter(a => a.type === "inherited_ira")
-          .reduce((sum, a) => sum + a.balance, 0);
-        const suppressRoth = (!!rc.startAfterInheritedDepleted && inhBalanceAfterDrain > 0)
-          || suppressSaleYear;
-
-        if (inFillWindow && !suppressRoth && headroom > 0) {
-          rothConverted = performRothConversion(accounts, headroom);
-        }
+      if (!suppressRoth && headroom > 0) {
+        rothConverted = performRothConversion(accounts, headroom);
       }
     }
 
