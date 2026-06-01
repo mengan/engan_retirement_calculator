@@ -1900,7 +1900,7 @@ function renderCurrentPortfolio() {
 }
 
 // ===== Render Summary =====
-let assetChart, liquidBreakdownChart, incomeBreakdownChart, rothConversionChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart, taxableBrokerageGrowthChart;
+let assetChart, liquidBreakdownChart, allAssetsBreakdownChart, incomeBreakdownChart, rothConversionChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart, taxableBrokerageGrowthChart;
 let taxByBracketChart;
 let expenseByYearChart, expenseInflationChart, realEstateEquityChart, rentalIncomeChart, accountBalancesChart, accountTypeChart;
 
