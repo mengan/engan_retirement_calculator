@@ -3270,6 +3270,7 @@ function renderWithdrawalsTab() {
   renderRothConvEffectiveYears();
 
   const ii = state.settings.inheritedIra;
+  document.getElementById("ii-target").value = ii.iiTarget || "same";
   document.getElementById("ii-strategy").value = ii.strategy || "fill_first";
   document.getElementById("ii-split-pct").value = ii.splitPct ?? 50;
   document.getElementById("ii-cap-bracket").checked = ii.capAtBracketFill === true;
