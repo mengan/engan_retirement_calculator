@@ -1606,11 +1606,11 @@ function project(opts) {
     let inheritedRMD = 0;
     let inheritedBracketDrain = 0;
     let mandatoryInherited = inheritedMandatoryDistribution(accounts, year, yearsOut === 0);
-    if (iiEarly.capAtBracketFill === true && bracketFillTarget != null) {
+    if (iiEarly.capAtBracketFill === true && iiBracketFillTarget != null) {
       const baseOrdNoDrain = (salary1 + salary2 - pretaxContribs) + rentalTaxable + traditionalRMD;
       const ssTNoDrain     = ssTaxablePortion(grossSS, baseOrdNoDrain);
       const baseTaxNoDrain = Math.max(0, baseOrdNoDrain + ssTNoDrain - stdDed);
-      const headroom = Math.max(0, bracketFillTarget - baseTaxNoDrain);
+      const headroom = Math.max(0, iiBracketFillTarget - baseTaxNoDrain);
       mandatoryInherited = Math.min(mandatoryInherited, headroom);
     }
     if (mandatoryInherited > 0) {
