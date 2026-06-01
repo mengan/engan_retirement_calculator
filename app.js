@@ -4168,6 +4168,7 @@ function wireRealNominalToggle() {
       summaryRealMode = r.value === "real";
       if (lastRows) {
         drawCharts(lastRows, lastLowRows, lastHighRows);
+        drawAllAssetsBreakdown(lastRows);
         drawIncomeBreakdown(lastRows);
         drawRothConversions(lastRows);
         drawGapWithdrawalBreakdown(lastRows);
