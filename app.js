@@ -1588,6 +1588,14 @@ function project(opts) {
     else if (rcEarly.strategy === "fill_24") bracketFillTarget = 383900 * cumInfl;
     else if (rcEarly.strategy === "fill_32") bracketFillTarget = 487450 * cumInfl;
 
+    // Separate bracket ceiling for the inherited IRA drain (may differ from Roth conv target).
+    const iiTargetKey = (iiEarly.iiTarget && iiEarly.iiTarget !== "same") ? iiEarly.iiTarget : rcEarly.strategy;
+    let iiBracketFillTarget = null;
+    if      (iiTargetKey === "fill_12") iiBracketFillTarget = 94300  * cumInfl;
+    else if (iiTargetKey === "fill_22") iiBracketFillTarget = 201050 * cumInfl;
+    else if (iiTargetKey === "fill_24") iiBracketFillTarget = 383900 * cumInfl;
+    else if (iiTargetKey === "fill_32") iiBracketFillTarget = 487450 * cumInfl;
+
     // (1b) Mandatory inherited IRA distribution.
     // If the original owner was past their Required Beginning Date (RBD) — i.e. they had
     // already started taking RMDs (age 73+) — the SECURE Act requires the beneficiary to
