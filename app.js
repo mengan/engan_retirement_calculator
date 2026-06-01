@@ -3365,10 +3365,11 @@ function wireWithdrawalsTab() {
     saveState(); recalc();
   });
 
-  ["ii-strategy", "ii-split-pct"].forEach(id => {
+  ["ii-target", "ii-strategy", "ii-split-pct"].forEach(id => {
     document.getElementById(id).addEventListener("change", (e) => {
       const ii = state.settings.inheritedIra;
-      if (id === "ii-strategy") ii.strategy = e.target.value;
+      if (id === "ii-target") ii.iiTarget = e.target.value;
+      else if (id === "ii-strategy") ii.strategy = e.target.value;
       else if (id === "ii-split-pct") ii.splitPct = parseFloat(e.target.value) || 0;
       saveState(); renderWithdrawalsTab(); recalc();
     });
