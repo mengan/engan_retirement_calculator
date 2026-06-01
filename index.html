@@ -715,7 +715,17 @@
         target bracket ceiling) can be used to drain more of the inherited IRA, do Roth conversions, or both.
         The strategy setting below controls how that headroom is split.
       </p>
-      <label>Strategy
+      <label>Bracket Ceiling (for Inherited IRA drain)
+        <select id="ii-target">
+          <option value="same">Same as Roth conversion target</option>
+          <option value="fill_12">Fill 12% bracket</option>
+          <option value="fill_22">Fill 22% bracket</option>
+          <option value="fill_24">Fill 24% bracket</option>
+          <option value="fill_32">Fill 32% bracket</option>
+        </select>
+        <small>Sets the ordinary-income ceiling the model drains the inherited IRA up to each year. Setting this <em>higher</em> than your Roth conversion target lets you drain the inherited IRA faster without converting more to Roth. Setting it the same links both to the Roth target.</small>
+      </label>
+      <label>Distribution Strategy
         <select id="ii-strategy">
           <option value="rmd_only">RMD only — bracket headroom goes to Roth conversion</option>
           <option value="fill_first">Drain Inherited IRA first — Roth conv after it's empty</option>
