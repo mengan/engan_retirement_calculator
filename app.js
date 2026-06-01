@@ -2550,6 +2550,42 @@ function drawCharts(rows, lowRows, highRows) {
   });
 }
 
+function drawAllAssetsBreakdown(rows) {
+  if (allAssetsBreakdownChart) allAssetsBreakdownChart.destroy();
+  const dr = deflateRows(rows, summaryRealMode);
+  const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  const pick = t => dr.map(r => (r.balancesByType && r.balancesByType[t]) || 0);
+  allAssetsBreakdownChart = new Chart(
+    document.getElementById("allAssetsBreakdownChart").getContext("2d"),
+    {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          { label: "Taxable Brokerage",      data: pick("taxable"),       borderColor: "#f59e0b", backgroundColor: "rgba(245,158,11,0.15)",  fill: true, tension: 0.2, pointRadius: 0 },
+          { label: "Traditional IRA / 401k", data: pick("traditional"),   borderColor: "#ef4444", backgroundColor: "rgba(239,68,68,0.15)",   fill: true, tension: 0.2, pointRadius: 0 },
+          { label: "Roth",                   data: pick("roth"),           borderColor: "#10b981", backgroundColor: "rgba(16,185,129,0.15)",  fill: true, tension: 0.2, pointRadius: 0 },
+          { label: "Inherited IRA",          data: pick("inherited_ira"),  borderColor: "#c2410c", backgroundColor: "rgba(194,65,12,0.15)",   fill: true, tension: 0.2, pointRadius: 0 },
+          { label: "HSA",                    data: pick("hsa"),            borderColor: "#7c3aed", backgroundColor: "rgba(124,58,237,0.15)",  fill: true, tension: 0.2, pointRadius: 0 },
+          { label: "Primary Home Equity",    data: dr.map(r => Math.max(0, (r.reEquity || 0) - (r.rentalEquity || 0))), borderColor: "#0ea5e9", backgroundColor: "rgba(14,165,233,0.15)", fill: true, tension: 0.2, pointRadius: 0 },
+          { label: "Rental Real Estate Equity", data: dr.map(r => r.rentalEquity || 0), borderColor: "#6366f1", backgroundColor: "rgba(99,102,241,0.15)", fill: true, tension: 0.2, pointRadius: 0 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: "All Assets by Type (Liquid + Real Estate)" },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+        },
+        scales: {
+          y: { ticks: { callback: v => fmt(v) } },
+        },
+      },
+    }
+  );
+}
+
 function drawIncomeBreakdown(rows) {
   if (incomeBreakdownChart) incomeBreakdownChart.destroy();
   const dr = deflateRows(rows, summaryRealMode);
