@@ -2010,6 +2010,7 @@ function drawTaxByBracket(rows) {
     });
   });
   ltcgBrackets.forEach((b, i) => {
+    if (b.rate === 0) return; // 0% bracket never produces tax — skip to avoid confusing legend
     datasets.push({
       label: `LTCG ${b.rate}%`,
       data: dr.map(r => (r.ltcgTaxByBracket && r.ltcgTaxByBracket[i]) || 0),
