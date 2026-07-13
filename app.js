@@ -2780,21 +2780,32 @@ function drawExpenseBreakdown(rows) {
   if (taxableBrokerageFlowChart) taxableBrokerageFlowChart.destroy();
   const dr = deflateRows(rows, summaryRealMode);
   const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
-  // Net flow to/from taxable brokerage each year.
-  // Positive = surplus deposited (inflows beat outflows that year).
-  // Negative = deficit drawn (outflows exceed inflows, brokerage fills the gap).
-  const netFlow = dr.map(r => {
+
+  // Build per-year arrays: investment growth, net cash flow, balance
+  const growthArr  = [];
+  const netFlowArr = [];
+  const balanceArr = [];
+
+  for (let i = 0; i < dr.length; i++) {
+    const r   = dr[i];
+    const bal = (r.balancesByType && r.balancesByType.taxable) || 0;
+    const prev = i === 0 ? bal : (dr[i-1].balancesByType && dr[i-1].balancesByType.taxable) || 0;
+
     const inflows = (r.salary1 || 0) + (r.salary2 || 0)
-      + (r.grossSS || 0)
-      + (r.rentalNet || 0)
-      + (r.dividendIncome || 0)
-      + (r.saleProceeds || 0)
-      + (r.traditionalRMD || 0)
-      + (r.inheritedRMD || 0)
-      + (r.inheritedBracketDrain || 0) + (r.inheritedSpendWD || 0);
+      + (r.grossSS || 0) + (r.rentalNet || 0) + (r.dividendIncome || 0)
+      + (r.saleProceeds || 0) + (r.traditionalRMD || 0)
+      + (r.inheritedRMD || 0) + (r.inheritedBracketDrain || 0) + (r.inheritedSpendWD || 0);
     const outflows = (r.expenses || 0) + (r.ordinaryTax || 0) + (r.ltcgTax || 0);
-    return inflows - outflows;
-  });
+    const netFlow  = inflows - outflows;
+
+    const deltaBalance = i === 0 ? 0 : bal - prev;
+    const investGrowth = i === 0 ? 0 : deltaBalance - netFlow;
+
+    growthArr.push(investGrowth);
+    netFlowArr.push(netFlow);
+    balanceArr.push(bal);
+  }
+
   taxableBrokerageFlowChart = new Chart(
     document.getElementById("gapWithdrawalChart").getContext("2d"),
     {
@@ -2803,21 +2814,63 @@ function drawExpenseBreakdown(rows) {
         labels,
         datasets: [
           {
-            label: "Taxable Brokerage Net Flow",
-            data: netFlow,
-            backgroundColor: netFlow.map(v => v >= 0 ? "#10b981" : "#ef4444"),
+            label: "Investment Growth",
+            data: growthArr,
+            backgroundColor: "rgba(37,99,235,0.75)",
+            stack: "change",
+          },
+          {
+            label: "Net Cash Flow (income − expenses & taxes)",
+            data: netFlowArr,
+            backgroundColor: netFlowArr.map(v => v >= 0 ? "rgba(16,185,129,0.85)" : "rgba(239,68,68,0.85)"),
+            stack: "change",
+          },
+          {
+            label: "Taxable Balance",
+            data: balanceArr,
+            type: "line",
+            borderColor: "#1f3a5f",
+            backgroundColor: "rgba(0,0,0,0)",
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.2,
+            fill: false,
+            yAxisID: "yBalance",
+            order: 0,
           },
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          title: { display: true, text: "Annual Taxable Brokerage Net Flow (green = surplus added, red = gap drawn)" },
-          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+          title: { display: true, text: "Annual Taxable Brokerage: Investment Growth vs Net Cash Flow" },
+          tooltip: {
+            callbacks: {
+              label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}`,
+              footer: items => {
+                // Sum only the bar datasets (stack: "change") for the net change
+                const barItems = items.filter(i => i.dataset.stack === "change");
+                if (barItems.length < 2) return undefined;
+                const total = barItems.reduce((s, i) => s + (i.parsed.y || 0), 0);
+                return `Net change: ${fmt(total)}`;
+              },
+            },
+          },
+          legend: { display: true },
         },
         scales: {
-          x: { stacked: false },
-          y: { ticks: { callback: v => fmt(v) } },
+          x: { stacked: true },
+          y: {
+            stacked: true,
+            title: { display: true, text: "Annual Change ($)" },
+            ticks: { callback: v => fmt(v) },
+          },
+          yBalance: {
+            position: "right",
+            title: { display: true, text: "Total Balance ($)" },
+            ticks: { callback: v => fmt(v) },
+            grid: { drawOnChartArea: false },
+          },
         },
       },
     }
