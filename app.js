@@ -2462,6 +2462,7 @@ document.getElementById("sum-peak").textContent = fmt(peakLiquid);
   renderExpenseByYearTable(rows);
   drawAccountTypeBalances(rows);
   drawAccountBalances(rows);
+  renderAccountBalanceHistory(rows);
   drawRealEstateEquityChart(rows);
   drawRentalIncomeChart(rows);
   renderRealEstateTable(rows);
