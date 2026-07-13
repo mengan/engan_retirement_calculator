@@ -2809,12 +2809,18 @@ function drawExpenseBreakdown(rows) {
     const bal = (r.balancesByType && r.balancesByType.taxable) || 0;
     const prev = i === 0 ? bal : (dr[i-1].balancesByType && dr[i-1].balancesByType.taxable) || 0;
 
-    const inflows = (r.salary1 || 0) + (r.salary2 || 0)
-      + (r.grossSS || 0) + (r.rentalNet || 0) + (r.dividendIncome || 0)
-      + (r.saleProceeds || 0) + (r.traditionalRMD || 0)
-      + (r.inheritedRMD || 0) + (r.inheritedBracketDrain || 0) + (r.inheritedSpendWD || 0);
-    const outflows = (r.expenses || 0) + (r.ordinaryTax || 0) + (r.ltcgTax || 0);
-    const netFlow  = inflows - outflows;
+    // Use actual taxable account cash movements, not a proxy income-minus-expenses calc.
+    // This correctly shows red only in years where taxable was actually drawn from,
+    // regardless of where taxes or Roth conversion costs were paid from.
+    const cashIn  = (r.surplusDeposited || 0)      // working surplus deposited to taxable
+      + (r.inheritedRMD || 0)                       // inherited IRA RMD lands in taxable
+      + (r.inheritedBracketDrain || 0)              // extra inherited drain lands in taxable
+      + (r.inheritedSpendWD || 0)                   // inherited IRA spend/tax WD lands in taxable
+      + (r.traditionalRMD || 0)                     // traditional IRA RMD lands in taxable
+      + (r.saleProceeds || 0);                      // property sale proceeds land in taxable
+    const cashOut = (r.taxableGapWD || 0)           // spending withdrawn from taxable
+      + (r.taxableTaxWD || 0);                      // tax bill withdrawn from taxable
+    const netFlow = cashIn - cashOut;
 
     const deltaBalance = i === 0 ? 0 : bal - prev;
     const investGrowth = i === 0 ? 0 : deltaBalance - netFlow;
