@@ -3837,11 +3837,11 @@ async function runMonteCarlo() {
       labels,
       datasets: [
         { label: "P90 (best case)", data: p90, borderColor: "#10b981",
-          backgroundColor: "rgba(16,185,129,0.15)", fill: "+1", tension: 0.2, pointRadius: 0 },
+          backgroundColor: "rgba(16,185,129,0.15)", fill: "+1", tension: 0.2, ...zeroDropProps(p90, "#10b981") },
         { label: "P50 (median)",   data: p50, borderColor: "#1f3a5f",
-          backgroundColor: "rgba(31,58,95,0.0)", fill: false, borderWidth: 3, tension: 0.2, pointRadius: 0 },
+          backgroundColor: "rgba(31,58,95,0.0)", fill: false, borderWidth: 3, tension: 0.2, ...zeroDropProps(p50, "#1f3a5f") },
         { label: "P10 (worst case)", data: p10, borderColor: "#ef4444",
-          backgroundColor: "rgba(239,68,68,0.0)", fill: false, tension: 0.2, pointRadius: 0 },
+          backgroundColor: "rgba(239,68,68,0.0)", fill: false, tension: 0.2, ...zeroDropProps(p10, "#ef4444") },
       ],
     },
     options: {
