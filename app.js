@@ -46,6 +46,9 @@ const defaultState = () => ({
     // Withdrawal strategy. "traditional" covers both IRA and 401(k)
     // (assumed rolled into a traditional IRA at retirement).
     withdrawalOrder: ["taxable", "roth", "traditional", "inherited_ira", "hsa"],
+    // When true, within each account type drain the smallest account completely first
+    // before moving to the next, rather than spreading withdrawals pro-rata.
+    drainSmallestFirst: true,
     // When true and a Roth fill_X strategy is active, cash-gap withdrawals from
     // traditional/inherited IRA are capped at the bracket headroom — non-ordinary
     // accounts cover any overflow before the model would bust into a higher bracket.
