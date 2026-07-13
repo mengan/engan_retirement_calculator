@@ -2467,7 +2467,6 @@ document.getElementById("sum-peak").textContent = fmt(peakLiquid);
   drawRothConversions(rows);
   drawGapWithdrawalBreakdown(rows);
   drawExpenseBreakdown(rows);
-  drawTaxableBrokerageGrowth(rows);
   drawTaxByBracket(rows);
   const expLowRows  = project({ inflationPct: state.settings.defaultInflationLow });
   const expHighRows = project({ inflationPct: state.settings.defaultInflationHigh });
