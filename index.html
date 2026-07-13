@@ -135,12 +135,14 @@
     <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:16px 20px; margin-top:24px;">
       <strong style="color:#0369a1; font-size:15px;">&#127922; Try it with sample data</strong>
       <p style="margin:6px 0 12px; font-size:13px; color:#0c4a6e; line-height:1.6;">
-        Not sure where to start? Click below to populate the Investment Accounts and Real Estate tabs
-        with a randomized example portfolio — realistic balances, account types, and property values
-        that give you a working plan to explore. You can replace everything with your real numbers later.
+        Not sure where to start? Load a sample portfolio sized to your approximate estate — four accounts across different types, plus one property. You can replace everything with your real numbers later.
       </p>
-      <button id="randomize-btn" data-i18n="btn.randomize" style="padding:8px 18px; font-size:14px; font-weight:600; background:#0284c7; color:#fff; border:none; border-radius:6px; cursor:pointer;">&#127922; Randomize Sample Data</button>
-      <span id="randomize-status" style="margin-left:12px; font-size:13px; color:#64748b;"></span>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button id="randomize-1m-btn" style="padding:8px 18px; font-size:14px; font-weight:600; background:#0284c7; color:#fff; border:none; border-radius:6px; cursor:pointer;">&#127922; ~$1M Estate</button>
+        <button id="randomize-3m-btn" style="padding:8px 18px; font-size:14px; font-weight:600; background:#0369a1; color:#fff; border:none; border-radius:6px; cursor:pointer;">&#127922; ~$3M Estate</button>
+        <button id="randomize-5m-btn" style="padding:8px 18px; font-size:14px; font-weight:600; background:#1e3a5f; color:#fff; border:none; border-radius:6px; cursor:pointer;">&#127922; ~$5M Estate</button>
+        <span id="randomize-status" style="font-size:13px; color:#64748b;"></span>
+      </div>
     </div>
 
     <div class="start-btn-row" style="display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;">
