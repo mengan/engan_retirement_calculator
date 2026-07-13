@@ -484,8 +484,21 @@
     </div>
   </div>
 
+  <h3 style="margin-top:24px;">Withdrawal Strategy Within Account Type</h3>
+  <p class="muted">When multiple accounts share the same type (e.g. two Roth IRAs), choose how withdrawals are distributed across them.</p>
+  <label style="display:flex;align-items:flex-start;gap:10px;max-width:600px;">
+    <select id="set-drain-smallest" style="width:auto;flex-shrink:0;">
+      <option value="true">Drain smallest account first (default)</option>
+      <option value="false">Pro-rata — withdraw proportionally from all accounts</option>
+    </select>
+    <small style="color:#64748b;">
+      <strong>Drain smallest first:</strong> Completely empties the account with the lowest balance before touching the next, consolidating accounts over time.<br/>
+      <strong>Pro-rata:</strong> Spreads each withdrawal proportionally across all accounts of the same type simultaneously.
+    </small>
+  </label>
+
   <h3 style="margin-top:24px;">Projected Account Balances by Account</h3>
-  <p class="muted">Each account tracked individually. Withdrawals from accounts of the same type are distributed pro-rata by balance. Excluded accounts grow but are never drawn from.</p>
+  <p class="muted" id="account-balances-chart-desc">Each account tracked individually. Excluded accounts grow but are never drawn from.</p>
   <div class="chart-wrapper">
     <div class="chart-container" style="height:420px;"><canvas id="accountBalancesChart"></canvas></div>
     <div class="chart-zoom-controls" data-chart="accountBalancesChart">
@@ -497,6 +510,15 @@
       <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
       <button data-zoom-reset>Reset</button>
     </div>
+  </div>
+
+  <h3 style="margin-top:32px;">Account Balance History Table</h3>
+  <p class="muted">Year-by-year balance for each account. Scroll horizontally if needed.</p>
+  <div style="overflow-x:auto;margin-top:8px;">
+    <table id="account-balance-history-table" style="min-width:600px;font-size:13px;border-collapse:collapse;">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
   </div>
 </section>
 
