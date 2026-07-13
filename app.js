@@ -2030,6 +2030,37 @@ function drawAccountBalances(rows) {
   );
 }
 
+function renderAccountBalanceHistory(rows) {
+  const table = document.getElementById("account-balance-history-table");
+  if (!table) return;
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+
+  const accounts = state.accounts;
+  if (!accounts.length || !rows.length) { thead.innerHTML = ""; tbody.innerHTML = ""; return; }
+
+  // Header: Year | Age | Account1 | Account2 | ...
+  const s = state.settings;
+  thead.innerHTML = `<tr>
+    <th style="text-align:left;padding:4px 8px;background:#f1f5f9;position:sticky;left:0;z-index:1;">Year</th>
+    <th style="text-align:left;padding:4px 8px;background:#f1f5f9;">Age</th>
+    ${accounts.map(a => `<th style="text-align:right;padding:4px 8px;background:#f1f5f9;">${a.name}${a.excluded ? ' <em style="font-weight:normal;color:#94a3b8;">(excl)</em>' : ''}</th>`).join("")}
+    <th style="text-align:right;padding:4px 8px;background:#f1f5f9;font-weight:700;">Total</th>
+  </tr>`;
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const rowStyle = i % 2 === 0 ? "" : "background:#f8fafc;";
+    const balances = accounts.map(a => (r.balancesById && r.balancesById[a.id]) || 0);
+    const total = balances.reduce((s, v) => s + v, 0);
+    return `<tr style="${rowStyle}">
+      <td style="padding:3px 8px;position:sticky;left:0;background:${i % 2 === 0 ? '#fff' : '#f8fafc'};">${r.year}</td>
+      <td style="padding:3px 8px;color:#64748b;">${r.s1Age}${s.hasSpouse2 ? `/${r.s2Age}` : ''}</td>
+      ${balances.map(v => `<td style="text-align:right;padding:3px 8px;">${v > 0 ? fmt(v) : '<span style="color:#cbd5e1;">—</span>'}</td>`).join("")}
+      <td style="text-align:right;padding:3px 8px;font-weight:600;">${fmt(total)}</td>
+    </tr>`;
+  }).join("");
+}
+
 function drawTaxByBracket(rows) {
   if (taxByBracketChart) taxByBracketChart.destroy();
   const dr = deflateRows(rows, summaryRealMode);
