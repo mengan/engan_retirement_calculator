@@ -3103,7 +3103,7 @@ function renderGuardrails(rows, lowRows, highRows) {
           borderDash: [3, 3],
           fill: false,
           tension: 0.2,
-          pointRadius: 0,
+          ...zeroDropProps(highLiquid, "rgba(16,185,129,0.7)"),
         },
         {
           label: "Liquid Assets — Mid (base case)",
@@ -3113,7 +3113,7 @@ function renderGuardrails(rows, lowRows, highRows) {
           borderWidth: 2.5,
           fill: true,
           tension: 0.2,
-          pointRadius: 0,
+          ...zeroDropProps(midLiquid, "#2563eb"),
         },
         {
           label: "Liquid Assets — Pessimistic",
@@ -3124,7 +3124,7 @@ function renderGuardrails(rows, lowRows, highRows) {
           borderDash: [3, 3],
           fill: false,
           tension: 0.2,
-          pointRadius: 0,
+          ...zeroDropProps(lowLiquid, "rgba(239,68,68,0.7)"),
         },
         {
           label: "Forecasted Expenses",
