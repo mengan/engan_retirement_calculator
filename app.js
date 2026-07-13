@@ -1957,6 +1957,24 @@ let expenseByYearChart, expenseInflationChart, realEstateEquityChart, rentalInco
 let lastRows = null, lastLowRows = null, lastHighRows = null;
 let summaryRealMode = false;
 
+// Returns per-point arrays for a line dataset so the first index where data
+// goes from >0 to ≤0 gets a star marker in the dataset's color.
+function zeroDropProps(data, color) {
+  const n = data.length;
+  const pointRadius          = new Array(n).fill(0);
+  const pointBackgroundColor = new Array(n).fill(color);
+  const pointStyle           = new Array(n).fill("circle");
+  for (let i = 1; i < n; i++) {
+    if (data[i - 1] > 0 && data[i] <= 0) {
+      pointRadius[i]          = 10;
+      pointStyle[i]           = "star";
+      pointBackgroundColor[i] = color;
+      break;
+    }
+  }
+  return { pointRadius, pointBackgroundColor, pointStyle };
+}
+
 function drawAccountTypeBalances(rows) {
   if (accountTypeChart) accountTypeChart.destroy();
   const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
