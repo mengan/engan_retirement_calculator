@@ -544,6 +544,8 @@ function renderAccountTotals() {
 }
 
 function renderAccounts() {
+  const drainEl = document.getElementById("set-drain-smallest");
+  if (drainEl) drainEl.value = String(state.settings.drainSmallestFirst !== false);
   renderAccountTotals();
   const tbody = document.querySelector("#accounts-table tbody");
   tbody.innerHTML = "";
