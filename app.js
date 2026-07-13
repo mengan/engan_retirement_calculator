@@ -4315,7 +4315,6 @@ function wireRealNominalToggle() {
         drawRothConversions(lastRows);
         drawGapWithdrawalBreakdown(lastRows);
         drawExpenseBreakdown(lastRows);
-        drawTaxableBrokerageGrowth(lastRows);
         drawTaxByBracket(lastRows);
       }
     });
