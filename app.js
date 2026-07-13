@@ -4922,8 +4922,8 @@ function renderFireNumbers() {
             backgroundColor: "rgba(14,165,233,0.1)",
             fill: true,
             tension: 0.3,
-            pointRadius: 0,
             borderWidth: 2,
+            ...zeroDropProps(portfolioValues, "#0ea5e9"),
           },
           {
             label: "Classic FIRE Target",
