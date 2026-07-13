@@ -2160,15 +2160,13 @@ function drawRealEstateEquityChart(rows) {
       type: "line",
       data: {
         labels,
-        datasets: [{
+        datasets: [(() => { const d = rows.map(r => r.reEquity || 0); return {
           label: "Real Estate Equity",
-          data: rows.map(r => r.reEquity || 0),
-          borderColor: "#10b981",
+          data: d, borderColor: "#10b981",
           backgroundColor: "rgba(16,185,129,0.20)",
-          fill: true,
-          tension: 0.2,
-          pointRadius: 0,
-        }],
+          fill: true, tension: 0.2,
+          ...zeroDropProps(d, "#10b981"),
+        }; })()],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
