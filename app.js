@@ -2001,6 +2001,13 @@ function drawAccountTypeBalances(rows) {
 
 function drawAccountBalances(rows) {
   if (accountBalancesChart) accountBalancesChart.destroy();
+  const descEl = document.getElementById("account-balances-chart-desc");
+  if (descEl) {
+    const mode = state.settings.drainSmallestFirst !== false
+      ? "Withdrawals drain the smallest account of each type completely before moving to the next."
+      : "Withdrawals are spread pro-rata across all accounts of the same type.";
+    descEl.textContent = `Each account tracked individually. ${mode} Excluded accounts grow but are never drawn from.`;
+  }
   const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
 
   // Color palette — cycle through a distinct set for up to ~12 accounts
