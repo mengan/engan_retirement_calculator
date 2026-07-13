@@ -2671,14 +2671,14 @@ function drawAllAssetsBreakdown(rows) {
       data: {
         labels,
         datasets: [
-          { label: "Taxable Brokerage",      data: pick("taxable"),       borderColor: "#f59e0b", backgroundColor: "rgba(245,158,11,0.15)",  fill: true, tension: 0.2, pointRadius: 0 },
-          { label: "Traditional IRA / 401k", data: pick("traditional"),   borderColor: "#ef4444", backgroundColor: "rgba(239,68,68,0.15)",   fill: true, tension: 0.2, pointRadius: 0 },
-          { label: "Roth",                   data: pick("roth"),           borderColor: "#10b981", backgroundColor: "rgba(16,185,129,0.15)",  fill: true, tension: 0.2, pointRadius: 0 },
-          { label: "Inherited IRA",          data: pick("inherited_ira"),  borderColor: "#c2410c", backgroundColor: "rgba(194,65,12,0.15)",   fill: true, tension: 0.2, pointRadius: 0 },
-          { label: "HSA",                    data: pick("hsa"),            borderColor: "#7c3aed", backgroundColor: "rgba(124,58,237,0.15)",  fill: true, tension: 0.2, pointRadius: 0 },
-          { label: "Primary Home Equity",    data: dr.map(r => Math.max(0, (r.reEquity || 0) - (r.rentalEquity || 0))), borderColor: "#0ea5e9", backgroundColor: "rgba(14,165,233,0.15)", fill: true, tension: 0.2, pointRadius: 0 },
-          { label: "Rental Real Estate Equity", data: dr.map(r => r.rentalEquity || 0), borderColor: "#6366f1", backgroundColor: "rgba(99,102,241,0.15)", fill: true, tension: 0.2, pointRadius: 0 },
-        ],
+          [pick("taxable"),       "#f59e0b", "Taxable Brokerage",           "rgba(245,158,11,0.15)"],
+          [pick("traditional"),   "#ef4444", "Traditional IRA / 401k",      "rgba(239,68,68,0.15)"],
+          [pick("roth"),          "#10b981", "Roth",                        "rgba(16,185,129,0.15)"],
+          [pick("inherited_ira"), "#c2410c", "Inherited IRA",               "rgba(194,65,12,0.15)"],
+          [pick("hsa"),           "#7c3aed", "HSA",                         "rgba(124,58,237,0.15)"],
+          [dr.map(r => Math.max(0, (r.reEquity||0)-(r.rentalEquity||0))), "#0ea5e9", "Primary Home Equity",       "rgba(14,165,233,0.15)"],
+          [dr.map(r => r.rentalEquity||0),                                 "#6366f1", "Rental Real Estate Equity", "rgba(99,102,241,0.15)"],
+        ].map(([d, color, label, bg]) => ({ label, data: d, borderColor: color, backgroundColor: bg, fill: true, tension: 0.2, ...zeroDropProps(d, color) })),
       },
       options: {
         responsive: true,
