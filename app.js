@@ -2037,16 +2037,20 @@ function drawAccountBalances(rows) {
     "#0891b2","#b45309","#15803d","#dc2626","#7c3aed","#db2777",
   ];
 
-  const datasets = state.accounts.map((a, i) => ({
-    label: a.excluded ? `${a.name} (excluded)` : a.name,
-    data: rows.map(r => (r.balancesById && r.balancesById[a.id]) || 0),
-    borderColor: palette[i % palette.length],
-    backgroundColor: "transparent",
-    borderWidth: a.excluded ? 1 : 2,
-    borderDash: a.excluded ? [5, 4] : [],
-    tension: 0.2,
-    pointRadius: 0,
-  }));
+  const datasets = state.accounts.map((a, i) => {
+    const color = palette[i % palette.length];
+    const data = rows.map(r => (r.balancesById && r.balancesById[a.id]) || 0);
+    return {
+      label: a.excluded ? `${a.name} (excluded)` : a.name,
+      data,
+      borderColor: color,
+      backgroundColor: "transparent",
+      borderWidth: a.excluded ? 1 : 2,
+      borderDash: a.excluded ? [5, 4] : [],
+      tension: 0.2,
+      ...zeroDropProps(data, color),
+    };
+  });
 
   accountBalancesChart = new Chart(
     document.getElementById("accountBalancesChart").getContext("2d"),
