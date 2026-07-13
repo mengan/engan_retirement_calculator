@@ -4535,39 +4535,82 @@ function generateRandomProperties() {
   return properties;
 }
 
+function generateTieredAccounts(tier) {
+  // tier: 1 = ~$1M liquid, 3 = ~$3M liquid, 5 = ~$5M liquid
+  // Always exactly 4 accounts: taxable, 401k, roth, ira
+  const s1Name = state.settings.s1.name || "Spouse 1";
+
+  // Allocation ratios by tier (taxable, 401k, roth, ira)
+  const totals = { 1: 1_000_000, 3: 3_000_000, 5: 5_000_000 };
+  const total = totals[tier] || 1_000_000;
+  // Vary slightly so repeated clicks differ
+  const noise = () => 0.9 + Math.random() * 0.2;
+  const ratios = [0.20 * noise(), 0.45 * noise(), 0.20 * noise(), 0.15 * noise()];
+  const ratioSum = ratios.reduce((a, b) => a + b, 0);
+  const [taxBal, k401Bal, rothBal, iraBal] = ratios.map(r => Math.round(total * r / ratioSum / 1000) * 1000);
+
+  return [
+    {
+      id: uid(), name: "Joint Brokerage", type: "taxable", owner: "Joint",
+      balance: taxBal, basis: Math.round(taxBal * (0.45 + Math.random() * 0.35)),
+      returnPct: 6, contribution: tier >= 3 ? 24000 : 12000,
+      dividendYield: +(1.5 + Math.random() * 1.5).toFixed(1), excluded: false,
+    },
+    {
+      id: uid(), name: `${s1Name} 401(k)`, type: "401k", owner: s1Name,
+      balance: k401Bal, basis: 0, returnPct: 6.5,
+      contribution: 23000, excluded: false,
+    },
+    {
+      id: uid(), name: `${s1Name} Roth IRA`, type: "roth", owner: s1Name,
+      balance: rothBal, basis: 0, returnPct: 7,
+      contribution: 7000, excluded: false,
+    },
+    {
+      id: uid(), name: `${s1Name} IRA`, type: "ira", owner: s1Name,
+      balance: iraBal, basis: 0, returnPct: 6,
+      contribution: 0, excluded: false,
+    },
+  ];
+}
+
+function generateTieredProperty(tier) {
+  const currentYear = state.settings.currentYear;
+  // One primary home sized to the tier
+  const homeValues = { 1: 400_000, 3: 750_000, 5: 1_200_000 };
+  const homeValue = homeValues[tier] || 400_000;
+  const homeLoan  = Math.round(homeValue * (0.3 + Math.random() * 0.3) / 1000) * 1000;
+  const homeRate  = +(3.5 + Math.random() * 2).toFixed(2);
+  const homePmt   = Math.round(homeLoan * (homeRate / 100 / 12) /
+    (1 - Math.pow(1 + homeRate / 100 / 12, -360)));
+  return [{
+    id: uid(), name: "Primary Home", type: "primary",
+    value: homeValue, loanBalance: homeLoan,
+    payment: homePmt, escrow: Math.round(homePmt * 0.2 / 10) * 10,
+    interestRate: homeRate,
+    loanPayoffYear: currentYear + Math.floor(10 + Math.random() * 15),
+    loanPayoffMonth: 12, appreciation: 3,
+    isRental: false, rent: 0, rentGrowth: 3, basis: 0, sellYear: 0,
+    yearsDepreciated: 0, taxablePct: 30,
+  }];
+}
+
 function wireRandomizeButton() {
-  const btn    = document.getElementById("randomize-btn");
   const status = document.getElementById("randomize-status");
-  if (!btn || !status) return;
+  if (!status) return;
 
-  function refresh() {
-    if (userHasCustomizedAccounts()) {
-      btn.disabled = true;
-      btn.style.opacity = "0.45";
-      btn.style.cursor  = "not-allowed";
-      status.textContent = "Disabled — you've already started entering your own data on the Investment Accounts tab.";
-      status.style.color = "#b45309";
-    } else {
-      btn.disabled = false;
-      btn.style.opacity = "";
-      btn.style.cursor  = "pointer";
-      status.textContent = "";
-    }
-  }
-
-  btn.addEventListener("click", () => {
-    if (userHasCustomizedAccounts()) return;
-    state.accounts   = generateRandomAccounts();
-    state.properties = generateRandomProperties();
-    saveState();
-    fullRender();
-    status.textContent = "Sample data loaded! Explore the tabs, then replace with your real numbers.";
-    status.style.color = "#15803d";
-    // Re-evaluate button state after render
-    refresh();
+  [["randomize-1m-btn", 1], ["randomize-3m-btn", 3], ["randomize-5m-btn", 5]].forEach(([btnId, tier]) => {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      state.accounts   = generateTieredAccounts(tier);
+      state.properties = generateTieredProperty(tier);
+      saveState();
+      fullRender();
+      status.textContent = `~$${tier}M sample loaded! Explore the tabs, then replace with your real numbers.`;
+      status.style.color = "#15803d";
+    });
   });
-
-  refresh();
 }
 
 // ===== FIRE Calculator =====
