@@ -164,6 +164,8 @@ function migrate(s) {
     s._ssOverrideMigrated = true;
   }
 
+  // drainSmallestFirst: new in schema — default true for existing state files.
+  if (s.settings && s.settings.drainSmallestFirst == null) s.settings.drainSmallestFirst = true;
   s.settings = { ...d.settings, ...(s.settings || {}) };
   s.settings.rothConv     = { ...d.settings.rothConv,     ...(s.settings.rothConv     || {}) };
   // If existing state has manual years but no mode, default to manual to preserve them
