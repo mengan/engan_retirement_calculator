@@ -620,6 +620,11 @@ document.getElementById("add-account").addEventListener("click", () => {
   saveState(); renderAccounts(); recalc();
 });
 
+document.getElementById("set-drain-smallest").addEventListener("change", (e) => {
+  state.settings.drainSmallestFirst = e.target.value === "true";
+  saveState(); recalc();
+});
+
 // ===== Properties =====
 function renderProperties() {
   const container = document.getElementById("properties-container");
