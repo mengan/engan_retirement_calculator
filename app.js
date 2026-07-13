@@ -1989,15 +1989,18 @@ function drawAccountTypeBalances(rows) {
   ];
 
   const datasets = typeDefs
-    .map(({ key, label, color }) => ({
-      label,
-      data: rows.map(r => (r.balancesByType && r.balancesByType[key]) || 0),
-      borderColor: color,
-      backgroundColor: "transparent",
-      borderWidth: 2,
-      tension: 0.2,
-      pointRadius: 0,
-    }))
+    .map(({ key, label, color }) => {
+      const data = rows.map(r => (r.balancesByType && r.balancesByType[key]) || 0);
+      return {
+        label,
+        data,
+        borderColor: color,
+        backgroundColor: "transparent",
+        borderWidth: 2,
+        tension: 0.2,
+        ...zeroDropProps(data, color),
+      };
+    })
     .filter(ds => ds.data.some(v => v > 0));
 
   accountTypeChart = new Chart(
