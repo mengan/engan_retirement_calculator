@@ -2922,15 +2922,12 @@ function drawExpenseBreakdown(rows) {
 
   // Build datasets — inflows stack upward, outflows stack downward (negative values), growth separate positive stack
   const datasets = [
-    // ── INFLOW STACK ──
+    // ── INFLOW STACK (true external inflows only — RMDs/inherited drains are account transfers, shown separately) ──
     { label: "Salary / Wages",          data: perYear.map(p => p.salary || null),     backgroundColor: "#1d4ed8", stack: "in" },
     { label: "Social Security",         data: perYear.map(p => p.ss || null),          backgroundColor: "#0ea5e9", stack: "in" },
     { label: "Rental Income (net)",     data: perYear.map(p => p.rental || null),      backgroundColor: "#10b981", stack: "in" },
     { label: "Dividends",               data: perYear.map(p => p.dividends || null),   backgroundColor: "#a78bfa", stack: "in" },
     { label: "Property Sale Proceeds",  data: perYear.map(p => p.salePrc || null),     backgroundColor: "#84cc16", stack: "in" },
-    { label: "Traditional IRA RMD",     data: perYear.map(p => p.tradRMD || null),     backgroundColor: "#fbbf24", stack: "in" },
-    { label: "Inherited IRA RMD",       data: perYear.map(p => p.inhRMD || null),      backgroundColor: "#f97316", stack: "in" },
-    { label: "Inherited IRA Extra Drain", data: perYear.map(p => (p.inhBracket + p.inhSpend) || null), backgroundColor: "#c2410c", stack: "in" },
     { label: "Working Surplus Saved",   data: perYear.map(p => p.surplus || null),     backgroundColor: "#6366f1", stack: "in" },
 
     // ── GROWTH STACK (separate positive stack) ──
