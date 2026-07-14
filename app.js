@@ -2985,12 +2985,6 @@ function drawExpenseBreakdown(rows) {
             title: { display: true, text: "Annual $ Flow" },
             ticks: { callback: v => fmt(v) },
           },
-          yLiquid: {
-            position: "right",
-            title: { display: true, text: "Total Liquid Assets ($)" },
-            ticks: { callback: v => fmt(v) },
-            grid: { drawOnChartArea: false },
-          },
         },
       },
     }
