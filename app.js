@@ -5175,6 +5175,265 @@ function applyTheme(mode) {
   if (lastRows) recalc();
 }
 
+// Single-filer 2024 brackets
+const SINGLE_TAX_BRACKETS_2024 = [
+  { rate: 10, upTo: 11600 },
+  { rate: 12, upTo: 47150 },
+  { rate: 22, upTo: 100525 },
+  { rate: 24, upTo: 191950 },
+  { rate: 32, upTo: 243725 },
+  { rate: 35, upTo: 609350 },
+  { rate: 37, upTo: 0 },
+];
+const SINGLE_LTCG_BRACKETS_2024 = [
+  { rate: 0,  upTo: 47025 },
+  { rate: 15, upTo: 518900 },
+  { rate: 20, upTo: 0 },
+];
+
+function runSurvivorProjection(whoDies, deathAge) {
+  const s = state.settings;
+  const currentYear = s.currentYear;
+
+  // Save originals
+  const orig = {
+    hasSpouse2:   s.hasSpouse2,
+    filingStatus: s.filingStatus,
+    stdDeduction: s.stdDeduction,
+    taxBrackets:  s.taxBrackets,
+    ltcgBrackets: s.ltcgBrackets,
+    expBase:      s.expenses.base,
+    s1salary:     s.s1.salary,
+    s2salary:     s.s2?.salary,
+    s1ssAmt:      s.s1.ssAmt,
+    s2ssAmt:      s.s2?.ssAmt,
+  };
+
+  const expPct = (parseFloat(document.getElementById("surv-expense-pct")?.value) || 75) / 100;
+  const deathYear = currentYear + (deathAge - (whoDies === "s1" ? s.s1.age : s.s2.age));
+
+  // Override: single filer, survivor adjustments
+  s.filingStatus = "single";
+  s.stdDeduction = 14600;
+  s.taxBrackets  = SINGLE_TAX_BRACKETS_2024.map(b => ({ ...b }));
+  s.ltcgBrackets = SINGLE_LTCG_BRACKETS_2024.map(b => ({ ...b }));
+  s.expenses.base = orig.expBase * expPct;
+
+  if (whoDies === "s1") {
+    // Mike dies — survivor is Juliet. Keep higher SS.
+    s.s1.salary  = 0;
+    s.s1.ssAmt   = Math.max(orig.s1ssAmt || 0, orig.s2ssAmt || 0);
+    s.hasSpouse2 = false;
+  } else {
+    // Juliet dies — survivor is Mike. Keep higher SS.
+    s.s2.salary  = 0;
+    s.s2.ssAmt   = Math.max(orig.s1ssAmt || 0, orig.s2ssAmt || 0);
+    s.hasSpouse2 = false;
+  }
+
+  const survivorRows = project();
+
+  // Restore
+  s.hasSpouse2   = orig.hasSpouse2;
+  s.filingStatus = orig.filingStatus;
+  s.stdDeduction = orig.stdDeduction;
+  s.taxBrackets  = orig.taxBrackets;
+  s.ltcgBrackets = orig.ltcgBrackets;
+  s.expenses.base = orig.expBase;
+  s.s1.salary    = orig.s1salary;
+  s.s1.ssAmt     = orig.s1ssAmt;
+  if (s.s2) {
+    s.s2.salary  = orig.s2salary;
+    s.s2.ssAmt   = orig.s2ssAmt;
+  }
+
+  return { survivorRows, deathYear };
+}
+
+function renderSurvivorTab(baseRows) {
+  const s = state.settings;
+
+  // Update name labels
+  const s1name = s.s1?.name || "Spouse 1";
+  const s2name = s.s2?.name || "Spouse 2";
+  ["surv-s1-name-label","surv-s1-radio-label"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = id.includes("radio") ? `${s1name} dies first` : s1name;
+  });
+  ["surv-s2-name-label","surv-s2-radio-label"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = id.includes("radio") ? `${s2name} dies first` : s2name;
+  });
+
+  // Sync slider displays
+  const syncSlider = (sliderId, displayId, yearId, age) => {
+    const slider = document.getElementById(sliderId);
+    const dispEl = document.getElementById(displayId);
+    const yearEl = document.getElementById(yearId);
+    if (!slider) return;
+    const currentAge = age;
+    const update = () => {
+      const a = parseInt(slider.value);
+      if (dispEl) dispEl.textContent = a;
+      if (yearEl) yearEl.textContent = s.currentYear + (a - currentAge);
+    };
+    slider.removeEventListener("input", slider._survHandler);
+    slider._survHandler = update;
+    slider.addEventListener("input", update);
+    update();
+  };
+  syncSlider("surv-s1-death-age", "surv-s1-death-age-display", "surv-s1-death-year-display", s.s1?.age || 50);
+  syncSlider("surv-s2-death-age", "surv-s2-death-age-display", "surv-s2-death-year-display", s.s2?.age || 54);
+
+  // Render legacy table with current baseRows (no re-projection needed)
+  renderLegacyTable(baseRows);
+}
+
+function runAndDrawSurvivorChart(baseRows) {
+  const s = state.settings;
+  const whoDies = document.querySelector("input[name='surv-who-dies']:checked")?.value || "s1";
+  const deathAge = parseInt(document.getElementById(whoDies === "s1" ? "surv-s1-death-age" : "surv-s2-death-age")?.value || 90);
+
+  const { survivorRows, deathYear } = runSurvivorProjection(whoDies, deathAge);
+
+  // Build chart data aligned by year
+  const labels = baseRows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  const baseArr = baseRows.map(r => r.liquid);
+
+  // Survivor path: use base rows before death year, survivor rows after
+  const survivorArr = baseRows.map(r => {
+    const sr = survivorRows.find(s => s.year === r.year);
+    return r.year < deathYear ? r.liquid : (sr?.liquid ?? null);
+  });
+
+  if (survivorLiquidChart) survivorLiquidChart.destroy();
+  survivorLiquidChart = new Chart(
+    document.getElementById("survivorLiquidChart").getContext("2d"),
+    {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Joint Baseline (both alive)",
+            data: baseArr,
+            borderColor: "#1d4ed8",
+            backgroundColor: "rgba(29,78,216,0.08)",
+            borderWidth: 2,
+            tension: 0.2,
+            fill: true,
+            pointRadius: 0,
+            ...zeroDropProps(baseArr, "#1d4ed8"),
+          },
+          {
+            label: `Survivor Path (after ${whoDies === "s1" ? (s.s1?.name || "Spouse 1") : (s.s2?.name || "Spouse 2")} dies age ${deathAge})`,
+            data: survivorArr,
+            borderColor: "#dc2626",
+            backgroundColor: "rgba(220,38,38,0.08)",
+            borderWidth: 2,
+            tension: 0.2,
+            fill: true,
+            borderDash: [6, 3],
+            pointRadius: 0,
+            ...zeroDropProps(survivorArr, "#dc2626"),
+          },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: "Liquid Assets: Joint Baseline vs Survivor Path" },
+          tooltip: { mode: "index", intersect: false, callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+          annotation: {
+            annotations: {
+              deathLine: {
+                type: "line",
+                scaleID: "x",
+                value: baseRows.findIndex(r => r.year >= deathYear),
+                borderColor: "#dc2626",
+                borderWidth: 1,
+                borderDash: [4, 4],
+                label: { content: `Death year ${deathYear}`, display: true, position: "start" },
+              },
+            },
+          },
+        },
+        scales: {
+          x: {},
+          y: { title: { display: true, text: "Liquid Assets ($)" }, ticks: { callback: v => fmt(v) } },
+        },
+      },
+    }
+  );
+
+  // Summary
+  const sumEl = document.getElementById("surv-summary");
+  if (sumEl) {
+    const baseBust  = baseRows.find(r => r.liquid <= 0 && r.retired);
+    const survBust  = survivorRows.find(r => r.liquid <= 0 && r.retired && r.year >= deathYear);
+    const baseEnd   = baseRows[baseRows.length - 1]?.liquid || 0;
+    const survEnd   = survivorRows[survivorRows.length - 1]?.liquid || 0;
+    const diff      = survEnd - baseEnd;
+    const diffColor = diff < 0 ? "#dc2626" : "#15803d";
+
+    sumEl.innerHTML = `
+      <strong>Joint baseline:</strong> Funds ${baseBust ? `run out in ${baseBust.year}` : "last through the full plan"}.<br/>
+      <strong>Survivor path:</strong> After ${whoDies === "s1" ? (s.s1?.name||"Spouse 1") : (s.s2?.name||"Spouse 2")} dies at age ${deathAge} (${deathYear}),
+        funds ${survBust ? `run out in ${survBust.year}` : "last through the full plan"}.<br/>
+      <strong>End-of-plan liquid difference:</strong> <span style="color:${diffColor};font-weight:600;">${diff >= 0 ? "+" : ""}${fmt(diff)}</span>
+        (survivor ends with ${fmt(survEnd)} vs joint ${fmt(baseEnd)}).<br/>
+      <em style="color:#6b7280;font-size:12px;">Survivor path uses single-filer tax rates throughout for simplicity. Expense factor: ${Math.round((parseFloat(document.getElementById("surv-expense-pct")?.value)||75))}% of joint.</em>
+    `;
+  }
+}
+
+function renderLegacyTable(rows) {
+  const tbody = document.querySelector("#legacy-table tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  const heirBracket = parseFloat(document.getElementById("legacy-heir-bracket")?.value || 0.22);
+
+  rows.forEach(r => {
+    const taxable   = (r.balancesByType?.taxable      || 0);
+    const roth      = (r.balancesByType?.roth          || 0);
+    const trad      = (r.balancesByType?.traditional   || 0)
+                    + (r.balancesByType?.inherited_ira || 0);
+    const reEquity  = r.reEquity || 0;
+
+    const tradAfterTax = trad * (1 - heirBracket);
+    const afterTax     = taxable + roth + tradAfterTax + reEquity;
+    const nominal      = taxable + roth + trad + reEquity;
+    const haircut      = nominal - afterTax;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.year}</td>
+      <td>${r.s1Age}/${r.s2Age}</td>
+      <td>${fmt(taxable)}</td>
+      <td>${fmt(roth)}</td>
+      <td>${fmt(tradAfterTax)} <small style="color:#6b7280;">(${fmt(trad)} − ${Math.round(heirBracket*100)}%)</small></td>
+      <td>${fmt(reEquity)}</td>
+      <td style="background:#d1fae5;font-weight:600;">${fmt(afterTax)}</td>
+      <td>${fmt(nominal)}</td>
+      <td style="color:#dc2626;">-${fmt(haircut)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function wireSurvivorTab() {
+  document.getElementById("surv-run-btn")?.addEventListener("click", () => {
+    if (lastRows) runAndDrawSurvivorChart(lastRows);
+  });
+  document.getElementById("legacy-refresh-btn")?.addEventListener("click", () => {
+    if (lastRows) renderLegacyTable(lastRows);
+  });
+  document.getElementById("legacy-heir-bracket")?.addEventListener("change", () => {
+    if (lastRows) renderLegacyTable(lastRows);
+  });
+}
+
 function wireThemeToggle() {
   const saved = localStorage.getItem("theme") || "light";
   document.getElementById(saved === "dark" ? "theme-dark" : "theme-light").checked = true;
