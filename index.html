@@ -1270,6 +1270,104 @@
   </div>
 </section>
 
+<section id="tab-survivor" class="tab-panel">
+  <h2>Survivor &amp; Legacy</h2>
+
+  <fieldset>
+    <legend>Survivor Analysis — What if one spouse dies early?</legend>
+    <p class="muted" style="margin-top:0;">
+      Models the surviving spouse's financial trajectory: single-filer tax rates (roughly double the effective rate on the same income),
+      reduced expenses, and loss of one income/Social Security. Highlights why Roth conversions matter more for the survivor.
+    </p>
+    <p class="muted" style="font-size:12px;">
+      Note: For simplicity, the survivor path applies single-filer rates for the entire projection period. Pre-death years may differ slightly from the joint baseline.
+    </p>
+    <div class="grid-2">
+      <label>Age <span id="surv-s1-name-label">Spouse 1</span> dies
+        <input type="range" id="surv-s1-death-age" min="60" max="100" value="90" style="width:100%;"/>
+        <small>Age: <strong id="surv-s1-death-age-display">90</strong> &nbsp;(Year: <span id="surv-s1-death-year-display">—</span>)</small>
+      </label>
+      <label>Age <span id="surv-s2-name-label">Spouse 2</span> dies
+        <input type="range" id="surv-s2-death-age" min="60" max="100" value="90" style="width:100%;"/>
+        <small>Age: <strong id="surv-s2-death-age-display">90</strong> &nbsp;(Year: <span id="surv-s2-death-year-display">—</span>)</small>
+      </label>
+      <label>Survivor expense factor (%)
+        <input type="number" id="surv-expense-pct" value="75" min="10" max="150" step="5"/>
+        <small>Surviving spouse's annual expenses as % of joint expenses. 75% is a common estimate.</small>
+      </label>
+      <div style="padding-top:24px;">
+        <small><strong>Social Security:</strong> Survivor keeps the higher of the two SS benefits. The lower benefit stops.</small>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <label style="font-weight:600;">Who dies first?</label><br/>
+      <label style="display:inline-flex;align-items:center;gap:6px;margin-right:16px;">
+        <input type="radio" name="surv-who-dies" value="s1" id="surv-s1-dies" checked style="width:auto;"/> <span id="surv-s1-radio-label">Spouse 1 (Mike)</span>
+      </label>
+      <label style="display:inline-flex;align-items:center;gap:6px;">
+        <input type="radio" name="surv-who-dies" value="s2" id="surv-s2-dies" style="width:auto;"/> <span id="surv-s2-radio-label">Spouse 2 (Juliet)</span>
+      </label>
+    </div>
+    <button id="surv-run-btn" class="primary" style="margin-top:12px;">Run Survivor Analysis</button>
+  </fieldset>
+
+  <div class="chart-container" style="height:360px;margin-top:16px;">
+    <canvas id="survivorLiquidChart"></canvas>
+  </div>
+  <div id="surv-summary" style="margin-top:12px;padding:10px 14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;"></div>
+
+  <hr style="margin:28px 0;"/>
+
+  <fieldset>
+    <legend>Legacy / Inheritance Value</legend>
+    <p class="muted" style="margin-top:0;">
+      This table shows the estimated after-tax value your heir receives at each age.
+      <strong>Taxable brokerage</strong> and <strong>real estate</strong> get stepped-up cost basis at death (no capital gains tax on appreciation).
+      <strong>Roth IRA</strong> passes tax-free and heir still has 10 years to drain it, tax-free.
+      <strong>Traditional IRA / 401k</strong> must be drained within 10 years and taxed as ordinary income at your heir's bracket.
+      Actual values depend on your heir's income and tax law at the time.
+    </p>
+    <div class="grid-2">
+      <label>Heir's estimated ordinary tax bracket
+        <select id="legacy-heir-bracket">
+          <option value="0.10">10%</option>
+          <option value="0.12">12%</option>
+          <option value="0.22" selected>22%</option>
+          <option value="0.24">24%</option>
+          <option value="0.32">32%</option>
+        </select>
+      </label>
+      <label>Heir's estimated LTCG rate
+        <select id="legacy-heir-ltcg">
+          <option value="0.00">0%</option>
+          <option value="0.15" selected>15%</option>
+          <option value="0.20">20%</option>
+        </select>
+      </label>
+    </div>
+    <button id="legacy-refresh-btn" class="primary" style="margin-top:8px;">Refresh Table</button>
+  </fieldset>
+
+  <div class="table-wrap" style="margin-top:12px;">
+    <table id="legacy-table" style="font-size:13px;">
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Ages</th>
+          <th>Taxable Brokerage<br/><small>(step-up, full value)</small></th>
+          <th>Roth IRA<br/><small>(tax-free to heir)</small></th>
+          <th>Traditional IRA/401k<br/><small>(after heir's income tax)</small></th>
+          <th>Real Estate Equity<br/><small>(step-up, full value)</small></th>
+          <th style="background:#d1fae5;">After-Tax Inheritance</th>
+          <th>Nominal Total<br/><small>(before tax haircut)</small></th>
+          <th>Tax Haircut</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
 </main>
 
 <script src="app.js"></script>
