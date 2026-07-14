@@ -3003,6 +3003,7 @@ function drawExpenseBreakdown(rows) {
 
 // ===== Guardrails (SWR) tab =====
 let guardrailChart, guardrailLiquidChart;
+let survivorLiquidChart = null;
 
 function computeGuardrails(rows) {
   const s = state.settings;
