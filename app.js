@@ -2550,6 +2550,16 @@ function deflateRows(rows, realMode) {
       } : r.balancesByType,
       ordTaxByBracket: (r.ordTaxByBracket || []).map(v => deflate(v)),
       ltcgTaxByBracket: (r.ltcgTaxByBracket || []).map(v => deflate(v)),
+      taxableGapWD: deflate(r.taxableGapWD),
+      taxableTaxWD: deflate(r.taxableTaxWD),
+      surplusDeposited: deflate(r.surplusDeposited),
+      totalWithdrawn: deflate(r.totalWithdrawn),
+      withdrawnByType: r.withdrawnByType ? Object.fromEntries(
+        Object.entries(r.withdrawnByType).map(([k, v]) => [k, deflate(v)])
+      ) : r.withdrawnByType,
+      balancesById: r.balancesById ? Object.fromEntries(
+        Object.entries(r.balancesById).map(([k, v]) => [k, deflate(v)])
+      ) : r.balancesById,
     };
   });
 }
