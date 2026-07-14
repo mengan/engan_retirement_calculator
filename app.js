@@ -2773,6 +2773,9 @@ function drawRothConversions(rows) {
   if (rothConversionChart) rothConversionChart.destroy();
   const dr = deflateRows(rows, summaryRealMode);
   const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  const totalConv   = dr.reduce((s, r) => s + (r.rothConverted || 0), 0);
+  const totalTradRMD = dr.reduce((s, r) => s + (r.traditionalRMD || 0), 0);
+  const totalInhRMD  = dr.reduce((s, r) => s + (r.inheritedRMD || 0) + (r.inheritedBracketDrain || 0) + (r.inheritedSpendWD || 0), 0);
   rothConversionChart = new Chart(
     document.getElementById("rothConversionChart").getContext("2d"),
     {
@@ -2780,15 +2783,18 @@ function drawRothConversions(rows) {
       data: {
         labels,
         datasets: [
-          { label: "Roth Conversion", data: dr.map(r => r.rothConverted || 0), backgroundColor: "#7c3aed" },
+          { label: "Roth Conversion",            data: dr.map(r => r.rothConverted || 0),                                                              backgroundColor: "#7c3aed" },
+          { label: "Traditional IRA/401k RMD",   data: dr.map(r => r.traditionalRMD || 0),                                                             backgroundColor: "#dc2626" },
+          { label: "Inherited IRA RMD",           data: dr.map(r => r.inheritedRMD || 0),                                                               backgroundColor: "#b45309" },
+          { label: "Inherited IRA Bracket Drain", data: dr.map(r => (r.inheritedBracketDrain || 0) + (r.inheritedSpendWD || 0)),                         backgroundColor: "#c2410c" },
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           title: { display: true, text: [
-            `Annual Roth Conversions — Total: ${fmt(dr.reduce((s, r) => s + (r.rothConverted || 0), 0))}`,
-            "(not cash inflow — moves pretax → Roth; tax cost included in outflows)",
+            "Annual Conversions & Forced Distributions (account transfers — not net inflows)",
+            `Roth Conv: ${fmt(totalConv)}  |  Trad RMD: ${fmt(totalTradRMD)}  |  Inherited IRA: ${fmt(totalInhRMD)}`,
           ]},
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
         },
