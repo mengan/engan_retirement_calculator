@@ -2951,10 +2951,19 @@ function drawExpenseBreakdown(rows) {
               label: item => {
                 const v = item.parsed.y;
                 if (v == null || v === 0) return null;
-                return `  ${item.dataset.label}: ${fmt(Math.abs(v))}`;
+                const stack = item.dataset.stack;
+                const isOut = stack === "out" || v < 0;
+                const sign  = isOut ? "-" : "+";
+                return `  ${sign}${fmt(Math.abs(v))}  ${item.dataset.label}`;
+              },
+              labelColor: item => {
+                const v = item.parsed.y;
+                const stack = item.dataset.stack;
+                const isOut = stack === "out" || v < 0;
+                const color = isOut ? "#dc2626" : "#16a34a";
+                return { borderColor: color, backgroundColor: color };
               },
               afterBody: items => {
-                // Group by stack for summary lines
                 let totalIn = 0, totalGrowth = 0, totalOut = 0;
                 items.forEach(item => {
                   const v = item.parsed.y;
@@ -2962,16 +2971,17 @@ function drawExpenseBreakdown(rows) {
                   const stack = item.dataset.stack;
                   if (stack === "in") totalIn += v;
                   else if (stack === "growth") totalGrowth += v;
-                  else if (stack === "out") totalOut += v; // negative
+                  else if (stack === "out") totalOut += v;
                 });
                 const net = totalIn + totalGrowth + totalOut;
+                const netSign = net >= 0 ? "+" : "-";
                 return [
                   "",
                   `─────────────────────`,
-                  `  Total Inflows:  ${fmt(totalIn)}`,
-                  `  Total Growth:   ${fmt(totalGrowth)}`,
-                  `  Total Outflows: ${fmt(Math.abs(totalOut))}`,
-                  `  Net Change:     ${fmt(net)}`,
+                  `  +${fmt(totalIn)}  Total Inflows`,
+                  `  +${fmt(totalGrowth)}  Total Growth`,
+                  `  -${fmt(Math.abs(totalOut))}  Total Outflows`,
+                  `  ${netSign}${fmt(Math.abs(net))}  Net Change`,
                 ];
               },
               footer: () => undefined,
