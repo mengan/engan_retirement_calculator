@@ -2718,6 +2718,27 @@ function drawIncomeBreakdown(rows) {
   if (incomeBreakdownChart) incomeBreakdownChart.destroy();
   const dr = deflateRows(rows, summaryRealMode);
   const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+
+  // Per-account-type investment growth = balance delta (RMDs and internal transfers net to zero
+  // across the portfolio so we just look at total balance change per type)
+  const types = [
+    { key: "taxable",      label: "Taxable Growth",      color: "#fbbf24" },
+    { key: "traditional",  label: "Traditional/401k Growth", color: "#f87171" },
+    { key: "roth",         label: "Roth Growth",          color: "#34d399" },
+    { key: "inherited_ira",label: "Inherited IRA Growth", color: "#fb923c" },
+    { key: "hsa",          label: "HSA Growth",           color: "#a78bfa" },
+  ];
+  const growthDatasets = types.map(({ key, label, color }) => ({
+    label,
+    data: dr.map((r, i) => {
+      const bal  = r.balancesByType?.[key] || 0;
+      const prev = i === 0 ? bal : (dr[i-1].balancesByType?.[key] || 0);
+      const delta = i === 0 ? 0 : bal - prev;
+      return delta > 0 ? delta : 0; // only show positive growth years
+    }),
+    backgroundColor: color,
+  }));
+
   incomeBreakdownChart = new Chart(
     document.getElementById("incomeBreakdownChart").getContext("2d"),
     {
@@ -2725,21 +2746,18 @@ function drawIncomeBreakdown(rows) {
       data: {
         labels,
         datasets: [
-          { label: "Salaries",                     data: dr.map(r => (r.salary1 || 0) + (r.salary2 || 0)), backgroundColor: "#1d4ed8" },
-          { label: "Social Security",              data: dr.map(r => r.grossSS || 0),              backgroundColor: "#0ea5e9" },
-          { label: "Rental Net",                   data: dr.map(r => r.rentalNet || 0),            backgroundColor: "#10b981" },
-          { label: "Dividends",                    data: dr.map(r => r.dividendIncome || 0),       backgroundColor: "#a78bfa" },
-          { label: "Property Sale Proceeds",       data: dr.map(r => r.saleProceeds || 0),         backgroundColor: "#84cc16" },
-          { label: "Traditional IRA / 401k RMD",  data: dr.map(r => r.traditionalRMD || 0),       backgroundColor: "#dc2626" },
-          { label: "Inherited IRA RMD",            data: dr.map(r => r.inheritedRMD || 0),         backgroundColor: "#b45309" },
-          { label: "Inherited IRA Bracket Fill",   data: dr.map(r => r.inheritedBracketDrain || 0), backgroundColor: "#c2410c" },
-          { label: "Inherited IRA (spending WD)",  data: dr.map(r => r.inheritedSpendWD || 0),      backgroundColor: "#92400e" },
+          { label: "Salaries",               data: dr.map(r => (r.salary1 || 0) + (r.salary2 || 0)), backgroundColor: "#1d4ed8" },
+          { label: "Social Security",        data: dr.map(r => r.grossSS || 0),       backgroundColor: "#0ea5e9" },
+          { label: "Rental Net",             data: dr.map(r => r.rentalNet || 0),     backgroundColor: "#10b981" },
+          { label: "Dividends",              data: dr.map(r => r.dividendIncome || 0),backgroundColor: "#6366f1" },
+          { label: "Property Sale Proceeds", data: dr.map(r => r.saleProceeds || 0),  backgroundColor: "#84cc16" },
+          ...growthDatasets,
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          title: { display: true, text: "Annual Inflows by Source (stacked)" },
+          title: { display: true, text: "Annual Inflows & Investment Growth by Source (stacked)" },
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
         },
         scales: {
