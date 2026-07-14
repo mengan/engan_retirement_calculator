@@ -2912,10 +2912,10 @@ function drawExpenseBreakdown(rows) {
     { label: "Federal Ordinary Tax",    data: perYear.map(p => -(p.ordTax) || null),    backgroundColor: "rgba(127,29,29,0.85)",   stack: "out" },
     { label: "Federal LTCG Tax",        data: perYear.map(p => -(p.cgTax) || null),     backgroundColor: "rgba(153,27,27,0.70)",   stack: "out" },
 
-    // ── NET LIQUID LINE ──
+    // ── NET CHANGE LINE ──
     {
-      label: "Total Liquid Assets",
-      data: liquidArr,
+      label: "Net Annual Change",
+      data: netChangeArr,
       type: "line",
       borderColor: "#000",
       backgroundColor: "rgba(0,0,0,0)",
@@ -2923,9 +2923,9 @@ function drawExpenseBreakdown(rows) {
       tension: 0.2,
       fill: false,
       pointRadius: 0,
-      yAxisID: "yLiquid",
+      yAxisID: "y",
       order: 0,
-      ...zeroDropProps(liquidArr, "#000"),
+      ...zeroDropProps(netChangeArr, "#000"),
     },
   ];
 
