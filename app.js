@@ -1186,15 +1186,25 @@ function performRothConversion(accounts, amount) {
   if (amount <= 0) return 0;
   let remaining = amount;
   let converted = 0;
-  for (const type of ["ira", "sep_ira", "401k", "inherited_ira"]) {
+
+  // 401k before sep_ira before ira (more realistic conversion order); skip inherited_ira
+  for (const type of ["401k", "sep_ira", "ira"]) {
     if (remaining <= 0) break;
     const sources = accounts.filter(a => a.type === type && a.balance > 0);
+    if (!sources.length) continue;
+
+    // Pro-rata across owners: each owner's share of this type's total balance
+    const totalBal = sources.reduce((s, a) => s + a.balance, 0);
+    const takeTotal = Math.min(remaining, totalBal);
+
     for (const src of sources) {
-      if (remaining <= 0) break;
-      const take = Math.min(remaining, src.balance);
+      const share = src.balance / totalBal;
+      const take = Math.min(src.balance, takeTotal * share);
+      if (take <= 0) continue;
       src.balance -= take;
-      remaining -= take;
-      converted += take;
+      remaining  -= take;
+      converted  += take;
+
       let dst = accounts.find(a => a.type === "roth" && a.owner === src.owner);
       if (!dst) dst = accounts.find(a => a.type === "roth");
       if (!dst) {
