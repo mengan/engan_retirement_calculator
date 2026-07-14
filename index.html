@@ -804,13 +804,24 @@
         </label>
       </div>
       <button id="tsc-rerun" class="primary" style="margin-bottom:12px;">Rerun Comparison</button>
-      <table id="tax-strategy-table">
-        <thead><tr>
-          <th>Strategy</th>
-          <th>End Net Worth</th>
-          <th>Lifetime Tax Paid<br/><small id="tsc-full-range"></small></th>
-        </tr></thead>
+      <table id="tax-strategy-table" style="font-size:13px;">
+        <thead>
+          <tr>
+            <th rowspan="2" style="vertical-align:bottom;">Roth Strategy</th>
+            <th colspan="2" style="text-align:center;background:#fef9c3;border-bottom:1px solid #ccc;">Today's Rates<br/><small>current law unchanged</small></th>
+            <th colspan="2" style="text-align:center;background:#fef3c7;border-bottom:1px solid #ccc;">TCJA Expires 2026<br/><small>brackets revert ~3–5 pts higher</small></th>
+            <th colspan="2" style="text-align:center;background:#fed7aa;border-bottom:1px solid #ccc;">Moderate Increase<br/><small>+5 pts on all brackets</small></th>
+            <th colspan="2" style="text-align:center;background:#fecaca;border-bottom:1px solid #ccc;">Significant Increase<br/><small>+10 pts on all brackets</small></th>
+          </tr>
+          <tr>
+            <th style="background:#fef9c3;">End NW</th><th style="background:#fef9c3;">Life Tax</th>
+            <th style="background:#fef3c7;">End NW</th><th style="background:#fef3c7;">Life Tax</th>
+            <th style="background:#fed7aa;">End NW</th><th style="background:#fed7aa;">Life Tax</th>
+            <th style="background:#fecaca;">End NW</th><th style="background:#fecaca;">Life Tax</th>
+          </tr>
+        </thead>
         <tbody></tbody>
+        <tfoot id="tsc-full-range-row"><tr><td colspan="9" style="font-size:11px;color:#666;padding:4px 6px;"></td></tr></tfoot>
       </table>
     </fieldset>
 
