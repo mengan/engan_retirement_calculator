@@ -2974,11 +2974,7 @@ function drawExpenseBreakdown(rows) {
                   `  Net Change:     ${fmt(net)}`,
                 ];
               },
-              footer: items => {
-                const liqItem = items.find(i => i.dataset.label === "Total Liquid Assets");
-                if (!liqItem) return undefined;
-                return `  Liquid Balance: ${fmt(liqItem.parsed.y)}`;
-              },
+              footer: () => undefined,
             },
           },
         },
