@@ -2895,9 +2895,10 @@ function drawExpenseBreakdown(rows) {
     const ordTax       = r.ordinaryTax || 0;
     const cgTax        = r.ltcgTax || 0;
 
-    const totalIn  = salary + ss + rental + dividends + salePrc + tradRMD + inhRMD + inhBracket + inhSpend + surplus;
-    const totalOut = expBase + expRecurring + expLarge + expMortgage + ordTax + cgTax;
-    const netChange = totalIn + totalGrowth - totalOut;
+    // Net worth delta: RMDs and inherited drains move money between accounts (no net-worth change
+    // beyond the tax cost, which is already captured in ordTax/cgTax). Use the simulation's own
+    // netWorth field so account transfers cancel out automatically.
+    const netChange = i === 0 ? 0 : r.netWorth - prev.netWorth;
 
     return {
       salary, ss, rental, dividends, salePrc, tradRMD, inhRMD, inhBracket, inhSpend, surplus,
