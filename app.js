@@ -5212,7 +5212,7 @@ function runSurvivorProjection(whoDies, deathAge) {
     stdDeduction: s.stdDeduction,
     taxBrackets:  s.taxBrackets,
     ltcgBrackets: s.ltcgBrackets,
-    expBase:      s.expenses.base,
+    expBase:      state.expenses.base,
     s1salary:     s.s1.salary,
     s2salary:     s.s2?.salary,
     s1ssAmt:      s.s1.ssAmt,
@@ -5227,7 +5227,7 @@ function runSurvivorProjection(whoDies, deathAge) {
   s.stdDeduction = 14600;
   s.taxBrackets  = SINGLE_TAX_BRACKETS_2024.map(b => ({ ...b }));
   s.ltcgBrackets = SINGLE_LTCG_BRACKETS_2024.map(b => ({ ...b }));
-  s.expenses.base = orig.expBase * expPct;
+  state.expenses.base = orig.expBase * expPct;
 
   if (whoDies === "s1") {
     // Mike dies — survivor is Juliet. Keep higher SS.
