@@ -2860,14 +2860,15 @@ function drawExpenseBreakdown(rows) {
     const ordTax       = r.ordinaryTax || 0;
     const cgTax        = r.ltcgTax || 0;
 
-    // Net liquid change for the black line
-    const liquid = r.liquid || 0;
+    const totalIn  = salary + ss + rental + dividends + salePrc + tradRMD + inhRMD + inhBracket + inhSpend + surplus;
+    const totalOut = expBase + expRecurring + expLarge + expMortgage + ordTax + cgTax;
+    const netChange = totalIn + totalGrowth - totalOut;
 
     return {
       salary, ss, rental, dividends, salePrc, tradRMD, inhRMD, inhBracket, inhSpend, surplus,
       growthByType, totalGrowth,
       expBase, expRecurring, expLarge, expMortgage, ordTax, cgTax,
-      liquid,
+      netChange,
     };
   });
 
