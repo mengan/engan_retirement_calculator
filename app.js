@@ -5459,4 +5459,5 @@ function wireThemeToggle() {
   wireModeSwitch();
   wireFireTab();
   wireLangSwitcher();
+  wireSurvivorTab();
 })();
