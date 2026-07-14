@@ -2808,100 +2808,189 @@ function drawExpenseBreakdown(rows) {
   if (taxableBrokerageFlowChart) taxableBrokerageFlowChart.destroy();
   const dr = deflateRows(rows, summaryRealMode);
   const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  const n = dr.length;
 
-  // Build per-year arrays: investment growth, net cash flow, balance
-  const growthArr  = [];
-  const netFlowArr = [];
-  const balanceArr = [];
+  // Per-account investment growth: sum each account's (balance - prev_balance - net_contribution).
+  // We approximate per-account growth by taking the total liquid delta minus all known cash flows.
+  // For the tooltip we show growth broken down by account type.
+  const perYear = dr.map((r, i) => {
+    const prev = i === 0 ? dr[0] : dr[i - 1];
 
-  for (let i = 0; i < dr.length; i++) {
-    const r   = dr[i];
-    const bal = (r.balancesByType && r.balancesByType.taxable) || 0;
-    const prev = i === 0 ? bal : (dr[i-1].balancesByType && dr[i-1].balancesByType.taxable) || 0;
+    // --- Inflows (positive bars) ---
+    const salary       = (r.salary1 || 0) + (r.salary2 || 0);
+    const ss           = r.grossSS || 0;
+    const rental       = r.rentalNet || 0;
+    const dividends    = r.dividendIncome || 0;
+    const salePrc      = r.saleProceeds || 0;
+    const tradRMD      = r.traditionalRMD || 0;
+    const inhRMD       = r.inheritedRMD || 0;
+    const inhBracket   = r.inheritedBracketDrain || 0;
+    const inhSpend     = r.inheritedSpendWD || 0;
+    const surplus      = r.surplusDeposited || 0;
 
-    // Use actual taxable account cash movements, not a proxy income-minus-expenses calc.
-    // This correctly shows red only in years where taxable was actually drawn from,
-    // regardless of where taxes or Roth conversion costs were paid from.
-    const cashIn  = (r.surplusDeposited || 0)      // working surplus deposited to taxable
-      + (r.inheritedRMD || 0)                       // inherited IRA RMD lands in taxable
-      + (r.inheritedBracketDrain || 0)              // extra inherited drain lands in taxable
-      + (r.inheritedSpendWD || 0)                   // inherited IRA spend/tax WD lands in taxable
-      + (r.traditionalRMD || 0)                     // traditional IRA RMD lands in taxable
-      + (r.saleProceeds || 0);                      // property sale proceeds land in taxable
-    const cashOut = (r.taxableGapWD || 0)           // spending withdrawn from taxable
-      + (r.taxableTaxWD || 0);                      // tax bill withdrawn from taxable
-    const netFlow = cashIn - cashOut;
+    // Per account-type investment growth = balance delta minus all cash additions/removals for that type.
+    // We can approximate total liquid growth vs cash, then for the tooltip break it by type.
+    const types = ["taxable", "traditional", "roth", "inherited_ira", "hsa"];
+    const growthByType = {};
+    let totalGrowth = 0;
+    types.forEach(t => {
+      const bal  = (r.balancesByType && r.balancesByType[t]) || 0;
+      const pbal = (prev.balancesByType && prev.balancesByType[t]) || 0;
+      // Growth is the delta minus contributions/withdrawals — we can't perfectly isolate per-type
+      // cash flows so we use a simpler heuristic: if a type only grows (roth, hsa when not withdrawn)
+      // delta ≈ growth. For taxable we subtract known cash flows. For traditional/inherited we
+      // subtract RMDs. For the aggregate we use total liquid.
+      let cashAdj = 0;
+      if (t === "taxable")       cashAdj = surplus + salePrc + tradRMD + inhRMD + inhBracket + inhSpend
+                                           - (r.taxableGapWD || 0) - (r.taxableTaxWD || 0);
+      if (t === "traditional")   cashAdj = -tradRMD - ((r.withdrawnByType?.ira || 0) + (r.withdrawnByType?.["sep_ira"] || 0) + (r.withdrawnByType?.["401k"] || 0));
+      if (t === "inherited_ira") cashAdj = -(inhRMD + inhBracket + inhSpend);
+      if (t === "roth")          cashAdj = -(r.withdrawnByType?.roth || 0);
+      if (t === "hsa")           cashAdj = -(r.withdrawnByType?.hsa || 0);
+      const g = i === 0 ? 0 : (bal - pbal) - cashAdj;
+      growthByType[t] = g;
+      totalGrowth += g;
+    });
 
-    const deltaBalance = i === 0 ? 0 : bal - prev;
-    const investGrowth = i === 0 ? 0 : deltaBalance - netFlow;
+    // --- Outflows (negative bars) ---
+    const expBase      = r.expBaseline || 0;
+    const expRecurring = r.expRecurring || 0;
+    const expLarge     = r.expLarge || 0;
+    const expMortgage  = r.expMortgage || 0;
+    const ordTax       = r.ordinaryTax || 0;
+    const cgTax        = r.ltcgTax || 0;
 
-    growthArr.push(investGrowth);
-    netFlowArr.push(netFlow);
-    balanceArr.push(bal);
-  }
+    // Net liquid change for the black line
+    const liquid = r.liquid || 0;
+
+    return {
+      salary, ss, rental, dividends, salePrc, tradRMD, inhRMD, inhBracket, inhSpend, surplus,
+      growthByType, totalGrowth,
+      expBase, expRecurring, expLarge, expMortgage, ordTax, cgTax,
+      liquid,
+    };
+  });
+
+  // --- Dataset arrays ---
+  const typeLabels = {
+    taxable: "Taxable Brokerage Growth", traditional: "Traditional IRA/401k Growth",
+    roth: "Roth Growth", inherited_ira: "Inherited IRA Growth", hsa: "HSA Growth",
+  };
+  const typeColors = {
+    taxable: "rgba(245,158,11,0.85)", traditional: "rgba(239,68,68,0.75)",
+    roth: "rgba(16,185,129,0.75)", inherited_ira: "rgba(194,65,12,0.75)", hsa: "rgba(124,58,237,0.75)",
+  };
+
+  const liquidArr = perYear.map(p => p.liquid);
+
+  // Build datasets — inflows stack upward, outflows stack downward (negative values), growth separate positive stack
+  const datasets = [
+    // ── INFLOW STACK ──
+    { label: "Salary / Wages",          data: perYear.map(p => p.salary || null),     backgroundColor: "#1d4ed8", stack: "in" },
+    { label: "Social Security",         data: perYear.map(p => p.ss || null),          backgroundColor: "#0ea5e9", stack: "in" },
+    { label: "Rental Income (net)",     data: perYear.map(p => p.rental || null),      backgroundColor: "#10b981", stack: "in" },
+    { label: "Dividends",               data: perYear.map(p => p.dividends || null),   backgroundColor: "#a78bfa", stack: "in" },
+    { label: "Property Sale Proceeds",  data: perYear.map(p => p.salePrc || null),     backgroundColor: "#84cc16", stack: "in" },
+    { label: "Traditional IRA RMD",     data: perYear.map(p => p.tradRMD || null),     backgroundColor: "#fbbf24", stack: "in" },
+    { label: "Inherited IRA RMD",       data: perYear.map(p => p.inhRMD || null),      backgroundColor: "#f97316", stack: "in" },
+    { label: "Inherited IRA Extra Drain", data: perYear.map(p => (p.inhBracket + p.inhSpend) || null), backgroundColor: "#c2410c", stack: "in" },
+    { label: "Working Surplus Saved",   data: perYear.map(p => p.surplus || null),     backgroundColor: "#6366f1", stack: "in" },
+
+    // ── GROWTH STACK (separate positive stack) ──
+    ...["taxable","traditional","roth","inherited_ira","hsa"].map(t => ({
+      label: typeLabels[t],
+      data: perYear.map(p => p.growthByType[t] > 0 ? p.growthByType[t] : null),
+      backgroundColor: typeColors[t],
+      stack: "growth",
+    })),
+
+    // ── OUTFLOW STACK (negative values) ──
+    { label: "Living Expenses",         data: perYear.map(p => p.expBase || null),      backgroundColor: "rgba(239,68,68,0.85)",   stack: "out" },
+    { label: "Recurring Expenses",      data: perYear.map(p => -(p.expRecurring) || null), backgroundColor: "rgba(220,38,38,0.75)", stack: "out" },
+    { label: "Large Expenses",          data: perYear.map(p => -(p.expLarge) || null),  backgroundColor: "rgba(185,28,28,0.70)",   stack: "out" },
+    { label: "Federal Ordinary Tax",    data: perYear.map(p => -(p.ordTax) || null),    backgroundColor: "rgba(127,29,29,0.85)",   stack: "out" },
+    { label: "Federal LTCG Tax",        data: perYear.map(p => -(p.cgTax) || null),     backgroundColor: "rgba(153,27,27,0.70)",   stack: "out" },
+
+    // ── NET LIQUID LINE ──
+    {
+      label: "Total Liquid Assets",
+      data: liquidArr,
+      type: "line",
+      borderColor: "#000",
+      backgroundColor: "rgba(0,0,0,0)",
+      borderWidth: 2.5,
+      tension: 0.2,
+      fill: false,
+      pointRadius: 0,
+      yAxisID: "yLiquid",
+      order: 0,
+      ...zeroDropProps(liquidArr, "#000"),
+    },
+  ];
+
+  // Fix outflow stack: living expenses should be negative too
+  datasets.find(d => d.label === "Living Expenses").data =
+    perYear.map(p => p.expBase ? -p.expBase : null);
 
   taxableBrokerageFlowChart = new Chart(
     document.getElementById("gapWithdrawalChart").getContext("2d"),
     {
       type: "bar",
-      data: {
-        labels,
-        datasets: [
-          {
-            label: "Investment Growth",
-            data: growthArr,
-            backgroundColor: "rgba(37,99,235,0.75)",
-            stack: "change",
-          },
-          {
-            label: "Net Cash Flow (income − expenses & taxes)",
-            data: netFlowArr,
-            backgroundColor: netFlowArr.map(v => v >= 0 ? "rgba(16,185,129,0.85)" : "rgba(239,68,68,0.85)"),
-            stack: "change",
-          },
-          {
-            label: "Taxable Balance",
-            data: balanceArr,
-            type: "line",
-            borderColor: "#1f3a5f",
-            backgroundColor: "rgba(0,0,0,0)",
-            borderWidth: 2,
-            tension: 0.2,
-            fill: false,
-            yAxisID: "yBalance",
-            order: 0,
-            ...zeroDropProps(balanceArr, "#1f3a5f"),
-          },
-        ],
-      },
+      data: { labels, datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
         plugins: {
-          title: { display: true, text: "Annual Taxable Brokerage: Investment Growth vs Net Cash Flow" },
+          title: { display: true, text: "Annual Liquid Asset Flows: Inflows, Growth & Outflows" },
+          legend: { display: true, labels: { boxWidth: 12, font: { size: 11 } } },
           tooltip: {
+            mode: "index",
+            intersect: false,
             callbacks: {
-              label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}`,
+              label: item => {
+                const v = item.parsed.y;
+                if (v == null || v === 0) return null;
+                return `  ${item.dataset.label}: ${fmt(Math.abs(v))}`;
+              },
+              afterBody: items => {
+                // Group by stack for summary lines
+                let totalIn = 0, totalGrowth = 0, totalOut = 0;
+                items.forEach(item => {
+                  const v = item.parsed.y;
+                  if (v == null) return;
+                  const stack = item.dataset.stack;
+                  if (stack === "in") totalIn += v;
+                  else if (stack === "growth") totalGrowth += v;
+                  else if (stack === "out") totalOut += v; // negative
+                });
+                const net = totalIn + totalGrowth + totalOut;
+                return [
+                  "",
+                  `─────────────────────`,
+                  `  Total Inflows:  ${fmt(totalIn)}`,
+                  `  Total Growth:   ${fmt(totalGrowth)}`,
+                  `  Total Outflows: ${fmt(Math.abs(totalOut))}`,
+                  `  Net Change:     ${fmt(net)}`,
+                ];
+              },
               footer: items => {
-                // Sum only the bar datasets (stack: "change") for the net change
-                const barItems = items.filter(i => i.dataset.stack === "change");
-                if (barItems.length < 2) return undefined;
-                const total = barItems.reduce((s, i) => s + (i.parsed.y || 0), 0);
-                return `Net change: ${fmt(total)}`;
+                const liqItem = items.find(i => i.dataset.label === "Total Liquid Assets");
+                if (!liqItem) return undefined;
+                return `  Liquid Balance: ${fmt(liqItem.parsed.y)}`;
               },
             },
           },
-          legend: { display: true },
         },
         scales: {
           x: { stacked: true },
           y: {
             stacked: true,
-            title: { display: true, text: "Annual Change ($)" },
+            title: { display: true, text: "Annual $ Flow" },
             ticks: { callback: v => fmt(v) },
           },
-          yBalance: {
+          yLiquid: {
             position: "right",
-            title: { display: true, text: "Total Balance ($)" },
+            title: { display: true, text: "Total Liquid Assets ($)" },
             ticks: { callback: v => fmt(v) },
             grid: { drawOnChartArea: false },
           },
