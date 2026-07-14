@@ -2807,6 +2807,96 @@ function drawRothConversions(rows) {
   );
 }
 
+function drawWithdrawalsByType(rows) {
+  if (withdrawalsByTypeChart) withdrawalsByTypeChart.destroy();
+  const dr = deflateRows(rows, summaryRealMode);
+  const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+
+  // For each account type, split withdrawals into three buckets:
+  //   RMD          — required minimum distributions (traditionalRMD, inheritedRMD)
+  //   Bracket Drain — inherited IRA bracket-fill drains (inheritedBracketDrain + inheritedSpendWD for tax portion)
+  //   Spending WD  — discretionary withdrawals via withdrawnByType (spend + tax gap)
+  //
+  // withdrawnByType already includes all spend+tax pulls; inherited bracket/RMD are tracked separately.
+  // To avoid double-counting inherited: withdrawnByType["inherited_ira"] = inheritedSpendWD (spend+tax pulls),
+  // while inheritedRMD and inheritedBracketDrain are on top of that.
+
+  const accts = [
+    { key: "taxable",      label: "Taxable",       rmdField: null,           bracketField: null,                  color: ["#fbbf24","#f59e0b","#d97706"] },
+    { key: "traditional",  label: "Traditional/401k", rmdField: "traditionalRMD", bracketField: null,             color: ["#f87171","#ef4444","#dc2626"] },
+    { key: "inherited_ira",label: "Inherited IRA", rmdField: "inheritedRMD", bracketField: "inheritedBracketDrain", color: ["#fb923c","#f97316","#ea580c"] },
+    { key: "roth",         label: "Roth",          rmdField: null,           bracketField: null,                  color: ["#34d399","#10b981","#059669"] },
+    { key: "hsa",          label: "HSA",           rmdField: null,           bracketField: null,                  color: ["#a78bfa","#8b5cf6","#7c3aed"] },
+  ];
+
+  const datasets = [];
+  accts.forEach(({ key, label, rmdField, bracketField, color }) => {
+    // RMD bar
+    if (rmdField) {
+      datasets.push({
+        label: `${label} RMD`,
+        data: dr.map(r => r[rmdField] || 0),
+        backgroundColor: color[0],
+        stack: "wd",
+      });
+    }
+    // Bracket drain bar
+    if (bracketField) {
+      datasets.push({
+        label: `${label} Bracket Drain`,
+        data: dr.map(r => r[bracketField] || 0),
+        backgroundColor: color[1],
+        stack: "wd",
+      });
+    }
+    // Spending/tax withdrawal — from withdrawnByType, minus already-counted RMD/bracket amounts
+    datasets.push({
+      label: `${label} Spending WD`,
+      data: dr.map(r => {
+        const total = r.withdrawnByType?.[key] || 0;
+        // For traditional: withdrawnByType includes spending+tax pulls only (RMD tracked separately)
+        // For inherited: withdrawnByType["inherited_ira"] = inheritedSpendWD (already excludes RMD/bracket)
+        // For others: straightforward
+        return Math.max(0, total);
+      }),
+      backgroundColor: color[2],
+      stack: "wd",
+    });
+  });
+
+  withdrawalsByTypeChart = new Chart(
+    document.getElementById("withdrawalsByTypeChart").getContext("2d"),
+    {
+      type: "bar",
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: "Annual Withdrawals by Account Type & Source" },
+          tooltip: {
+            mode: "index", intersect: false,
+            callbacks: {
+              label: c => {
+                const v = c.parsed.y;
+                return v > 0 ? `  ${c.dataset.label}: ${fmt(v)}` : null;
+              },
+              footer: items => {
+                const total = items.reduce((s, i) => s + (i.parsed.y || 0), 0);
+                return total > 0 ? `  Total: ${fmt(total)}` : undefined;
+              },
+            },
+          },
+          legend: { display: true, labels: { boxWidth: 12, font: { size: 11 } } },
+        },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, ticks: { callback: v => fmt(v) } },
+        },
+      },
+    }
+  );
+}
+
 function drawGapWithdrawalBreakdown(rows) {
   if (expenseBreakdownChart) expenseBreakdownChart.destroy();
   const dr = deflateRows(rows, summaryRealMode);
