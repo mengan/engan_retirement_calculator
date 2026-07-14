@@ -2997,7 +2997,7 @@ function drawExpenseBreakdown(rows) {
                 return { borderColor: color, backgroundColor: color };
               },
               afterBody: items => {
-                let totalIn = 0, totalGrowth = 0, totalOut = 0;
+                let totalIn = 0, totalGrowth = 0, totalOut = 0, netWorthDelta = null;
                 items.forEach(item => {
                   const v = item.parsed.y;
                   if (v == null) return;
@@ -3005,17 +3005,20 @@ function drawExpenseBreakdown(rows) {
                   if (stack === "in") totalIn += v;
                   else if (stack === "growth") totalGrowth += v;
                   else if (stack === "out") totalOut += v;
+                  else if (item.dataset.label === "Net Annual Change") netWorthDelta = v;
                 });
-                const net = totalIn + totalGrowth + totalOut;
-                const netSign = net >= 0 ? "+" : "-";
-                return [
+                const lines = [
                   "",
                   `─────────────────────`,
                   `  +${fmt(totalIn)}  Total Inflows`,
                   `  +${fmt(totalGrowth)}  Total Growth`,
                   `  -${fmt(Math.abs(totalOut))}  Total Outflows`,
-                  `  ${netSign}${fmt(Math.abs(net))}  Net Change`,
                 ];
+                if (netWorthDelta !== null) {
+                  const s = netWorthDelta >= 0 ? "+" : "-";
+                  lines.push(`  ${s}${fmt(Math.abs(netWorthDelta))}  Net Worth Change (black line)`);
+                }
+                return lines;
               },
               footer: () => undefined,
             },
