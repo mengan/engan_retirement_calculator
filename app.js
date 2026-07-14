@@ -5249,7 +5249,7 @@ function runSurvivorProjection(whoDies, deathAge) {
   s.stdDeduction = orig.stdDeduction;
   s.taxBrackets  = orig.taxBrackets;
   s.ltcgBrackets = orig.ltcgBrackets;
-  s.expenses.base = orig.expBase;
+  state.expenses.base = orig.expBase;
   s.s1.salary    = orig.s1salary;
   s.s1.ssAmt     = orig.s1ssAmt;
   if (s.s2) {
