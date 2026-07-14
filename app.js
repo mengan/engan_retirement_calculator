@@ -5310,11 +5310,17 @@ function runAndDrawSurvivorChart(baseRows) {
   const labels = baseRows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
   const baseArr = baseRows.map(r => r.liquid);
 
-  // Survivor path: use base rows before death year, survivor rows after
-  const survivorArr = baseRows.map(r => {
-    const sr = survivorRows.find(s => s.year === r.year);
-    return r.year < deathYear ? r.liquid : (sr?.liquid ?? null);
-  });
+  // Survivor path: match joint up to death year, then switch to survivor projection
+  const survivorByYear = Object.fromEntries(survivorRows.map(r => [r.year, r.liquid]));
+  const survivorArr = baseRows.map(r =>
+    r.year < deathYear ? r.liquid : (survivorByYear[r.year] ?? null)
+  );
+
+  // Mark the death year with a single point so it shows on the chart without the annotation plugin
+  const deathIdx = baseRows.findIndex(r => r.year >= deathYear);
+  const deathMarker = baseRows.map((r, i) => i === deathIdx ? r.liquid : null);
+
+  const deadName = whoDies === "s1" ? (s.s1?.name || "Spouse 1") : (s.s2?.name || "Spouse 2");
 
   if (survivorLiquidChart) survivorLiquidChart.destroy();
   survivorLiquidChart = new Chart(
@@ -5336,7 +5342,7 @@ function runAndDrawSurvivorChart(baseRows) {
             ...zeroDropProps(baseArr, "#1d4ed8"),
           },
           {
-            label: `Survivor Path (after ${whoDies === "s1" ? (s.s1?.name || "Spouse 1") : (s.s2?.name || "Spouse 2")} dies age ${deathAge})`,
+            label: `Survivor Path (${deadName} dies age ${deathAge}, ${deathYear})`,
             data: survivorArr,
             borderColor: "#dc2626",
             backgroundColor: "rgba(220,38,38,0.08)",
@@ -5347,25 +5353,25 @@ function runAndDrawSurvivorChart(baseRows) {
             pointRadius: 0,
             ...zeroDropProps(survivorArr, "#dc2626"),
           },
+          {
+            label: `${deadName} dies (${deathYear})`,
+            data: deathMarker,
+            borderColor: "#dc2626",
+            backgroundColor: "#dc2626",
+            pointRadius: deathMarker.map(v => v !== null ? 8 : 0),
+            pointStyle: "triangle",
+            showLine: false,
+            type: "line",
+          },
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           title: { display: true, text: "Liquid Assets: Joint Baseline vs Survivor Path" },
-          tooltip: { mode: "index", intersect: false, callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
-          annotation: {
-            annotations: {
-              deathLine: {
-                type: "line",
-                scaleID: "x",
-                value: baseRows.findIndex(r => r.year >= deathYear),
-                borderColor: "#dc2626",
-                borderWidth: 1,
-                borderDash: [4, 4],
-                label: { content: `Death year ${deathYear}`, display: true, position: "start" },
-              },
-            },
+          tooltip: {
+            mode: "index", intersect: false,
+            callbacks: { label: c => c.parsed.y != null ? `${c.dataset.label}: ${fmt(c.parsed.y)}` : null },
           },
         },
         scales: {
