@@ -2835,17 +2835,20 @@ function drawWithdrawalsByType(rows) {
   // To avoid double-counting inherited: withdrawnByType["inherited_ira"] = inheritedSpendWD (spend+tax pulls),
   // while inheritedRMD and inheritedBracketDrain are on top of that.
 
+  // withdrawnByType keys are raw account types: "ira","sep_ira","401k","roth","roth_401k","taxable","inherited_ira","hsa"
+  // Helper sums all raw keys that belong to a display group
+  const sumTypes = (r, keys) => keys.reduce((s, k) => s + (r.withdrawnByType?.[k] || 0), 0);
+
   const accts = [
-    { key: "taxable",      label: "Taxable",       rmdField: null,           bracketField: null,                  color: ["#fbbf24","#f59e0b","#d97706"] },
-    { key: "traditional",  label: "Traditional/401k", rmdField: "traditionalRMD", bracketField: null,             color: ["#f87171","#ef4444","#dc2626"] },
-    { key: "inherited_ira",label: "Inherited IRA", rmdField: "inheritedRMD", bracketField: "inheritedBracketDrain", color: ["#fb923c","#f97316","#ea580c"] },
-    { key: "roth",         label: "Roth",          rmdField: null,           bracketField: null,                  color: ["#34d399","#10b981","#059669"] },
-    { key: "hsa",          label: "HSA",           rmdField: null,           bracketField: null,                  color: ["#a78bfa","#8b5cf6","#7c3aed"] },
+    { label: "Taxable",        rawKeys: ["taxable"],                    rmdField: null,           bracketField: null,                   color: ["#fbbf24","#f59e0b","#d97706"] },
+    { label: "Traditional/401k", rawKeys: ["ira","sep_ira","401k"],     rmdField: "traditionalRMD", bracketField: null,                  color: ["#f87171","#ef4444","#dc2626"] },
+    { label: "Inherited IRA",  rawKeys: ["inherited_ira"],              rmdField: "inheritedRMD", bracketField: "inheritedBracketDrain",  color: ["#fb923c","#f97316","#ea580c"] },
+    { label: "Roth",           rawKeys: ["roth","roth_401k"],           rmdField: null,           bracketField: null,                   color: ["#34d399","#10b981","#059669"] },
+    { label: "HSA",            rawKeys: ["hsa"],                        rmdField: null,           bracketField: null,                   color: ["#a78bfa","#8b5cf6","#7c3aed"] },
   ];
 
   const datasets = [];
-  accts.forEach(({ key, label, rmdField, bracketField, color }) => {
-    // RMD bar
+  accts.forEach(({ label, rawKeys, rmdField, bracketField, color }) => {
     if (rmdField) {
       datasets.push({
         label: `${label} RMD`,
@@ -2854,7 +2857,6 @@ function drawWithdrawalsByType(rows) {
         stack: "wd",
       });
     }
-    // Bracket drain bar
     if (bracketField) {
       datasets.push({
         label: `${label} Bracket Drain`,
@@ -2863,16 +2865,12 @@ function drawWithdrawalsByType(rows) {
         stack: "wd",
       });
     }
-    // Spending/tax withdrawal — from withdrawnByType, minus already-counted RMD/bracket amounts
+    // Spending withdrawals: sum raw account-type keys from withdrawnByType.
+    // For inherited_ira: withdrawnByType already equals inheritedSpendWD (excludes RMD/bracket).
+    // For traditional: withdrawnByType["ira"/"sep_ira"/"401k"] are spend+tax pulls only (RMD separate).
     datasets.push({
       label: `${label} Spending WD`,
-      data: dr.map(r => {
-        const total = r.withdrawnByType?.[key] || 0;
-        // For traditional: withdrawnByType includes spending+tax pulls only (RMD tracked separately)
-        // For inherited: withdrawnByType["inherited_ira"] = inheritedSpendWD (already excludes RMD/bracket)
-        // For others: straightforward
-        return Math.max(0, total);
-      }),
+      data: dr.map(r => Math.max(0, sumTypes(r, rawKeys))),
       backgroundColor: color[2],
       stack: "wd",
     });
