@@ -3373,27 +3373,93 @@ const ACCOUNT_TYPE_LABELS = {
 function renderWithdrawalOrder() {
   const ol = document.getElementById("withdrawal-order");
   ol.innerHTML = "";
-  state.settings.withdrawalOrder.forEach((type, idx) => {
+  // HSA is excluded from manual ordering — it's always last automatically
+  const orderable = state.settings.withdrawalOrder.filter(t => t !== "hsa");
+  orderable.forEach((type, idx) => {
     const li = document.createElement("li");
     li.style.marginBottom = "4px";
     li.innerHTML = `
       <span style="display:inline-block;min-width:200px;">${ACCOUNT_TYPE_LABELS[type] || type}</span>
       <button class="small" data-action="up"  ${idx === 0 ? "disabled" : ""}>↑</button>
-      <button class="small" data-action="down" ${idx === state.settings.withdrawalOrder.length - 1 ? "disabled" : ""}>↓</button>
+      <button class="small" data-action="down" ${idx === orderable.length - 1 ? "disabled" : ""}>↓</button>
     `;
     li.querySelector("[data-action='up']").addEventListener("click", () => {
       if (idx === 0) return;
       const arr = state.settings.withdrawalOrder;
-      [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
-      saveState(); renderWithdrawalOrder(); recalc();
+      const ai = arr.indexOf(type), bi = arr.indexOf(orderable[idx - 1]);
+      [arr[ai], arr[bi]] = [arr[bi], arr[ai]];
+      saveState(); renderWithdrawalOrder(); recalc(); renderWithdrawalOrderComparison();
     });
     li.querySelector("[data-action='down']").addEventListener("click", () => {
+      if (idx === orderable.length - 1) return;
       const arr = state.settings.withdrawalOrder;
-      if (idx === arr.length - 1) return;
-      [arr[idx + 1], arr[idx]] = [arr[idx], arr[idx + 1]];
-      saveState(); renderWithdrawalOrder(); recalc();
+      const ai = arr.indexOf(type), bi = arr.indexOf(orderable[idx + 1]);
+      [arr[ai], arr[bi]] = [arr[bi], arr[ai]];
+      saveState(); renderWithdrawalOrder(); recalc(); renderWithdrawalOrderComparison();
     });
     ol.appendChild(li);
+  });
+}
+
+function renderWithdrawalOrderComparison() {
+  const tbody = document.querySelector("#withdrawal-order-comparison tbody");
+  if (!tbody) return;
+
+  const s = state.settings;
+  const planStart = s.currentYear;
+  const planEnd   = s.endYear;
+  const origOrder = [...s.withdrawalOrder];
+
+  // All meaningful permutations of the four orderable types
+  // Rather than all 24 permutations, enumerate the most common/meaningful combos
+  const orderable = ["taxable", "traditional", "inherited_ira", "roth"];
+  const candidates = [
+    ["taxable", "inherited_ira", "traditional", "roth"],
+    ["taxable", "traditional", "inherited_ira", "roth"],
+    ["taxable", "traditional", "roth", "inherited_ira"],
+    ["inherited_ira", "taxable", "traditional", "roth"],
+    ["inherited_ira", "traditional", "taxable", "roth"],
+    ["traditional", "taxable", "inherited_ira", "roth"],
+    ["traditional", "inherited_ira", "taxable", "roth"],
+    ["roth", "taxable", "traditional", "inherited_ira"],
+  ];
+
+  // Always include the current order if not already listed
+  const currentKey = origOrder.filter(t => t !== "hsa").join(",");
+  if (!candidates.some(c => c.join(",") === currentKey)) {
+    candidates.unshift(origOrder.filter(t => t !== "hsa"));
+  }
+
+  const results = candidates.map(order => {
+    s.withdrawalOrder = [...order, "hsa"];
+    const rows = project();
+    const tax   = rows.filter(r => r.year >= planStart && r.year <= planEnd)
+                      .reduce((sum, r) => sum + (r.totalTax || 0), 0);
+    const endNW = rows[rows.length - 1]?.netWorth || 0;
+    const bust  = rows.find(r => r.liquid <= 0 && r.retired);
+    return { order, tax, endNW, bust: bust?.year || null };
+  });
+
+  s.withdrawalOrder = origOrder;
+
+  const bestNW  = Math.max(...results.map(r => r.endNW));
+  const lowestTax = Math.min(...results.map(r => r.tax));
+
+  tbody.innerHTML = "";
+  results.forEach(({ order, tax, endNW, bust }) => {
+    const isCurrent = order.join(",") === currentKey;
+    const isBestNW  = endNW === bestNW;
+    const isLowTax  = tax === lowestTax;
+    const tr = document.createElement("tr");
+    if (isCurrent) tr.style.background = "#dbeafe";
+    if (isBestNW)  tr.style.fontWeight = "600";
+    tr.innerHTML = `
+      <td>${order.map(t => ACCOUNT_TYPE_LABELS[t] || t).join(" → ")}${isCurrent ? " <strong>(current)</strong>" : ""}</td>
+      <td style="text-align:right;">${fmt(endNW)}${isBestNW ? " ★" : ""}</td>
+      <td style="text-align:right;${isLowTax ? "color:#15803d;" : ""}">${fmt(tax)}${isLowTax ? " ★" : ""}</td>
+      <td style="text-align:right;">${bust ? String(bust) : "—"}</td>
+    `;
+    tbody.appendChild(tr);
   });
 }
 
