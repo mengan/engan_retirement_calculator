@@ -4565,6 +4565,7 @@ function wireRealNominalToggle() {
         drawAllAssetsBreakdown(lastRows);
         drawIncomeBreakdown(lastRows);
         drawRothConversions(lastRows);
+        drawWithdrawalsByType(lastRows);
         drawGapWithdrawalBreakdown(lastRows);
         drawExpenseBreakdown(lastRows);
         drawTaxByBracket(lastRows);
