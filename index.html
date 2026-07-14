@@ -1124,6 +1124,18 @@
     </div>
   </div>
   <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="withdrawalsByTypeChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="withdrawalsByTypeChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
+  </div>
+  <div class="chart-wrapper">
     <div class="chart-container"><canvas id="expenseBreakdownChart"></canvas></div>
     <div class="chart-zoom-controls" data-chart="expenseBreakdownChart">
       <span>Y-axis:</span>
