@@ -2759,7 +2759,20 @@ function drawIncomeBreakdown(rows) {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           title: { display: true, text: "Annual Inflows & Investment Growth by Source (stacked)" },
-          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+          tooltip: {
+            mode: "index",
+            intersect: false,
+            callbacks: {
+              label: c => {
+                const v = c.parsed.y;
+                return v > 0 ? `  ${c.dataset.label}: ${fmt(v)}` : null;
+              },
+              footer: items => {
+                const total = items.reduce((s, i) => s + (i.parsed.y || 0), 0);
+                return `  Total: ${fmt(total)}`;
+              },
+            },
+          },
         },
         scales: {
           x: { stacked: true },
