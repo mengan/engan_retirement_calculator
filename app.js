@@ -2507,6 +2507,7 @@ document.getElementById("sum-peak").textContent = fmt(peakLiquid);
   renderRothRecommendation(rows);
   renderTaxStrategyComparison();
   renderGuardrails(rows, lowRows, highRows);
+  renderSurvivorTab(rows);
 }
 
 function deflateRows(rows, realMode) {
