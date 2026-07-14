@@ -3501,6 +3501,7 @@ function renderLtcgBrackets() {
 
 function renderWithdrawalsTab() {
   renderWithdrawalOrder();
+  renderWithdrawalOrderComparison();
   renderTaxBrackets();
   renderLtcgBrackets();
 
