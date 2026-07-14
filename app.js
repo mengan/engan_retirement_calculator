@@ -3636,44 +3636,72 @@ function renderTaxStrategyComparison() {
     { key: "fill_32", label: "Fill 32% Bracket" },
   ];
 
+  // Four tax-rate scenarios: [label, taxRisePct override, taxRiseYear override]
+  // TCJA expiry modeled as +3.5 pts average across brackets (approximates reverting
+  // 10→15, 12→15, 22→25, 24→28, 32→33, 35→36, 37→39.6).
+  const scenarios = [
+    { id: "today",    risePct: 0,    riseYear: 2100 },
+    { id: "tcja",     risePct: 3.5,  riseYear: 2026 },
+    { id: "moderate", risePct: 5,    riseYear: 2026 },
+    { id: "high",     risePct: 10,   riseYear: 2026 },
+  ];
+
   const s = state.settings;
-  const rc = s.rothConv || {};
   const planStart = s.currentYear;
   const planEnd   = s.endYear;
-  document.getElementById("tsc-full-range").textContent = `${planStart}–${planEnd}`;
+  const rangeEl = document.querySelector("#tsc-full-range-row td");
+  if (rangeEl) rangeEl.textContent = `Plan range: ${planStart}–${planEnd}`;
 
-  const currentStrategy = rc.strategy || "none";
-  const originalStrategy = rc.strategy;
+  const currentStrategy = s.rothConv?.strategy || "none";
+  const origStrategy  = s.rothConv.strategy;
+  const origRisePct   = s.taxRisePct;
+  const origRiseYear  = s.taxRiseYear;
 
-  const results = strategies.map(({ key, label }) => {
-    s.rothConv.strategy = key;
-    const rows = project();
-    const fullTax = rows
-      .filter(r => r.year >= planStart && r.year <= planEnd)
-      .reduce((sum, r) => sum + (r.totalTax || 0), 0);
-    const endNW = rows[rows.length - 1]?.netWorth || 0;
-    return { key, label, fullTax, endNW };
+  // Run all strategy × scenario combinations
+  const matrix = strategies.map(({ key, label }) => {
+    const scenResults = scenarios.map(sc => {
+      s.rothConv.strategy = key;
+      s.taxRisePct  = sc.risePct;
+      s.taxRiseYear = sc.riseYear;
+      const rows = project();
+      const tax = rows
+        .filter(r => r.year >= planStart && r.year <= planEnd)
+        .reduce((sum, r) => sum + (r.totalTax || 0), 0);
+      const endNW = rows[rows.length - 1]?.netWorth || 0;
+      return { tax, endNW };
+    });
+    return { key, label, scenResults };
   });
 
-  s.rothConv.strategy = originalStrategy;
+  // Restore originals
+  s.rothConv.strategy = origStrategy;
+  s.taxRisePct  = origRisePct;
+  s.taxRiseYear = origRiseYear;
 
-  // Best = highest end-of-plan net worth
-  const bestKey = results.reduce((b, r) => (r.endNW > b.endNW ? r : b)).key;
+  // Per-scenario best end-NW key (to highlight winners per column pair)
+  const bestNWByScen = scenarios.map((_, si) =>
+    matrix.reduce((b, r) => (r.scenResults[si].endNW > b.scenResults[si].endNW ? r : b)).key
+  );
 
-  results.forEach(({ key, label, fullTax, endNW }) => {
+  const scenBg = ["#fef9c3","#fef3c7","#fed7aa","#fecaca"];
+
+  matrix.forEach(({ key, label, scenResults }) => {
+    const isCurrent = key === currentStrategy;
     const tr = document.createElement("tr");
-    if (key === currentStrategy) tr.style.background = "#dbeafe";
-    const isBest = key === bestKey;
+    if (isCurrent) tr.style.fontWeight = "600";
+
+    const cells = scenResults.map((sc, si) => {
+      const isBest = bestNWByScen[si] === key;
+      const bg = isBest ? "#d1fae5" : scenBg[si];
+      const star = isBest ? " ★" : "";
+      return `<td style="background:${bg};text-align:right;">${fmt(sc.endNW)}${star}</td>`
+           + `<td style="background:${bg};text-align:right;">${fmt(sc.tax)}</td>`;
+    }).join("");
+
     tr.innerHTML = `
-      <td>
-        ${label}
-        ${key === currentStrategy ? ' <strong>(current)</strong>' : ''}
-        ${isBest ? ' <span style="color:#15803d;">✓ highest net worth</span>' : ''}
-      </td>
-      <td>${fmt(endNW)}</td>
-      <td>${fmt(fullTax)}</td>
+      <td>${label}${isCurrent ? ' <strong>(current)</strong>' : ''}</td>
+      ${cells}
     `;
-    if (isBest) tr.style.borderLeft = "4px solid #15803d";
     tbody.appendChild(tr);
   });
 }
