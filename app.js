@@ -2882,7 +2882,7 @@ function drawExpenseBreakdown(rows) {
     roth: "rgba(16,185,129,0.75)", inherited_ira: "rgba(194,65,12,0.75)", hsa: "rgba(124,58,237,0.75)",
   };
 
-  const liquidArr = perYear.map(p => p.liquid);
+  const netChangeArr = perYear.map(p => p.netChange);
 
   // Build datasets — inflows stack upward, outflows stack downward (negative values), growth separate positive stack
   const datasets = [
