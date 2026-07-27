@@ -1178,8 +1178,6 @@ function inheritedMandatoryDistribution(accounts, currentYear, isFirstYear = fal
     const yearsLeft = 10 - elapsed;
     const fullRmd = yearsLeft <= 0 ? a.balance : a.balance / yearsLeft;
     mandatory += fullRmd;
-    // Tag: if any account is at/past year 10, the mandatory amount is non-negotiable
-    if (yearsLeft <= 0) mandatory.__hasFinalYearDrain = true;
   });
   return mandatory;
 }
