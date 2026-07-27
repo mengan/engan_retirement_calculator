@@ -1167,7 +1167,7 @@ function inheritedMandatoryDistribution(accounts, currentYear, isFirstYear = fal
   // year (elapsed >= 1). The 10-year rule requires full drain by inheritanceYear + 10.
   // - elapsed 0 (the inheritance year itself): no distribution.
   // - elapsed 1..9: distribute balance / yearsLeft (years remaining in the 10-yr window).
-  // - elapsed >= 10: must fully drain.
+  // - elapsed >= 10: must fully drain (no cap allowed — IRS deadline).
   let mandatory = 0;
   accounts.forEach(a => {
     if (a.type !== "inherited_ira" || a.balance <= 0) return;
@@ -1178,8 +1178,19 @@ function inheritedMandatoryDistribution(accounts, currentYear, isFirstYear = fal
     const yearsLeft = 10 - elapsed;
     const fullRmd = yearsLeft <= 0 ? a.balance : a.balance / yearsLeft;
     mandatory += fullRmd;
+    // Tag: if any account is at/past year 10, the mandatory amount is non-negotiable
+    if (yearsLeft <= 0) mandatory.__hasFinalYearDrain = true;
   });
   return mandatory;
+}
+
+function inheritedIraHasFinalYearDrain(accounts, currentYear) {
+  // Returns true if any inherited IRA is at or past its 10-year deadline this year.
+  return accounts.some(a => {
+    if (a.type !== "inherited_ira" || a.balance <= 0) return false;
+    const elapsed = currentYear - (a.inheritanceYear || (currentYear - 1));
+    return elapsed >= 10;
+  });
 }
 
 function performRothConversion(accounts, amount) {
