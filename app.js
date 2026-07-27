@@ -1661,7 +1661,9 @@ function project(opts) {
     let inheritedRMD = 0;
     let inheritedBracketDrain = 0;
     let mandatoryInherited = inheritedMandatoryDistribution(accounts, year, yearsOut === 0);
-    if (iiEarly.capAtBracketFill === true && iiBracketFillTarget != null) {
+    const iiraFinalYear = inheritedIraHasFinalYearDrain(accounts, year);
+    // capAtBracketFill is bypassed in the final year (elapsed >= 10): IRS requires full drain.
+    if (iiEarly.capAtBracketFill === true && iiBracketFillTarget != null && !iiraFinalYear) {
       const baseOrdNoDrain = (salary1 + salary2 - pretaxContribs) + rentalTaxable + traditionalRMD;
       const ssTNoDrain     = ssTaxablePortion(grossSS, baseOrdNoDrain);
       const baseTaxNoDrain = Math.max(0, baseOrdNoDrain + ssTNoDrain - stdDed);
