@@ -2763,9 +2763,12 @@ function drawAccountBalances(rows) {
     const mode = state.settings.drainSmallestFirst !== false
       ? "Withdrawals drain the smallest account of each type completely before moving to the next."
       : "Withdrawals are spread pro-rata across all accounts of the same type.";
-    descEl.textContent = `Each account tracked individually. ${mode} Excluded accounts grow but are never drawn from.`;
+    descEl.textContent = `Each account tracked individually. ${mode} Excluded accounts grow but are never drawn from. Solid = actual (historical), dashed = projected.`;
   }
-  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  const { historyLabels, projLabels } = historyProjectionLabels(rows);
+  const labels = [...historyLabels, ...projLabels];
+  const sorted = sortedHistory();
+  const nHist = sorted.length;
 
   // Color palette — cycle through a distinct set for up to ~12 accounts
   const palette = [
@@ -2773,19 +2776,21 @@ function drawAccountBalances(rows) {
     "#0891b2","#b45309","#15803d","#dc2626","#7c3aed","#db2777",
   ];
 
-  const datasets = state.accounts.map((a, i) => {
+  const datasets = state.accounts.flatMap((a, i) => {
     const color = palette[i % palette.length];
-    const data = rows.map(r => (r.balancesById && r.balancesById[a.id]) || 0);
-    return {
-      label: a.excluded ? `${a.name} (excluded)` : a.name,
-      data,
-      borderColor: color,
-      backgroundColor: "transparent",
-      borderWidth: a.excluded ? 1 : 2,
-      borderDash: a.excluded ? [5, 4] : [],
-      tension: 0.2,
-      ...zeroDropProps(data, color),
-    };
+    const label = a.excluded ? `${a.name} (excluded)` : a.name;
+    const projData = rows.map(r => (r.balancesById && r.balancesById[a.id]) || 0);
+    const actualData = sorted.map((_, idx) => historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null) ?? null);
+    const projPadded = new Array(Math.max(0, nHist - 1)).fill(null)
+      .concat(nHist ? [actualData[nHist - 1]] : [])
+      .concat(projData);
+    const base = { borderColor: color, backgroundColor: "transparent", tension: 0.2, spanGaps: true, borderWidth: a.excluded ? 1 : 2 };
+    const out = [];
+    if (nHist) {
+      out.push({ label: `${label} (Actual)`, data: actualData.concat(new Array(projData.length).fill(null)), ...base });
+    }
+    out.push({ label: nHist ? `${label} (Projected)` : label, data: projPadded, borderDash: [6, 4], ...base });
+    return out;
   });
 
   accountBalancesChart = new Chart(
@@ -2797,7 +2802,7 @@ function drawAccountBalances(rows) {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           title: { display: true, text: "Individual Account Balances Over Time" },
-          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y != null ? fmt(c.parsed.y) : "—"}` } },
         },
         scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
       },
