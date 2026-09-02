@@ -636,9 +636,11 @@ function renderAccounts() {
   });
 }
 document.getElementById("add-account").addEventListener("click", () => {
-  state.accounts.push({ id: uid(), name: "New Account", type: "taxable", owner: "Joint",
-    balance: 0, basis: 0, contribution: 0, dividendYield: 2.0, excluded: false });
-  saveState(); renderAccounts(); recalc();
+  const acc = { id: uid(), name: "New Account", type: "taxable", owner: "Joint",
+    balance: 0, basis: 0, contribution: 0, dividendYield: 2.0, excluded: false };
+  state.accounts.push(acc);
+  upsertTodaysHistoryEntry("account", acc.id, { balance: 0 });
+  renderAccounts(); renderHistoryTab(); recalc();
 });
 
 document.getElementById("set-drain-smallest").addEventListener("change", (e) => {
