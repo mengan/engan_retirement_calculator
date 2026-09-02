@@ -1346,6 +1346,7 @@ function renderHistoryTable() {
 
 function renderHistoryTab() {
   renderHistorySummaryCards();
+  drawHistoryNetWorthTotalChart();
   drawHistoryNetWorthChart();
   drawHistoryByClassChart();
   drawHistoryByAccountChart();
