@@ -1070,15 +1070,28 @@ function drawHistoryNetWorthTotalChart() {
     exPrimarySeries.push(Math.round(liquid + reEquity));
   });
 
+  // Day-offsets from the first sample, used as the x variable for the exponential fits.
+  const firstMs = new Date(sorted[0].date).getTime();
+  const dayOffsets = sorted.map(s => (new Date(s.date).getTime() - firstMs) / 86400000);
+  const netWorthFit = fitExponentialTrend(dayOffsets, netWorthSeries);
+  const exPrimaryFit = fitExponentialTrend(dayOffsets, exPrimarySeries);
+  const netWorthTrend = netWorthFit ? dayOffsets.map(x => Math.round(netWorthFit(x))) : null;
+  const exPrimaryTrend = exPrimaryFit ? dayOffsets.map(x => Math.round(exPrimaryFit(x))) : null;
+
+  const datasets = [
+    { label: "Total Net Worth", data: netWorthSeries, borderColor: "#1f3a5f", backgroundColor: "transparent", borderWidth: 2, tension: 0.15 },
+    { label: "Net Worth ex. Primary Residence", data: exPrimarySeries, borderColor: "#0891b2", backgroundColor: "transparent", borderWidth: 2, borderDash: [5, 4], tension: 0.15 },
+  ];
+  if (netWorthTrend) {
+    datasets.push({ label: "Total Net Worth Trend (exp.)", data: netWorthTrend, borderColor: "#1f3a5f", backgroundColor: "transparent", borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0 });
+  }
+  if (exPrimaryTrend) {
+    datasets.push({ label: "Net Worth ex. Primary Trend (exp.)", data: exPrimaryTrend, borderColor: "#0891b2", backgroundColor: "transparent", borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0 });
+  }
+
   historyNetWorthTotalChart = new Chart(canvas, {
     type: "line",
-    data: {
-      labels,
-      datasets: [
-        { label: "Total Net Worth", data: netWorthSeries, borderColor: "#1f3a5f", backgroundColor: "transparent", borderWidth: 2, tension: 0.15 },
-        { label: "Net Worth ex. Primary Residence", data: exPrimarySeries, borderColor: "#0891b2", backgroundColor: "transparent", borderWidth: 2, borderDash: [5, 4], tension: 0.15 },
-      ],
-    },
+    data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } } },
