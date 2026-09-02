@@ -31,6 +31,12 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def end_headers(self):
+        # Single-user local app — always serve the latest JS/CSS/HTML, never a
+        # stale cached copy from a previous browser session.
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
     def do_GET(self):
         if self.path == "/api/state":
             if os.path.exists(STATE_FILE):
