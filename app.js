@@ -1072,6 +1072,64 @@ const HISTORY_TYPE_GROUPS = [
   { types: ["hsa"],                              label: "HSA",                     color: "#8b5cf6" },
 ];
 
+let historyByClassChart = null;
+
+function drawHistoryByClassChart() {
+  const canvas = document.getElementById("historyByClassChart");
+  if (!canvas) return;
+  const sorted = sortedHistory();
+  if (historyByClassChart) historyByClassChart.destroy();
+  if (!sorted.length) return;
+
+  const retirementTypes = ["ira", "sep_ira", "401k", "roth", "roth_401k", "inherited_ira", "hsa"];
+  const labels = sorted.map(s => s.date);
+
+  const series = { taxable: [], retirement: [], investmentRE: [], primary: [] };
+  sorted.forEach((_, idx) => {
+    let taxable = 0, retirement = 0;
+    state.accounts.forEach(a => {
+      const v = historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null);
+      if (v == null) return;
+      if (a.type === "taxable") taxable += v;
+      else if (retirementTypes.includes(a.type)) retirement += v;
+    });
+    let investmentRE = 0, primary = 0;
+    state.properties.forEach(p => {
+      const v = historyFieldAt(sorted, idx, s => s.properties && s.properties[p.id] ? s.properties[p.id].value : null) || 0;
+      const l = historyFieldAt(sorted, idx, s => s.properties && s.properties[p.id] ? s.properties[p.id].loanBalance : null) || 0;
+      const equity = v - l;
+      if (p.type === "primary") primary += equity;
+      else investmentRE += equity;
+    });
+    series.taxable.push(Math.round(taxable));
+    series.retirement.push(Math.round(retirement));
+    series.investmentRE.push(Math.round(investmentRE));
+    series.primary.push(Math.round(primary));
+  });
+
+  const datasets = [
+    { key: "taxable",      label: "Taxable Brokerage",       color: "#f59e0b" },
+    { key: "retirement",   label: "Retirement Accounts",     color: "#ef4444" },
+    { key: "investmentRE", label: "Investment Properties (equity)", color: "#0891b2" },
+    { key: "primary",      label: "Primary Residence (equity)",     color: "#16a34a" },
+  ]
+    .map(({ key, label, color }) => ({
+      label, data: series[key],
+      borderColor: color, backgroundColor: "transparent", borderWidth: 2, tension: 0.15,
+    }))
+    .filter(ds => ds.data.some(v => v > 0));
+
+  historyByClassChart = new Chart(canvas, {
+    type: "line",
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } } },
+      scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
+    },
+  });
+}
+
 let historyByAccountChart = null;
 
 function drawHistoryByAccountChart() {
