@@ -766,6 +766,7 @@ document.getElementById("add-property").addEventListener("click", () => {
   upsertTodaysHistoryEntry("property", prop.id, { value: prop.value, loanBalance: prop.loanBalance });
   renderProperties(); renderHistoryTab(); recalc();
 });
+document.getElementById("edit-property-values").addEventListener("click", openTodaysHistoryModal);
 
 // ===== Historical Asset Tracking =====
 // Samples are stored in state.history, each { id, date: "YYYY-MM-DD",
