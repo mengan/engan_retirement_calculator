@@ -1194,6 +1194,9 @@ function renderHistoryTable() {
 function renderHistoryTab() {
   renderHistorySummaryCards();
   drawHistoryNetWorthChart();
+  drawHistoryByAccountChart();
+  renderHistoryByTypeTable();
+  renderHistoryReturnsTable();
   renderHistoryTable();
 }
 
