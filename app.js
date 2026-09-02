@@ -898,7 +898,7 @@ function openHistoryModal(sampleId) {
   const baselineIdx = editing ? editingIdx - 1 : sorted.length - 1;
 
   document.getElementById("history-modal-title").textContent = editing ? "Edit Sample" : "Add Sample";
-  document.getElementById("history-modal-date").value = editing ? editing.date : new Date().toISOString().slice(0, 10);
+  document.getElementById("history-modal-date").value = editing ? editing.date : todayLocalDateStr();
   document.getElementById("history-modal-delete").style.display = editing ? "" : "none";
 
   const propsWrap = document.getElementById("history-modal-properties");
