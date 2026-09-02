@@ -866,6 +866,16 @@ function todayLocalDateStr() {
   return new Date(d.getTime() - tz * 60000).toISOString().slice(0, 10);
 }
 
+// Jumps straight to the Historical Assets modal for today's sample — editing it if
+// one already exists for today, otherwise a fresh blank (forward-filled) one.
+// Used by the "Edit Account Balances" / "Edit Property Values" buttons.
+function openTodaysHistoryModal() {
+  const today = todayLocalDateStr();
+  const existing = state.history.find(h => h.date === today);
+  document.querySelector(".tab[data-tab='history']")?.click();
+  openHistoryModal(existing ? existing.id : null);
+}
+
 // Editing an account balance or property value/loan directly (outside the Historical
 // tab) records the change as a today-dated history sample rather than mutating the
 // account/property in place, so account values always trace back to a sample.
