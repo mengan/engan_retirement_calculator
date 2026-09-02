@@ -637,6 +637,7 @@ document.getElementById("add-account").addEventListener("click", () => {
   upsertTodaysHistoryEntry("account", acc.id, { balance: 0 });
   renderAccounts(); renderHistoryTab(); recalc();
 });
+document.getElementById("edit-account-balances").addEventListener("click", openTodaysHistoryModal);
 
 document.getElementById("set-drain-smallest").addEventListener("change", (e) => {
   state.settings.drainSmallestFirst = e.target.value === "true";
