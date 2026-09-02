@@ -622,9 +622,10 @@
 
   <h3 style="margin-top:32px;">Historical Rate of Return by Account Type</h3>
   <p class="muted">
-    Annualized change in balance between consecutive samples, by account type. This is a rough
-    measure (balance change ÷ time elapsed, not a true money-weighted return) and does not
-    separate market growth from contributions/withdrawals.
+    For each sample, compares against the sample closest to exactly one year earlier and
+    annualizes the change in between (skipped if no sample falls within roughly 10–14 months
+    prior). This is a rough measure (balance change ÷ time elapsed, not a true money-weighted
+    return) and does not separate market growth from contributions/withdrawals.
   </p>
   <div class="table-wrap">
     <table id="history-returns-table" style="font-size:13px;">
