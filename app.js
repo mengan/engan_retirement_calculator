@@ -583,7 +583,7 @@ function renderAccounts() {
           <option ${a.owner==='Joint'?'selected':''}>Joint</option>
         </select>
       </td>
-      <td><input type="number" value="${a.balance}" data-field="balance"/></td>
+      <td><input type="number" value="${a.balance}" data-field="balance" title="Editing this creates a new historical sample dated today"/></td>
       <td><input type="number" value="${a.basis}" data-field="basis" ${a.type==='taxable'?'':'disabled'}/></td>
       <td><input type="number" step="0.1" value="${a.dividendYield ?? (a.type==='taxable'?2:0)}" data-field="dividendYield" ${a.type==='taxable'?'':'disabled'}/></td>
       <td><input type="number" value="${a.inheritanceYear || ''}" data-field="inheritanceYear" placeholder="—" ${a.type==='inherited_ira'?'':'disabled'}/></td>
