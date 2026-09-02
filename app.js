@@ -664,8 +664,8 @@ function renderProperties() {
             <option value="secondary" ${p.type==='secondary'?'selected':''}>Second Home</option>
           </select>
         </label>
-        <label>Current Market Value ($) <input type="number" value="${p.value}" data-field="value"/></label>
-        <label>Loan Balance ($) <input type="number" value="${p.loanBalance}" data-field="loanBalance"/></label>
+        <label>Current Market Value ($) <input type="text" value="${fmt(p.value)}" disabled title="Set via the Historical Assets tab"/></label>
+        <label>Loan Balance ($) <input type="text" value="${fmt(p.loanBalance)}" disabled title="Set via the Historical Assets tab"/></label>
         <label>Total Monthly Payment PITI + Escrow ($)
           <input type="number" value="${p.payment}" data-field="payment"/>
           <small>Total monthly check — principal + interest + taxes + insurance.</small>
