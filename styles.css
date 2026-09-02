@@ -261,6 +261,16 @@ input[type="number"], input[type="text"], select {
 .table-wrap { overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #e5e7eb; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: left; font-size: 14px; }
+
+/* Resizable columns: applied via makeTableColumnsResizable() in app.js */
+table.resizable-cols { table-layout: fixed; }
+table.resizable-cols th { position: relative; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+table.resizable-cols td { overflow: hidden; text-overflow: ellipsis; }
+.col-resize-handle {
+  position: absolute; top: 0; right: -3px; width: 6px; height: 100%;
+  cursor: col-resize; user-select: none; z-index: 2;
+}
+.col-resize-handle:hover, .col-resize-handle.resizing { background: rgba(37, 99, 235, 0.35); }
 th { background: #f8fafc; font-weight: 600; color: #334155; }
 td input { max-width: 100%; }
 
