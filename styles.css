@@ -337,6 +337,9 @@ body.dark .property-card .rental-fields { border-top-color: #334155; }
 body.dark .property-card .future-mortgage-fields { border-top-color: #334155; }
 body.dark .muted { color: #64748b; }
 body.dark .summary-cards .card { background: #1e293b; }
+body.dark .modal { background: #1e293b; color: #e2e8f0; }
+body.dark .modal label { color: #cbd5e1; }
+body.dark .modal h4 { color: #93c5fd; border-bottom-color: #334155; }
 body.dark #projection-table tr.retired td:first-child { background: #422006; }
 body.dark .intro-panel .disclaimer-box { background: #422006; border-color: #92400e; color: #fde68a; }
 body.dark .intro-panel .steps li { background: #1e293b; border-color: #334155; }
