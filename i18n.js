@@ -350,6 +350,7 @@ es: {
   "tab.montecarlo": "Monte Carlo",
   "tab.summary": "Resumen",
   "tabgroup.startHere": "Comience Aquí",
+  "tabgroup.yourAssets": "Sus Activos",
   "intro.heroTitle": "Calculadora de Planificación para la Jubilación",
   "intro.heroBody": "Esta es una herramienta gratuita basada en el navegador para modelar sus finanzas de jubilación. Ejecute escenarios, compare estrategias y explore cómo sus ahorros, gastos, Seguridad Social e inversiones podrían desarrollarse con el tiempo. Todos los datos permanecen en su navegador — nada se envía a un servidor.",
   "intro.disclaimer.title": "⚠ Aviso Legal",
