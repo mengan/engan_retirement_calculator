@@ -1144,6 +1144,56 @@ function renderHistoryByTypeTable() {
   }).join("");
 }
 
+// Annualized simple return between two dates: (end/start - 1) scaled to a 1-year period.
+// Not money-weighted — contributions/withdrawals between samples will distort this,
+// same caveat as the source spreadsheet's own "annualized return" columns.
+function annualizedReturn(startVal, endVal, startDate, endDate) {
+  if (startVal == null || endVal == null || startVal <= 0) return null;
+  const days = (new Date(endDate) - new Date(startDate)) / 86400000;
+  if (days <= 0) return null;
+  const totalReturn = endVal / startVal - 1;
+  return (Math.pow(1 + totalReturn, 365 / days) - 1) * 100;
+}
+
+function renderHistoryReturnsTable() {
+  const table = document.getElementById("history-returns-table");
+  if (!table) return;
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  const sorted = sortedHistory();
+  if (sorted.length < 2) { thead.innerHTML = ""; tbody.innerHTML = ""; return; }
+
+  const groups = HISTORY_TYPE_GROUPS.filter(g => state.accounts.some(a => g.types.includes(a.type)));
+  const groupTotal = (idx, g) => state.accounts
+    .filter(a => g.types.includes(a.type))
+    .reduce((acc, a) => acc + (historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null) || 0), 0);
+
+  thead.innerHTML = `<tr>
+    <th>Period</th>
+    ${groups.map(g => `<th>${g.label}</th>`).join("")}
+    <th style="font-weight:700;">All Accounts</th>
+  </tr>`;
+
+  const rows = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1], cur = sorted[i];
+    const cells = groups.map(g => {
+      const startVal = groupTotal(i - 1, g), endVal = groupTotal(i, g);
+      const ret = annualizedReturn(startVal, endVal, prev.date, cur.date);
+      return `<td${ret != null && ret < 0 ? ' class="negative"' : ''}>${ret != null ? ret.toFixed(1) + '%' : '—'}</td>`;
+    }).join("");
+    const startAll = state.accounts.reduce((s, a) => s + (historyFieldAt(sorted, i - 1, sm => sm.accounts ? sm.accounts[a.id] : null) || 0), 0);
+    const endAll = state.accounts.reduce((s, a) => s + (historyFieldAt(sorted, i, sm => sm.accounts ? sm.accounts[a.id] : null) || 0), 0);
+    const retAll = annualizedReturn(startAll, endAll, prev.date, cur.date);
+    rows.push(`<tr>
+      <td style="font-weight:600;">${prev.date} → ${cur.date}</td>
+      ${cells}
+      <td style="font-weight:700;${retAll != null && retAll < 0 ? 'color:#b91c1c;' : ''}">${retAll != null ? retAll.toFixed(1) + '%' : '—'}</td>
+    </tr>`);
+  }
+  tbody.innerHTML = rows.reverse().join(""); // most recent period first
+}
+
 function renderHistoryTable() {
   const table = document.getElementById("history-table");
   if (!table) return;
