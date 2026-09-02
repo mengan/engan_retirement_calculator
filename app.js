@@ -754,6 +754,329 @@ document.getElementById("add-property").addEventListener("click", () => {
   saveState(); renderProperties(); recalc();
 });
 
+// ===== Historical Asset Tracking =====
+// Samples are stored in state.history, each { id, date: "YYYY-MM-DD",
+// accounts: { [accountId]: balance }, properties: { [propId]: { value, loanBalance } } }.
+// Fields omitted from a sample forward-fill from the nearest earlier sample.
+// The latest sample's values are pushed into account.balance / property.value+loanBalance
+// so the existing forecast engine (which reads those fields directly) always uses them.
+
+function seedHistoryForNewUser(s) {
+  if (typeof HISTORY_SEED_SAMPLES === "undefined" || !HISTORY_SEED_SAMPLES.length) return;
+
+  const norm = str => (str || "").trim().toLowerCase();
+  const resolveAccountId = (name, spec) => {
+    let acc = s.accounts.find(a => norm(a.name) === norm(name));
+    if (!acc) {
+      acc = {
+        id: uid(), name, type: spec.type || "taxable", owner: spec.owner || "Joint",
+        balance: 0, basis: 0, returnPct: s.settings.defaultReturn || 6,
+        contribution: 0, dividendYield: spec.type === "taxable" ? 0 : undefined,
+        excluded: !!spec.excluded,
+      };
+      s.accounts.push(acc);
+    }
+    return acc.id;
+  };
+  const resolvePropertyId = (name) => {
+    const p = s.properties.find(pp => norm(pp.name) === norm(name));
+    return p ? p.id : null;
+  };
+
+  // Resolve each spreadsheet column key to a live account/property id up front.
+  const resolved = {};
+  Object.entries(HISTORY_SEED_KEY_MAP).forEach(([key, spec]) => {
+    if (spec.kind === "account") {
+      resolved[key] = { kind: "account", id: resolveAccountId(spec.name, spec) };
+    } else {
+      const id = resolvePropertyId(spec.name);
+      if (id) resolved[key] = { kind: spec.kind, id };
+    }
+  });
+
+  s.history = HISTORY_SEED_SAMPLES.map(row => {
+    const sample = { id: uid(), date: row.date, accounts: {}, properties: {} };
+    Object.entries(resolved).forEach(([key, target]) => {
+      const v = row[key];
+      if (v == null) return;
+      if (target.kind === "account") {
+        sample.accounts[target.id] = v;
+      } else if (target.kind === "property_value") {
+        sample.properties[target.id] = sample.properties[target.id] || {};
+        sample.properties[target.id].value = v;
+      } else if (target.kind === "property_loan") {
+        sample.properties[target.id] = sample.properties[target.id] || {};
+        sample.properties[target.id].loanBalance = v;
+      }
+    });
+    return sample;
+  });
+
+  applyLatestHistoryToCurrent(s);
+}
+
+function sortedHistory() {
+  return [...state.history].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+}
+
+// Forward-filled value for an account/property field as of a given sample index
+// (inclusive) in the sorted history array.
+function historyFieldAt(sorted, idx, getField) {
+  for (let i = idx; i >= 0; i--) {
+    const v = getField(sorted[i]);
+    if (v != null) return v;
+  }
+  return null;
+}
+
+// Push the most recent (forward-filled) value for every account/property that
+// has ever appeared in history into the live account.balance / property.value+loanBalance.
+function applyLatestHistoryToCurrent(s) {
+  const sorted = [...s.history].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  if (!sorted.length) return;
+  const lastIdx = sorted.length - 1;
+
+  s.accounts.forEach(a => {
+    const v = historyFieldAt(sorted, lastIdx, smp => smp.accounts ? smp.accounts[a.id] : null);
+    if (v != null) a.balance = v;
+  });
+  s.properties.forEach(p => {
+    const v = historyFieldAt(sorted, lastIdx, smp => smp.properties && smp.properties[p.id] ? smp.properties[p.id].value : null);
+    const l = historyFieldAt(sorted, lastIdx, smp => smp.properties && smp.properties[p.id] ? smp.properties[p.id].loanBalance : null);
+    if (v != null) p.value = v;
+    if (l != null) p.loanBalance = l;
+  });
+}
+
+let historyModalEditingId = null;
+
+function openHistoryModal(sampleId) {
+  historyModalEditingId = sampleId || null;
+  const sorted = sortedHistory();
+  const editing = sampleId ? state.history.find(h => h.id === sampleId) : null;
+  const editingIdx = editing ? sorted.findIndex(h => h.id === sampleId) : -1;
+  // For a new sample, forward-fill from the very latest existing sample.
+  // For an existing sample being edited, forward-fill from the sample just before it.
+  const baselineIdx = editing ? editingIdx - 1 : sorted.length - 1;
+
+  document.getElementById("history-modal-title").textContent = editing ? "Edit Sample" : "Add Sample";
+  document.getElementById("history-modal-date").value = editing ? editing.date : new Date().toISOString().slice(0, 10);
+  document.getElementById("history-modal-delete").style.display = editing ? "" : "none";
+
+  const propsWrap = document.getElementById("history-modal-properties");
+  propsWrap.innerHTML = state.properties.map(p => {
+    const prevVal  = baselineIdx >= 0 ? historyFieldAt(sorted, baselineIdx, s => s.properties && s.properties[p.id] ? s.properties[p.id].value : null) : null;
+    const prevLoan = baselineIdx >= 0 ? historyFieldAt(sorted, baselineIdx, s => s.properties && s.properties[p.id] ? s.properties[p.id].loanBalance : null) : null;
+    const curVal  = editing && editing.properties && editing.properties[p.id] ? editing.properties[p.id].value : null;
+    const curLoan = editing && editing.properties && editing.properties[p.id] ? editing.properties[p.id].loanBalance : null;
+    return `
+      <label>${p.name} — Value
+        <input type="number" data-prop="${p.id}" data-field="value" value="${curVal ?? ''}" placeholder="${prevVal != null ? fmt(prevVal) + ' (previous)' : 'no previous value'}"/>
+      </label>
+      <label>${p.name} — Loan Balance
+        <input type="number" data-prop="${p.id}" data-field="loanBalance" value="${curLoan ?? ''}" placeholder="${prevLoan != null ? fmt(prevLoan) + ' (previous)' : 'no previous value'}"/>
+      </label>
+    `;
+  }).join("") || `<p class="muted">No properties yet — add one in the Real Estate tab first.</p>`;
+
+  const acctsWrap = document.getElementById("history-modal-accounts");
+  acctsWrap.innerHTML = state.accounts.map(a => {
+    const prev = baselineIdx >= 0 ? historyFieldAt(sorted, baselineIdx, s => s.accounts ? s.accounts[a.id] : null) : null;
+    const cur = editing && editing.accounts ? editing.accounts[a.id] : null;
+    return `
+      <label>${a.name} <small>(${a.owner})</small>
+        <input type="number" data-acct="${a.id}" value="${cur ?? ''}" placeholder="${prev != null ? fmt(prev) + ' (previous)' : 'no previous value'}"/>
+      </label>
+    `;
+  }).join("") || `<p class="muted">No accounts yet — add one in the Investment Accounts tab first.</p>`;
+
+  document.getElementById("history-modal-backdrop").style.display = "flex";
+}
+
+function closeHistoryModal() {
+  document.getElementById("history-modal-backdrop").style.display = "none";
+  historyModalEditingId = null;
+}
+
+function saveHistoryModal() {
+  const date = document.getElementById("history-modal-date").value;
+  if (!date) { alert("Please choose a date."); return; }
+
+  const sample = { id: historyModalEditingId || uid(), date, accounts: {}, properties: {} };
+
+  document.querySelectorAll("#history-modal-accounts [data-acct]").forEach(inp => {
+    if (inp.value !== "") sample.accounts[inp.dataset.acct] = parseFloat(inp.value);
+  });
+  const propInputs = document.querySelectorAll("#history-modal-properties [data-prop]");
+  propInputs.forEach(inp => {
+    if (inp.value === "") return;
+    const id = inp.dataset.prop, field = inp.dataset.field;
+    sample.properties[id] = sample.properties[id] || {};
+    sample.properties[id][field] = parseFloat(inp.value);
+  });
+
+  if (historyModalEditingId) {
+    const idx = state.history.findIndex(h => h.id === historyModalEditingId);
+    if (idx >= 0) state.history[idx] = sample;
+  } else {
+    state.history.push(sample);
+  }
+
+  applyLatestHistoryToCurrent(state);
+  saveState();
+  closeHistoryModal();
+  renderHistoryTab();
+  renderAccounts();
+  renderProperties();
+  recalc();
+}
+
+function deleteHistorySample() {
+  if (!historyModalEditingId) return;
+  if (!confirm("Delete this sample?")) return;
+  state.history = state.history.filter(h => h.id !== historyModalEditingId);
+  applyLatestHistoryToCurrent(state);
+  saveState();
+  closeHistoryModal();
+  renderHistoryTab();
+  renderAccounts();
+  renderProperties();
+  recalc();
+}
+
+let historyNetWorthChart = null;
+
+function renderHistorySummaryCards() {
+  const container = document.getElementById("history-summary-cards");
+  if (!container) return;
+  const sorted = sortedHistory();
+  if (!sorted.length) { container.innerHTML = ""; return; }
+  const lastIdx = sorted.length - 1;
+
+  let liquid = 0, realEstateEquity = 0;
+  state.accounts.forEach(a => {
+    const v = historyFieldAt(sorted, lastIdx, s => s.accounts ? s.accounts[a.id] : null);
+    if (v != null) liquid += v;
+  });
+  state.properties.forEach(p => {
+    const v = historyFieldAt(sorted, lastIdx, s => s.properties && s.properties[p.id] ? s.properties[p.id].value : null) || 0;
+    const l = historyFieldAt(sorted, lastIdx, s => s.properties && s.properties[p.id] ? s.properties[p.id].loanBalance : null) || 0;
+    realEstateEquity += (v - l);
+  });
+  const netWorth = liquid + realEstateEquity;
+
+  container.innerHTML = `
+    <div class="card"><div class="card-label">Latest Sample</div><div class="card-value">${sorted[lastIdx].date}</div></div>
+    <div class="card"><div class="card-label">Liquid Accounts</div><div class="card-value">${fmt(liquid)}</div></div>
+    <div class="card"><div class="card-label">Real Estate Equity</div><div class="card-value">${fmt(realEstateEquity)}</div></div>
+    <div class="card" style="background:#1f3a5f;color:#fff;"><div class="card-label" style="color:#cbd5e1;">Net Worth</div><div class="card-value" style="color:#fff;">${fmt(netWorth)}</div></div>
+  `;
+}
+
+function drawHistoryNetWorthChart() {
+  const canvas = document.getElementById("historyNetWorthChart");
+  if (!canvas) return;
+  const sorted = sortedHistory();
+  if (historyNetWorthChart) historyNetWorthChart.destroy();
+  if (!sorted.length) return;
+
+  const labels = sorted.map(s => s.date);
+  const liquidSeries = [];
+  const equitySeries = [];
+  sorted.forEach((_, idx) => {
+    let liquid = 0, equity = 0;
+    state.accounts.forEach(a => {
+      const v = historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null);
+      if (v != null) liquid += v;
+    });
+    state.properties.forEach(p => {
+      const v = historyFieldAt(sorted, idx, s => s.properties && s.properties[p.id] ? s.properties[p.id].value : null) || 0;
+      const l = historyFieldAt(sorted, idx, s => s.properties && s.properties[p.id] ? s.properties[p.id].loanBalance : null) || 0;
+      equity += (v - l);
+    });
+    liquidSeries.push(Math.round(liquid));
+    equitySeries.push(Math.round(equity));
+  });
+
+  historyNetWorthChart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        { label: "Liquid Accounts", data: liquidSeries, borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,0.15)", fill: true, tension: 0.15 },
+        { label: "Real Estate Equity", data: equitySeries, borderColor: "#16a34a", backgroundColor: "rgba(22,163,74,0.15)", fill: true, tension: 0.15 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { stacked: true, ticks: { callback: v => fmt(v) } }, x: { stacked: true } },
+      plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } } },
+    },
+  });
+}
+
+function renderHistoryTable() {
+  const table = document.getElementById("history-table");
+  if (!table) return;
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  const sorted = sortedHistory().slice().reverse(); // most recent first
+
+  const countEl = document.getElementById("history-sample-count");
+  if (countEl) countEl.textContent = sorted.length ? `${sorted.length} sample${sorted.length === 1 ? "" : "s"}` : "No samples yet.";
+
+  if (!sorted.length) { thead.innerHTML = ""; tbody.innerHTML = ""; return; }
+
+  thead.innerHTML = `<tr>
+    <th>Date</th>
+    ${state.properties.map(p => `<th>${p.name} Value</th><th>${p.name} Loan</th>`).join("")}
+    ${state.accounts.map(a => `<th>${a.name}</th>`).join("")}
+    <th></th>
+  </tr>`;
+
+  const fullSorted = sortedHistory();
+  tbody.innerHTML = sorted.map(sample => {
+    const idx = fullSorted.findIndex(s => s.id === sample.id);
+    const propCells = state.properties.map(p => {
+      const v = historyFieldAt(fullSorted, idx, s => s.properties && s.properties[p.id] ? s.properties[p.id].value : null);
+      const l = historyFieldAt(fullSorted, idx, s => s.properties && s.properties[p.id] ? s.properties[p.id].loanBalance : null);
+      const setV = sample.properties && sample.properties[p.id] && sample.properties[p.id].value != null;
+      const setL = sample.properties && sample.properties[p.id] && sample.properties[p.id].loanBalance != null;
+      return `<td${setV ? "" : ' style="color:#94a3b8;"'}>${v != null ? fmt(v) : "—"}</td><td${setL ? "" : ' style="color:#94a3b8;"'}>${l != null ? fmt(l) : "—"}</td>`;
+    }).join("");
+    const acctCells = state.accounts.map(a => {
+      const v = historyFieldAt(fullSorted, idx, s => s.accounts ? s.accounts[a.id] : null);
+      const setV = sample.accounts && sample.accounts[a.id] != null;
+      return `<td${setV ? "" : ' style="color:#94a3b8;"'}>${v != null ? fmt(v) : "—"}</td>`;
+    }).join("");
+    return `<tr data-id="${sample.id}" style="cursor:pointer;">
+      <td style="font-weight:600;">${sample.date}</td>
+      ${propCells}
+      ${acctCells}
+      <td><button class="small" data-action="edit-history">Edit</button></td>
+    </tr>`;
+  }).join("");
+
+  tbody.querySelectorAll("tr").forEach(tr => {
+    tr.addEventListener("click", () => openHistoryModal(tr.dataset.id));
+  });
+}
+
+function renderHistoryTab() {
+  renderHistorySummaryCards();
+  drawHistoryNetWorthChart();
+  renderHistoryTable();
+}
+
+document.getElementById("add-history-sample")?.addEventListener("click", () => openHistoryModal(null));
+document.getElementById("history-modal-close")?.addEventListener("click", closeHistoryModal);
+document.getElementById("history-modal-cancel")?.addEventListener("click", closeHistoryModal);
+document.getElementById("history-modal-save")?.addEventListener("click", saveHistoryModal);
+document.getElementById("history-modal-delete")?.addEventListener("click", deleteHistorySample);
+document.getElementById("history-modal-backdrop")?.addEventListener("click", (e) => {
+  if (e.target.id === "history-modal-backdrop") closeHistoryModal();
+});
+
 // ===== Future Property Purchases =====
 function calcMonthlyPayment(loanAmt, ratePct, termYrs) {
   if (loanAmt <= 0) return 0;
