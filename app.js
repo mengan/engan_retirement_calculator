@@ -253,18 +253,25 @@ async function loadState() {
       const data = await res.json();
       if (data && data.settings) {
         state = migrate(data);
+        maybeSeedHistory();
         return;
       }
     }
   } catch (e) { /* fall through to localStorage */ }
 
   const raw = localStorage.getItem(LS_KEY);
-  if (raw) {
-    state = migrate(JSON.parse(raw));
-  } else {
-    state = defaultState();
-    seedHistoryForNewUser(state);
-  }
+  state = raw ? migrate(JSON.parse(raw)) : defaultState();
+  maybeSeedHistory();
+}
+
+// Seeds the Historical Assets tab from the bundled example data exactly once —
+// guarded by _historySeeded so intentionally clearing all samples later doesn't
+// bring them back.
+function maybeSeedHistory() {
+  if (state._historySeeded) return;
+  state._historySeeded = true;
+  if (!state.history.length) seedHistoryForNewUser(state);
+  saveState();
 }
 
 function saveState() {
