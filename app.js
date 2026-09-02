@@ -2680,9 +2680,41 @@ function zeroDropProps(data, color) {
   return { pointRadius, pointBackgroundColor, pointStyle };
 }
 
+// Builds { historyLabels, projLabels } for prepending actual historical sample dates
+// before a projection's yearly labels on the same category axis.
+function historyProjectionLabels(rows) {
+  const historyLabels = sortedHistory().map(s => s.date);
+  const projLabels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  return { historyLabels, projLabels };
+}
+
+// Wraps a historical getter + projected data array into a pair of datasets ("Actual"
+// solid, "Projected" dashed) sharing one combined label axis, so the line reads
+// continuously from real samples into the forecast. historyGetter(idx) returns the
+// historical value at sortedHistory()[idx] (or null/undefined if not tracked).
+function historyProjectionDatasets(label, color, historyGetter, projData, extraStyle) {
+  const sorted = sortedHistory();
+  const nHist = sorted.length;
+  const actualData = sorted.map((_, idx) => historyGetter(idx) ?? null);
+  // Projected series is padded with nulls over the history range, then starts at the
+  // last actual point (if any) so the two lines connect with no visual gap.
+  const projPadded = new Array(Math.max(0, nHist - 1)).fill(null)
+    .concat(nHist ? [actualData[nHist - 1]] : [])
+    .concat(projData);
+  const base = { borderColor: color, backgroundColor: "transparent", tension: 0.2, spanGaps: true, ...extraStyle };
+  const out = [];
+  if (nHist) {
+    out.push({ label: `${label} (Actual)`, data: actualData.concat(new Array(projData.length).fill(null)), borderWidth: 2, ...base });
+  }
+  out.push({ label: nHist ? `${label} (Projected)` : label, data: projPadded, borderWidth: 2, borderDash: [6, 4], ...base });
+  return out;
+}
+
 function drawAccountTypeBalances(rows) {
   if (accountTypeChart) accountTypeChart.destroy();
-  const labels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+  const { historyLabels, projLabels } = historyProjectionLabels(rows);
+  const labels = [...historyLabels, ...projLabels];
+  const sorted = sortedHistory();
 
   // Only include types that have at least one account with non-zero data
   const typeDefs = [
@@ -2692,19 +2724,18 @@ function drawAccountTypeBalances(rows) {
     { key: "inherited_ira", label: "Inherited IRA",           color: "#b45309" },
     { key: "hsa",           label: "HSA",                     color: "#8b5cf6" },
   ];
+  const typeGroupsMap = { taxable: ["taxable"], traditional: ["ira","sep_ira","401k"], roth: ["roth","roth_401k"], inherited_ira: ["inherited_ira"], hsa: ["hsa"] };
 
   const datasets = typeDefs
-    .map(({ key, label, color }) => {
-      const data = rows.map(r => (r.balancesByType && r.balancesByType[key]) || 0);
-      return {
-        label,
-        data,
-        borderColor: color,
-        backgroundColor: "transparent",
-        borderWidth: 2,
-        tension: 0.2,
-        ...zeroDropProps(data, color),
-      };
+    .flatMap(({ key, label, color }) => {
+      const projData = rows.map(r => (r.balancesByType && r.balancesByType[key]) || 0);
+      const historyGetter = idx => state.accounts
+        .filter(a => typeGroupsMap[key].includes(a.type))
+        .reduce((sum, a) => {
+          const v = historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null);
+          return v != null ? sum + v : sum;
+        }, 0);
+      return historyProjectionDatasets(label, color, historyGetter, projData);
     })
     .filter(ds => ds.data.some(v => v > 0));
 
@@ -2717,7 +2748,7 @@ function drawAccountTypeBalances(rows) {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           title: { display: true, text: "Account Balances by Type Over Time" },
-          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y != null ? fmt(c.parsed.y) : "—"}` } },
         },
         scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
       },
