@@ -1344,6 +1344,46 @@ function renderHistoryTable() {
   });
 }
 
+// Adds a drag handle to the right edge of every <th> so columns can be resized by
+// the user. Re-run after any re-render since innerHTML rebuilds wipe out handles
+// and previously-set widths; the width map is preserved by column index/label so
+// resizing survives a re-render triggered by adding/editing a sample.
+const tableColumnWidths = {};
+function makeTableColumnsResizable(table) {
+  if (!table) return;
+  const ths = table.querySelectorAll("thead th");
+  if (!ths.length) return;
+  table.classList.add("resizable-cols");
+  const widths = tableColumnWidths[table.id] || (tableColumnWidths[table.id] = {});
+
+  ths.forEach((th, i) => {
+    if (widths[i]) th.style.width = widths[i] + "px";
+    th.querySelector(".col-resize-handle")?.remove();
+    const handle = document.createElement("div");
+    handle.className = "col-resize-handle";
+    th.appendChild(handle);
+
+    handle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = th.getBoundingClientRect().width;
+      handle.classList.add("resizing");
+      const onMove = (ev) => {
+        const newWidth = Math.max(40, startWidth + (ev.clientX - startX));
+        th.style.width = newWidth + "px";
+        widths[i] = newWidth;
+      };
+      const onUp = () => {
+        handle.classList.remove("resizing");
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+  });
+}
+
 function renderHistoryTab() {
   renderHistorySummaryCards();
   drawHistoryNetWorthTotalChart();
@@ -1353,6 +1393,8 @@ function renderHistoryTab() {
   renderHistoryByTypeTable();
   renderHistoryReturnsTable();
   renderHistoryTable();
+  ["history-by-type-table", "history-returns-table", "history-table"].forEach(id =>
+    makeTableColumnsResizable(document.getElementById(id)));
 }
 
 document.getElementById("add-history-sample")?.addEventListener("click", () => openHistoryModal(null));
