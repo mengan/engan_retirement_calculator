@@ -120,6 +120,7 @@ const defaultState = () => ({
       isRental: true, rent: 2400, rentGrowth: 3, basis: 220000, sellYear: 2040, yearsDepreciated: 10, taxablePct: 30 },
   ],
   futurePurchases: [],
+  history: [],
 });
 
 let state;
