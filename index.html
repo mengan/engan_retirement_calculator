@@ -595,6 +595,21 @@
     <canvas id="historyNetWorthChart"></canvas>
   </div>
 
+  <h3 style="margin-top:32px;">Historical Values by Account</h3>
+  <p class="muted">Each account's recorded balance over time. Excluded accounts are shown dashed.</p>
+  <div class="chart-container" style="height:420px;">
+    <canvas id="historyByAccountChart"></canvas>
+  </div>
+
+  <h3 style="margin-top:32px;">Historical Totals by Account Type</h3>
+  <p class="muted">Sum of all accounts of the same type, for every recorded sample date.</p>
+  <div class="table-wrap">
+    <table id="history-by-type-table" style="font-size:13px;">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
   <h3 style="margin-top:32px;">Samples</h3>
   <div class="table-wrap">
     <table id="history-table" style="font-size:13px;">
