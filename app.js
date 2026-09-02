@@ -1020,6 +1020,51 @@ function renderHistorySummaryCards() {
   `;
 }
 
+let historyNetWorthTotalChart = null;
+
+function drawHistoryNetWorthTotalChart() {
+  const canvas = document.getElementById("historyNetWorthTotalChart");
+  if (!canvas) return;
+  const sorted = sortedHistory();
+  if (historyNetWorthTotalChart) historyNetWorthTotalChart.destroy();
+  if (!sorted.length) return;
+
+  const labels = sorted.map(s => s.date);
+  const netWorthSeries = [];
+  const exPrimarySeries = [];
+  sorted.forEach((_, idx) => {
+    let liquid = 0, reEquity = 0, primaryEquity = 0;
+    state.accounts.forEach(a => {
+      const v = historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null);
+      if (v != null) liquid += v;
+    });
+    state.properties.forEach(p => {
+      const v = historyFieldAt(sorted, idx, s => s.properties && s.properties[p.id] ? s.properties[p.id].value : null) || 0;
+      const l = historyFieldAt(sorted, idx, s => s.properties && s.properties[p.id] ? s.properties[p.id].loanBalance : null) || 0;
+      const equity = v - l;
+      if (p.type === "primary") primaryEquity += equity; else reEquity += equity;
+    });
+    netWorthSeries.push(Math.round(liquid + reEquity + primaryEquity));
+    exPrimarySeries.push(Math.round(liquid + reEquity));
+  });
+
+  historyNetWorthTotalChart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        { label: "Total Net Worth", data: netWorthSeries, borderColor: "#1f3a5f", backgroundColor: "transparent", borderWidth: 2, tension: 0.15 },
+        { label: "Net Worth ex. Primary Residence", data: exPrimarySeries, borderColor: "#0891b2", backgroundColor: "transparent", borderWidth: 2, borderDash: [5, 4], tension: 0.15 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } } },
+      scales: { y: { ticks: { callback: v => fmt(v) } } },
+    },
+  });
+}
+
 function drawHistoryNetWorthChart() {
   const canvas = document.getElementById("historyNetWorthChart");
   if (!canvas) return;
