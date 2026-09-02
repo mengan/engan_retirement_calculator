@@ -855,6 +855,32 @@ function applyLatestHistoryToCurrent(s) {
   });
 }
 
+function todayLocalDateStr() {
+  const d = new Date();
+  const tz = d.getTimezoneOffset();
+  return new Date(d.getTime() - tz * 60000).toISOString().slice(0, 10);
+}
+
+// Editing an account balance or property value/loan directly (outside the Historical
+// tab) records the change as a today-dated history sample rather than mutating the
+// account/property in place, so account values always trace back to a sample.
+// kind: "account" -> fields = { balance }. kind: "property" -> fields = { value, loanBalance }.
+function upsertTodaysHistoryEntry(kind, id, fields) {
+  const today = todayLocalDateStr();
+  let sample = state.history.find(h => h.date === today);
+  if (!sample) {
+    sample = { id: uid(), date: today, accounts: {}, properties: {} };
+    state.history.push(sample);
+  }
+  if (kind === "account") {
+    sample.accounts[id] = fields.balance;
+  } else {
+    sample.properties[id] = { ...(sample.properties[id] || {}), ...fields };
+  }
+  applyLatestHistoryToCurrent(state);
+  saveState();
+}
+
 let historyModalEditingId = null;
 
 function openHistoryModal(sampleId) {
