@@ -620,12 +620,12 @@ function renderAccounts() {
         if (["name","type","owner"].includes(f)) a[f] = inp.value;
         else if (f === "rmdTakenAlready" || f === "excluded") a[f] = inp.checked;
         else a[f] = parseFloat(inp.value) || 0;
-        saveState(); renderAccounts(); recalc();
+        saveState(); renderAccounts(); renderHistoryTab(); recalc();
       });
     });
     tr.querySelector("[data-action='del']").addEventListener("click", () => {
       state.accounts = state.accounts.filter(x => x.id !== a.id);
-      saveState(); renderAccounts(); recalc();
+      saveState(); renderAccounts(); renderHistoryTab(); recalc();
     });
     tbody.appendChild(tr);
   });
