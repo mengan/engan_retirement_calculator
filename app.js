@@ -745,12 +745,13 @@ function renderProperties() {
         }
         // Re-render if yearsDepreciated or basis changed so computed display updates
         if (f === "yearsDepreciated" || f === "basis") { saveState(); renderProperties(); recalc(); return; }
+        if (f === "name" || f === "type") renderHistoryTab();
         saveState(); recalc();
       });
     });
     div.querySelector("[data-action='del']").addEventListener("click", () => {
       state.properties = state.properties.filter(x => x.id !== p.id);
-      saveState(); renderProperties(); recalc();
+      saveState(); renderProperties(); renderHistoryTab(); recalc();
     });
     container.appendChild(div);
   });
