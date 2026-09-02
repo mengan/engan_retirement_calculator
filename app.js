@@ -1261,6 +1261,25 @@ function annualizedReturn(startVal, endVal, startDate, endDate) {
   return (Math.pow(1 + totalReturn, 365 / days) - 1) * 100;
 }
 
+// Finds the sample closest to exactly 365 days before sorted[idx], restricted to
+// samples strictly earlier than it. Returns null if the closest candidate isn't
+// within ~300-430 days back (i.e. not a reasonable stand-in for "1 year ago").
+function findTrailingYearSampleIndex(sorted, idx) {
+  const curDate = new Date(sorted[idx].date);
+  const targetMs = curDate.getTime() - 365 * 86400000;
+  let bestIdx = -1, bestDiff = Infinity;
+  for (let j = idx - 1; j >= 0; j--) {
+    const diff = Math.abs(new Date(sorted[j].date).getTime() - targetMs);
+    if (diff < bestDiff) { bestDiff = diff; bestIdx = j; }
+    // Dates only get further from target as we keep going back once we've passed it.
+    if (new Date(sorted[j].date).getTime() < targetMs && diff > bestDiff) break;
+  }
+  if (bestIdx < 0) return null;
+  const gapDays = (curDate - new Date(sorted[bestIdx].date)) / 86400000;
+  if (gapDays < 300 || gapDays > 430) return null;
+  return bestIdx;
+}
+
 function renderHistoryReturnsTable() {
   const table = document.getElementById("history-returns-table");
   if (!table) return;
@@ -1273,31 +1292,34 @@ function renderHistoryReturnsTable() {
   const groupTotal = (idx, g) => state.accounts
     .filter(a => g.types.includes(a.type))
     .reduce((acc, a) => acc + (historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null) || 0), 0);
+  const allTotal = idx => state.accounts.reduce((s, a) => s + (historyFieldAt(sorted, idx, sm => sm.accounts ? sm.accounts[a.id] : null) || 0), 0);
 
   thead.innerHTML = `<tr>
-    <th>Period</th>
+    <th>As of</th>
+    <th>Trailing 12mo From</th>
     ${groups.map(g => `<th>${g.label}</th>`).join("")}
     <th style="font-weight:700;">All Accounts</th>
   </tr>`;
 
   const rows = [];
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = sorted[i - 1], cur = sorted[i];
+  for (let i = 0; i < sorted.length; i++) {
+    const startIdx = findTrailingYearSampleIndex(sorted, i);
+    if (startIdx == null) continue;
+    const cur = sorted[i], start = sorted[startIdx];
     const cells = groups.map(g => {
-      const startVal = groupTotal(i - 1, g), endVal = groupTotal(i, g);
-      const ret = annualizedReturn(startVal, endVal, prev.date, cur.date);
+      const startVal = groupTotal(startIdx, g), endVal = groupTotal(i, g);
+      const ret = annualizedReturn(startVal, endVal, start.date, cur.date);
       return `<td${ret != null && ret < 0 ? ' class="negative"' : ''}>${ret != null ? ret.toFixed(1) + '%' : '—'}</td>`;
     }).join("");
-    const startAll = state.accounts.reduce((s, a) => s + (historyFieldAt(sorted, i - 1, sm => sm.accounts ? sm.accounts[a.id] : null) || 0), 0);
-    const endAll = state.accounts.reduce((s, a) => s + (historyFieldAt(sorted, i, sm => sm.accounts ? sm.accounts[a.id] : null) || 0), 0);
-    const retAll = annualizedReturn(startAll, endAll, prev.date, cur.date);
+    const retAll = annualizedReturn(allTotal(startIdx), allTotal(i), start.date, cur.date);
     rows.push(`<tr>
-      <td style="font-weight:600;">${prev.date} → ${cur.date}</td>
+      <td style="font-weight:600;">${cur.date}</td>
+      <td class="muted">${start.date}</td>
       ${cells}
       <td style="font-weight:700;${retAll != null && retAll < 0 ? 'color:#b91c1c;' : ''}">${retAll != null ? retAll.toFixed(1) + '%' : '—'}</td>
     </tr>`);
   }
-  tbody.innerHTML = rows.reverse().join(""); // most recent period first
+  tbody.innerHTML = rows.reverse().join(""); // most recent first
 }
 
 function renderHistoryTable() {
