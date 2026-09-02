@@ -285,6 +285,20 @@ td input { max-width: 100%; }
 
 .muted { color: #64748b; font-size: 13px; }
 
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 40px 16px; overflow-y: auto; z-index: 1000;
+}
+.modal {
+  background: white; border-radius: 10px; padding: 24px 28px;
+  max-width: 760px; width: 100%; box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.modal label { display: block; margin-bottom: 10px; font-size: 13px; color: #334155; }
+.modal label small { display: block; color: #94a3b8; font-weight: normal; }
+.modal input { margin-top: 3px; }
+.modal h4 { color: #1f3a5f; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+
 /* ===== Dark Mode ===== */
 body.dark {
   background: #0f172a;
