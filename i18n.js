@@ -652,6 +652,7 @@ zh: {
   "tab.montecarlo": "蒙特卡洛模拟",
   "tab.summary": "摘要",
   "tabgroup.startHere": "从这里开始",
+  "tabgroup.yourAssets": "您的资产",
   "intro.heroTitle": "退休规划计算器",
   "intro.heroBody": "这是一款免费的浏览器工具，用于模拟您的退休财务状况。运行情景分析，比较策略，探索您的储蓄、支出、社会安全金和投资如何随时间发展。所有数据保存在您的浏览器中——不会发送到服务器。",
   "intro.disclaimer.title": "⚠ 免责声明",
