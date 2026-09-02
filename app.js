@@ -259,7 +259,12 @@ async function loadState() {
   } catch (e) { /* fall through to localStorage */ }
 
   const raw = localStorage.getItem(LS_KEY);
-  state = raw ? migrate(JSON.parse(raw)) : defaultState();
+  if (raw) {
+    state = migrate(JSON.parse(raw));
+  } else {
+    state = defaultState();
+    seedHistoryForNewUser(state);
+  }
 }
 
 function saveState() {
