@@ -26,6 +26,7 @@ en: {
   "tab.montecarlo": "Monte Carlo",
   "tab.summary": "Summary",
   "tabgroup.startHere": "Start Here",
+  "tabgroup.yourAssets": "Your Assets",
 
   // Intro
   "intro.heroTitle": "Retirement Planning Calculator",
