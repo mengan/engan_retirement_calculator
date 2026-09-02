@@ -573,6 +573,62 @@
   </div>
 </section>
 
+<!-- HISTORICAL ASSETS -->
+<section id="tab-history" class="tab-panel">
+  <h2>Historical Asset Tracking</h2>
+  <p class="muted">
+    Record snapshots of your account balances and property values over time. Leave any field
+    blank when adding a sample and it will carry forward the value from the previous sample.
+    The most recent sample's values are used as the current balances in the Investment Accounts
+    and Real Estate tabs. Everything here is stored only in your browser (localStorage) — it is
+    never sent to a server.
+  </p>
+  <div id="history-summary-cards" class="summary-cards"></div>
+
+  <div style="display:flex;align-items:center;gap:12px;margin:16px 0;">
+    <button id="add-history-sample" class="primary">+ Add Sample</button>
+    <span class="muted" id="history-sample-count"></span>
+  </div>
+
+  <h3 style="margin-top:24px;">Net Worth Over Time</h3>
+  <div class="chart-container" style="height:360px;">
+    <canvas id="historyNetWorthChart"></canvas>
+  </div>
+
+  <h3 style="margin-top:32px;">Samples</h3>
+  <div class="table-wrap">
+    <table id="history-table" style="font-size:13px;">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Historical sample edit modal -->
+<div id="history-modal-backdrop" class="modal-backdrop" style="display:none;">
+  <div class="modal" id="history-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h3 id="history-modal-title" style="margin:0;">Add Sample</h3>
+      <button class="small" id="history-modal-close" type="button">×</button>
+    </div>
+    <label style="max-width:220px;">Date
+      <input type="date" id="history-modal-date"/>
+    </label>
+
+    <h4 style="margin:16px 0 4px;">Real Estate</h4>
+    <div id="history-modal-properties" class="grid-2"></div>
+
+    <h4 style="margin:16px 0 4px;">Accounts</h4>
+    <div id="history-modal-accounts" class="grid-2"></div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button id="history-modal-save" class="primary" type="button">Save Sample</button>
+      <button id="history-modal-delete" class="danger" type="button" style="display:none;">Delete Sample</button>
+      <button id="history-modal-cancel" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- GUARDRAILS (SWR) -->
 <section id="tab-guardrails" class="tab-panel">
   <h2 data-i18n="guardrails.title">Spending Guardrails (Safe Withdrawal Rate)</h2>
