@@ -241,6 +241,7 @@ function migrate(s) {
     });
   }
   if (!Array.isArray(s.futurePurchases)) s.futurePurchases = [];
+  if (!Array.isArray(s.history)) s.history = [];
   return s;
 }
 
