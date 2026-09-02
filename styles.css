@@ -438,10 +438,7 @@ body.dark .intro-panel .steps li .step-body span { color: #94a3b8; }
 .fire-result-card .fire-rc-status.gap { background: #fef9c3; color: #92400e; }
 .fire-result-card .fire-rc-desc { font-size: 11px; color: #94a3b8; line-height: 1.5; }
 
-/* ===== Dark Mode — Mode Switcher & FIRE ===== */
-body.dark .mode-switcher { background: #1e293b; border-bottom-color: #334155; }
-body.dark .mode-btn { background: #0f172a; color: #94a3b8; border-color: #475569; }
-body.dark .mode-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+/* ===== Dark Mode — FIRE ===== */
 body.dark .fire-type-card { background: #1e293b; border-color: #334155; }
 body.dark .fire-type-card .fire-name { color: #e2e8f0; }
 body.dark .fire-type-card .fire-tagline { color: #94a3b8; }
