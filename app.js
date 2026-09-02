@@ -766,11 +766,13 @@ function renderProperties() {
   });
 }
 document.getElementById("add-property").addEventListener("click", () => {
-  state.properties.push({ id: uid(), name: "New Property", type: "primary",
+  const prop = { id: uid(), name: "New Property", type: "primary",
     value: 400000, loanBalance: 200000, payment: 2000, escrow: 500, interestRate: 5,
     loanPayoffYear: 0, loanPayoffMonth: 12,
-    isRental: false, rent: 0, basis: 0, sellYear: 0, yearsDepreciated: 0, taxablePct: 30 });
-  saveState(); renderProperties(); recalc();
+    isRental: false, rent: 0, basis: 0, sellYear: 0, yearsDepreciated: 0, taxablePct: 30 };
+  state.properties.push(prop);
+  upsertTodaysHistoryEntry("property", prop.id, { value: prop.value, loanBalance: prop.loanBalance });
+  renderProperties(); renderHistoryTab(); recalc();
 });
 
 // ===== Historical Asset Tracking =====
