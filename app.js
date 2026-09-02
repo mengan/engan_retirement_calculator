@@ -1136,7 +1136,7 @@ function drawHistoryNetWorthChart() {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      scales: { y: { stacked: true, ticks: { callback: v => fmt(v) } }, x: { stacked: true } },
+      scales: { y: { ticks: { callback: v => fmt(v) } } },
       plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } } },
     },
   });
