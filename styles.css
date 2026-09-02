@@ -341,6 +341,7 @@ body.dark .chart-zoom-controls { background: #1e293b; border-color: #334155; col
 body.dark .chart-zoom-controls label { color: #94a3b8; }
 body.dark .table-wrap { background: #1e293b; border-color: #334155; }
 body.dark table th { background: #0f172a; color: #94a3b8; }
+body.dark .col-resize-handle:hover, body.dark .col-resize-handle.resizing { background: rgba(147, 197, 253, 0.35); }
 body.dark table td { border-bottom-color: #334155; }
 body.dark .property-card { background: #1e293b; border-color: #334155; }
 body.dark .property-card .rental-fields { border-top-color: #334155; }
