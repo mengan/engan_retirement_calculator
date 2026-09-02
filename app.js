@@ -4937,6 +4937,7 @@ function fullRender() {
   renderAccounts();
   renderProperties();
   renderFuturePurchases();
+  renderHistoryTab();
   renderWithdrawalsTab();
   renderGuardrailsControls();
   recalc();
