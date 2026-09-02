@@ -1025,6 +1025,25 @@ function renderHistorySummaryCards() {
 
 let historyNetWorthTotalChart = null;
 
+// Least-squares exponential fit y = a * e^(b*x), via linear regression on ln(y) vs x.
+// Returns a function (x) => fitted y, or null if fewer than 2 positive-value points.
+function fitExponentialTrend(xs, ys) {
+  const pts = xs.map((x, i) => [x, ys[i]]).filter(([, y]) => y > 0);
+  if (pts.length < 2) return null;
+  const n = pts.length;
+  let sumX = 0, sumLnY = 0, sumXLnY = 0, sumXX = 0;
+  pts.forEach(([x, y]) => {
+    const lnY = Math.log(y);
+    sumX += x; sumLnY += lnY; sumXLnY += x * lnY; sumXX += x * x;
+  });
+  const denom = n * sumXX - sumX * sumX;
+  if (denom === 0) return null;
+  const b = (n * sumXLnY - sumX * sumLnY) / denom;
+  const lnA = (sumLnY - b * sumX) / n;
+  const a = Math.exp(lnA);
+  return x => a * Math.exp(b * x);
+}
+
 function drawHistoryNetWorthTotalChart() {
   const canvas = document.getElementById("historyNetWorthTotalChart");
   if (!canvas) return;
