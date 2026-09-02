@@ -741,6 +741,11 @@ function renderProperties() {
       inp.addEventListener("change", () => {
         const f = inp.dataset.field;
         if (!f) return;
+        if (f === "value" || f === "loanBalance") {
+          upsertTodaysHistoryEntry("property", p.id, { [f]: parseFloat(inp.value) || 0 });
+          renderProperties(); renderHistoryTab(); recalc();
+          return;
+        }
         if (f === "name" || f === "type") p[f] = inp.value;
         else if (f === "isRental") {
           p.isRental = inp.value === "true";
