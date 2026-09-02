@@ -1062,6 +1062,88 @@ function drawHistoryNetWorthChart() {
   });
 }
 
+// Same 5 buckets used by the projected "Account Balances by Type" chart, so the
+// historical (actual) and projected (forecast) views group accounts consistently.
+const HISTORY_TYPE_GROUPS = [
+  { types: ["taxable"],                          label: "Taxable Brokerage",      color: "#f59e0b" },
+  { types: ["ira", "sep_ira", "401k"],           label: "Traditional IRA / 401(k) / SEP IRA", color: "#ef4444" },
+  { types: ["roth", "roth_401k"],                label: "Roth IRA / Roth 401(k)", color: "#16a34a" },
+  { types: ["inherited_ira"],                    label: "Inherited IRA",           color: "#b45309" },
+  { types: ["hsa"],                              label: "HSA",                     color: "#8b5cf6" },
+];
+
+let historyByAccountChart = null;
+
+function drawHistoryByAccountChart() {
+  const canvas = document.getElementById("historyByAccountChart");
+  if (!canvas) return;
+  const sorted = sortedHistory();
+  if (historyByAccountChart) historyByAccountChart.destroy();
+  if (!sorted.length || !state.accounts.length) return;
+
+  const labels = sorted.map(s => s.date);
+  const palette = [
+    "#2563eb","#ef4444","#16a34a","#f59e0b","#8b5cf6","#ec4899",
+    "#0891b2","#b45309","#15803d","#dc2626","#7c3aed","#db2777",
+  ];
+
+  const datasets = state.accounts.map((a, i) => {
+    const color = palette[i % palette.length];
+    const data = sorted.map((_, idx) => historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null));
+    return {
+      label: a.excluded ? `${a.name} (excluded)` : a.name,
+      data,
+      borderColor: color,
+      backgroundColor: "transparent",
+      borderWidth: a.excluded ? 1 : 2,
+      borderDash: a.excluded ? [5, 4] : [],
+      spanGaps: true,
+      tension: 0.15,
+    };
+  }).filter(ds => ds.data.some(v => v != null && v > 0));
+
+  historyByAccountChart = new Chart(canvas, {
+    type: "line",
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y != null ? fmt(c.parsed.y) : "—"}` } } },
+      scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
+    },
+  });
+}
+
+function renderHistoryByTypeTable() {
+  const table = document.getElementById("history-by-type-table");
+  if (!table) return;
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  const sorted = sortedHistory();
+  if (!sorted.length) { thead.innerHTML = ""; tbody.innerHTML = ""; return; }
+
+  const groups = HISTORY_TYPE_GROUPS.filter(g => state.accounts.some(a => g.types.includes(a.type)));
+
+  thead.innerHTML = `<tr>
+    <th>Date</th>
+    ${groups.map(g => `<th>${g.label}</th>`).join("")}
+    <th style="font-weight:700;">Total</th>
+  </tr>`;
+
+  const reversed = [...sorted].reverse(); // most recent first
+  tbody.innerHTML = reversed.map(sample => {
+    const idx = sorted.findIndex(s => s.id === sample.id);
+    let total = 0;
+    const cells = groups.map(g => {
+      const sum = state.accounts
+        .filter(a => g.types.includes(a.type))
+        .reduce((acc, a) => acc + (historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null) || 0), 0);
+      total += sum;
+      return `<td>${sum > 0 ? fmt(sum) : "—"}</td>`;
+    }).join("");
+    return `<tr><td style="font-weight:600;">${sample.date}</td>${cells}<td style="font-weight:700;">${fmt(total)}</td></tr>`;
+  }).join("");
+}
+
 function renderHistoryTable() {
   const table = document.getElementById("history-table");
   if (!table) return;
