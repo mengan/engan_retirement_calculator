@@ -24,7 +24,7 @@ en: {
   "tab.guardrails": "Guardrails (SWR)",
   "tab.withdrawals": "Withdrawals & Taxes",
   "tab.montecarlo": "Monte Carlo",
-  "tab.summary": "Summary",
+  "tab.summary": "Forecast Summary",
   "tabgroup.startHere": "Start Here",
   "tabgroup.yourAssets": "Your Assets",
 

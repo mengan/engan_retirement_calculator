@@ -6,6 +6,7 @@
 <title>Retirement Calculator</title>
 <link rel="stylesheet" href="styles.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script src="i18n.js"></script>
 </head>
 <body>
@@ -48,7 +49,7 @@
   <button class="tab" data-tab="guardrails" data-i18n="tab.guardrails">Guardrails (SWR)</button>
   <button class="tab" data-tab="withdrawals" data-i18n="tab.withdrawals">Withdrawals &amp; Taxes</button>
   <button class="tab" data-tab="montecarlo" data-i18n="tab.montecarlo">Monte Carlo</button>
-  <button class="tab" data-tab="summary" data-i18n="tab.summary">Summary</button>
+  <button class="tab" data-tab="summary" data-i18n="tab.summary">Forecast Summary</button>
   <button class="tab" data-tab="fire-overview">🔥 FIRE Overview</button>
   <button class="tab" data-tab="fire-numbers">🎯 My FIRE Numbers</button>
   <button class="tab" data-tab="survivor">Survivor &amp; Legacy</button>
@@ -463,6 +464,7 @@
         <th>RMD Taken<br/><small>this year?</small></th>
         <th>Annual Contribution<br/><small>(while working)</small></th>
         <th>Exclude<br/><small>no withdrawals</small></th>
+        <th>Merge at Retirement<br/><small>rolls into selected account</small></th>
         <th></th>
       </tr>
     </thead>
@@ -584,6 +586,24 @@
   </p>
   <div id="history-summary-cards" class="summary-cards"></div>
 
+  <div style="display:flex;align-items:center;gap:10px;margin-top:24px;">
+    <h3 style="margin:0;">Average Rate of Return</h3>
+    <select id="history-return-period" style="width:auto;">
+      <option value="all" selected>All Time</option>
+      <option value="12mo">Trailing 12 Months</option>
+      <option value="ytd">Year to Date</option>
+      <option value="3mo">Annualized from Last 3 Months</option>
+      <option value="1mo">Annualized from Last Month</option>
+    </select>
+  </div>
+  <h4 style="margin:16px 0 4px;">By Account Type</h4>
+  <p class="muted" id="history-return-by-type-desc">Annualized return from your first sample to your most recent one (CAGR), by account type.</p>
+  <div id="history-return-by-type-cards" class="summary-cards"></div>
+
+  <h4 style="margin:16px 0 4px;">By Account</h4>
+  <p class="muted" id="history-return-by-account-desc">Annualized return from your first sample to your most recent one (CAGR), per account.</p>
+  <div id="history-return-by-account-cards" class="summary-cards"></div>
+
   <div style="display:flex;align-items:center;gap:12px;margin:16px 0;">
     <button id="add-history-sample" class="primary">+ Add Sample</button>
     <span class="muted" id="history-sample-count"></span>
@@ -592,11 +612,6 @@
   <h3 style="margin-top:24px;">Net Worth Over Time</h3>
   <div class="chart-container" style="height:320px;">
     <canvas id="historyNetWorthTotalChart"></canvas>
-  </div>
-
-  <h3 style="margin-top:24px;">Net Worth Breakdown</h3>
-  <div class="chart-container" style="height:360px;">
-    <canvas id="historyNetWorthChart"></canvas>
   </div>
 
   <h3 style="margin-top:24px;">Historical Values by Asset Class</h3>
@@ -1196,8 +1211,8 @@
     </div>
   </div>
   <div class="chart-wrapper">
-    <div class="chart-container"><canvas id="incomeBreakdownChart"></canvas></div>
-    <div class="chart-zoom-controls" data-chart="incomeBreakdownChart">
+    <div class="chart-container"><canvas id="accountGrowthChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="accountGrowthChart">
       <span>Y-axis:</span>
       <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
       <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
@@ -1234,6 +1249,18 @@
   <div class="chart-wrapper">
     <div class="chart-container"><canvas id="expenseBreakdownChart"></canvas></div>
     <div class="chart-zoom-controls" data-chart="expenseBreakdownChart">
+      <span>Y-axis:</span>
+      <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
+      <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
+      <span style="margin-left:8px;">X-axis:</span>
+      <label>From year <input type="number" placeholder="auto" data-zoom="xmin"/></label>
+      <label>To year <input type="number" placeholder="auto" data-zoom="xmax"/></label>
+      <button data-zoom-reset>Reset</button>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <div class="chart-container"><canvas id="incomeBreakdownChart"></canvas></div>
+    <div class="chart-zoom-controls" data-chart="incomeBreakdownChart">
       <span>Y-axis:</span>
       <label>Min <input type="number" placeholder="auto" data-zoom="ymin"/></label>
       <label>Max <input type="number" placeholder="auto" data-zoom="ymax"/></label>
@@ -1493,7 +1520,6 @@
 
 </main>
 
-<script src="history-seed.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

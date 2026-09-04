@@ -188,6 +188,12 @@ function migrate(s) {
     s.accounts.forEach(a => {
       if (a.type === "inherited_ira" && !a.inheritanceYear) a.inheritanceYear = (s.settings.currentYear || 2026) - 1;
       if (a.type === "taxable" && a.dividendYield == null) a.dividendYield = 2.0;
+      if (a.mergeIntoAccountId === undefined) a.mergeIntoAccountId = null;
+    });
+    // Drop dangling merge targets pointing at accounts that no longer exist.
+    const ids = new Set(s.accounts.map(a => a.id));
+    s.accounts.forEach(a => {
+      if (a.mergeIntoAccountId && !ids.has(a.mergeIntoAccountId)) a.mergeIntoAccountId = null;
     });
   }
   if (Array.isArray(s.properties)) {
@@ -253,25 +259,24 @@ async function loadState() {
       const data = await res.json();
       if (data && data.settings) {
         state = migrate(data);
-        maybeSeedHistory();
         return;
       }
     }
   } catch (e) { /* fall through to localStorage */ }
 
   const raw = localStorage.getItem(LS_KEY);
-  state = raw ? migrate(JSON.parse(raw)) : defaultState();
-  maybeSeedHistory();
-}
-
-// Seeds the Historical Assets tab from the bundled example data exactly once —
-// guarded by _historySeeded so intentionally clearing all samples later doesn't
-// bring them back.
-function maybeSeedHistory() {
-  if (state._historySeeded) return;
-  state._historySeeded = true;
-  if (!state.history.length) seedHistoryForNewUser(state);
-  saveState();
+  if (raw) {
+    state = migrate(JSON.parse(raw));
+  } else {
+    // Genuinely fresh install (no server state, no localStorage) — start with a
+    // randomized sample portfolio instead of fixed placeholder numbers, so every
+    // new user/clone sees different example data.
+    state = defaultState();
+    const tier = [1, 3, 5][Math.floor(Math.random() * 3)];
+    state.accounts   = generateTieredAccounts(tier);
+    state.properties = generateTieredProperty(tier);
+    saveState();
+  }
 }
 
 function saveState() {
@@ -297,6 +302,12 @@ document.querySelectorAll(".tab").forEach(btn => {
     document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    // Charts drawn while their tab panel was display:none get measured at 0×0 by
+    // Chart.js and never recover. Historical Assets' charts are only drawn once at
+    // load (unlike Accounts tab charts, which get redrawn several times via recalc()
+    // during init) so they need an explicit redraw the first time this tab is shown.
+    if (btn.dataset.tab === "history") renderHistoryTab();
+    if (btn.dataset.tab === "accounts" && lastRows) { drawAccountTypeBalances(lastRows); drawAccountBalances(lastRows); }
   });
 });
 
@@ -530,6 +541,21 @@ const ACCOUNT_TYPES = [
   ["inherited_ira", "Inherited IRA"],
   ["hsa", "HSA"],
 ];
+
+// Groups of account types that can merge into each other via "Merge at Retirement"
+// (e.g. a 401(k) rolling into a Traditional IRA). Inherited IRA and HSA only merge
+// with their own exact type — their RMD/qualified-expense rules don't map cleanly
+// onto other account types.
+const MERGE_TYPE_GROUPS = [
+  ["ira", "sep_ira", "401k"],
+  ["roth", "roth_401k"],
+  ["taxable"],
+  ["inherited_ira"],
+  ["hsa"],
+];
+function mergeCompatibleTypes(type) {
+  return MERGE_TYPE_GROUPS.find(g => g.includes(type)) || [type];
+}
 function renderAccountTotals() {
   const container = document.getElementById("account-totals-cards");
   if (!container) return;
@@ -590,6 +616,14 @@ function renderAccounts() {
       <td style="text-align:center">${['ira','sep_ira','401k','inherited_ira'].includes(a.type) ? `<input type="checkbox" data-field="rmdTakenAlready" ${a.rmdTakenAlready ? 'checked' : ''} title="Check if full RMD already taken and is in taxable balance"/>` : ''}</td>
       <td><input type="number" value="${a.contribution}" data-field="contribution"/></td>
       <td style="text-align:center"><input type="checkbox" data-field="excluded" ${a.excluded ? 'checked' : ''} title="Exclude from withdrawals — account still grows but is never drawn from"/></td>
+      <td>${(() => {
+        const compatTypes = mergeCompatibleTypes(a.type);
+        const candidates = state.accounts.filter(x => x.id !== a.id && compatTypes.includes(x.type));
+        if (!candidates.length) return `<span class="muted" title="No compatible account to merge into">—</span>`;
+        const opts = [`<option value="">None</option>`]
+          .concat(candidates.map(x => `<option value="${x.id}" ${a.mergeIntoAccountId === x.id ? "selected" : ""}>${x.name}</option>`));
+        return `<select data-field="mergeIntoAccountId" title="At the owner's retirement, this account's balance rolls into the selected account">${opts.join("")}</select>`;
+      })()}</td>
       <td><button class="small danger" data-action="del">×</button></td>
     `;
 
@@ -619,12 +653,15 @@ function renderAccounts() {
         if (!f) return;
         if (["name","type","owner"].includes(f)) a[f] = inp.value;
         else if (f === "rmdTakenAlready" || f === "excluded") a[f] = inp.checked;
+        else if (f === "mergeIntoAccountId") a[f] = inp.value || null;
         else a[f] = parseFloat(inp.value) || 0;
         saveState(); renderAccounts(); renderHistoryTab(); recalc();
       });
     });
     tr.querySelector("[data-action='del']").addEventListener("click", () => {
       state.accounts = state.accounts.filter(x => x.id !== a.id);
+      // Clear dangling references to a deleted account.
+      state.accounts.forEach(x => { if (x.mergeIntoAccountId === a.id) x.mergeIntoAccountId = null; });
       saveState(); renderAccounts(); renderHistoryTab(); recalc();
     });
     tbody.appendChild(tr);
@@ -632,7 +669,7 @@ function renderAccounts() {
 }
 document.getElementById("add-account").addEventListener("click", () => {
   const acc = { id: uid(), name: "New Account", type: "taxable", owner: "Joint",
-    balance: 0, basis: 0, contribution: 0, dividendYield: 2.0, excluded: false };
+    balance: 0, basis: 0, contribution: 0, dividendYield: 2.0, excluded: false, mergeIntoAccountId: null };
   state.accounts.push(acc);
   upsertTodaysHistoryEntry("account", acc.id, { balance: 0 });
   renderAccounts(); renderHistoryTab(); recalc();
@@ -775,63 +812,22 @@ document.getElementById("edit-property-values").addEventListener("click", openTo
 // The latest sample's values are pushed into account.balance / property.value+loanBalance
 // so the existing forecast engine (which reads those fields directly) always uses them.
 
-function seedHistoryForNewUser(s) {
-  if (typeof HISTORY_SEED_SAMPLES === "undefined" || !HISTORY_SEED_SAMPLES.length) return;
-
-  const norm = str => (str || "").trim().toLowerCase();
-  const resolveAccountId = (name, spec) => {
-    let acc = s.accounts.find(a => norm(a.name) === norm(name));
-    if (!acc) {
-      acc = {
-        id: uid(), name, type: spec.type || "taxable", owner: spec.owner || "Joint",
-        balance: 0, basis: 0, returnPct: s.settings.defaultReturn || 6,
-        contribution: 0, dividendYield: spec.type === "taxable" ? 0 : undefined,
-        excluded: !!spec.excluded,
-      };
-      s.accounts.push(acc);
-    }
-    return acc.id;
-  };
-  const resolvePropertyId = (name) => {
-    const p = s.properties.find(pp => norm(pp.name) === norm(name));
-    return p ? p.id : null;
-  };
-
-  // Resolve each spreadsheet column key to a live account/property id up front.
-  const resolved = {};
-  Object.entries(HISTORY_SEED_KEY_MAP).forEach(([key, spec]) => {
-    if (spec.kind === "account") {
-      resolved[key] = { kind: "account", id: resolveAccountId(spec.name, spec) };
-    } else {
-      const id = resolvePropertyId(spec.name);
-      if (id) resolved[key] = { kind: spec.kind, id };
-    }
-  });
-
-  s.history = HISTORY_SEED_SAMPLES.map(row => {
-    const sample = { id: uid(), date: row.date, accounts: {}, properties: {} };
-    Object.entries(resolved).forEach(([key, target]) => {
-      const v = row[key];
-      if (v == null) return;
-      if (target.kind === "account") {
-        sample.accounts[target.id] = v;
-      } else if (target.kind === "property_value") {
-        sample.properties[target.id] = sample.properties[target.id] || {};
-        sample.properties[target.id].value = v;
-      } else if (target.kind === "property_loan") {
-        sample.properties[target.id] = sample.properties[target.id] || {};
-        sample.properties[target.id].loanBalance = v;
-      }
-    });
-    return sample;
-  });
-
-  applyLatestHistoryToCurrent(s);
-}
-
 function sortedHistory() {
   return [...state.history].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 }
+
+// Zips parallel date/value arrays into {x, y} points for a real time-scale x-axis,
+// so charts space samples by actual elapsed time rather than evenly by index.
+// Chart.js's category axis (the default when `labels` is an array of strings) always
+// spaces points evenly regardless of date gaps — using {x, y} data + a "time" scale
+// is what makes irregular sample spacing render correctly.
+function toTimeSeries(dates, values) {
+  return dates.map((d, i) => ({ x: d, y: values[i] }));
+}
+
+// Standard time-scale x-axis config shared by every history chart plotted against
+// real dates.
+const HISTORY_TIME_X_SCALE = { type: "time", time: { tooltipFormat: "yyyy-MM-dd" }, ticks: { autoSkip: true, maxRotation: 45 } };
 
 // Forward-filled value for an account/property field as of a given sample index
 // (inclusive) in the sorted history array.
@@ -866,6 +862,26 @@ function todayLocalDateStr() {
   const d = new Date();
   const tz = d.getTimezoneOffset();
   return new Date(d.getTime() - tz * 60000).toISOString().slice(0, 10);
+}
+
+// Human-readable span between two "YYYY-MM-DD" dates, e.g. "1 year, 8 months" or "23 days".
+function humanDateSpan(startDate, endDate) {
+  const start = new Date(startDate), end = new Date(endDate);
+  let years = end.getFullYear() - start.getFullYear();
+  let months = end.getMonth() - start.getMonth();
+  let days = end.getDate() - start.getDate();
+  if (days < 0) {
+    months -= 1;
+    const prevMonth = new Date(end.getFullYear(), end.getMonth(), 0);
+    days += prevMonth.getDate();
+  }
+  if (months < 0) { years -= 1; months += 12; }
+
+  const parts = [];
+  if (years > 0) parts.push(`${years} year${years === 1 ? "" : "s"}`);
+  if (months > 0) parts.push(`${months} month${months === 1 ? "" : "s"}`);
+  if (years === 0 && months === 0) parts.push(`${days} day${days === 1 ? "" : "s"}`);
+  return parts.join(", ") || "0 days";
 }
 
 // Jumps straight to the Historical Assets modal for today's sample — editing it if
@@ -994,7 +1010,124 @@ function deleteHistorySample() {
   recalc();
 }
 
-let historyNetWorthChart = null;
+// CAGR from the first sample to the last, for a getter that returns a historical
+// value at a given sorted-history index (or null if untracked at that point).
+// Resolves the sorted-history index to use as the CAGR start point for a given
+// period, for the return cards. "all" walks forward from the very first sample;
+// the other periods anchor to a target date and find the closest actual sample
+// (within a tolerance window) at-or-before it, same approach as the returns table.
+function periodStartIndex(sorted, period) {
+  const endIdx = sorted.length - 1;
+  if (endIdx < 0) return null;
+  if (period === "12mo") return findClosestSampleIndex(sorted, endIdx, 365, 300, 430);
+  if (period === "3mo")  return findClosestSampleIndex(sorted, endIdx, 91, 46, 137);
+  if (period === "1mo")  return findClosestSampleIndex(sorted, endIdx, 30, 15, 60);
+  if (period === "ytd") {
+    const endDate = new Date(sorted[endIdx].date);
+    const jan1 = new Date(endDate.getFullYear(), 0, 1);
+    const daysBack = Math.round((endDate - jan1) / 86400000);
+    if (daysBack <= 0) return null;
+    return findClosestSampleIndex(sorted, endIdx, daysBack, 0, daysBack + 15);
+  }
+  return null; // "all" is handled by the caller's own forward-scan for the first positive value
+}
+
+// Returns { ret, startVal, endVal } for the CAGR over the given period ("all",
+// "12mo", "ytd", "1mo"), or null if there isn't enough data for that period.
+// A percentage return from a $0 (or negative) starting balance is undefined, so for
+// "all time" this walks forward to the first sample where the account actually
+// holds a positive balance (e.g. an inherited IRA that started at $0 before the
+// inheritance year) and uses that as the CAGR start instead.
+function overallAnnualizedReturn(sorted, getter, period = "all") {
+  if (sorted.length < 2) return null;
+  const endIdx = sorted.length - 1;
+
+  let startIdx;
+  if (period === "all") {
+    let firstTrackedIdx = -1, firstPositiveIdx = -1;
+    for (let i = 0; i < sorted.length; i++) {
+      const v = getter(i);
+      if (v == null) continue;
+      if (firstTrackedIdx < 0) firstTrackedIdx = i;
+      if (v > 0) { firstPositiveIdx = i; break; }
+    }
+    startIdx = firstPositiveIdx >= 0 ? firstPositiveIdx : firstTrackedIdx;
+  } else {
+    startIdx = periodStartIndex(sorted, period);
+  }
+  if (startIdx == null || startIdx < 0) return null;
+  if (endIdx <= startIdx) return null;
+  const startVal = getter(startIdx), endVal = getter(endIdx);
+  if (startVal == null || endVal == null) return null;
+  const ret = annualizedReturn(startVal, endVal, sorted[startIdx].date, sorted[endIdx].date);
+  if (ret == null) return null;
+  return { ret, startVal, endVal };
+}
+
+function returnCard(label, result) {
+  const ret = result?.ret;
+  const color = ret == null ? "#94a3b8" : ret < 0 ? "#b91c1c" : "#15803d";
+  return `
+    <div class="card">
+      <div class="card-label">${label}</div>
+      <div class="card-value" style="color:${color};">${ret != null ? ret.toFixed(1) + "%" : "—"}</div>
+      ${result ? `<div class="muted" style="font-size:11px;margin-top:2px;">${fmt(result.startVal)} → ${fmt(result.endVal)}</div>` : ""}
+    </div>
+  `;
+}
+
+const HISTORY_RETURN_PERIOD_LABELS = {
+  all:  "Annualized return from your first sample to your most recent one (CAGR)",
+  "12mo": "Annualized return over the trailing 12 months (closest sample ~1 year back to most recent)",
+  ytd:  "Annualized return year-to-date (closest sample to Jan 1 to most recent)",
+  "3mo": "Annualized return from ~3 months ago to most recent sample",
+  "1mo": "Annualized return from ~1 month ago to most recent sample",
+};
+
+function renderHistoryReturnCards() {
+  const sorted = sortedHistory();
+  const period = document.getElementById("history-return-period")?.value || "all";
+
+  const typeDesc = document.getElementById("history-return-by-type-desc");
+  if (typeDesc) typeDesc.textContent = `${HISTORY_RETURN_PERIOD_LABELS[period]}, by account type.`;
+  const acctDesc = document.getElementById("history-return-by-account-desc");
+  if (acctDesc) acctDesc.textContent = `${HISTORY_RETURN_PERIOD_LABELS[period]}, per account.`;
+
+  const byTypeContainer = document.getElementById("history-return-by-type-cards");
+  if (byTypeContainer) {
+    if (!sorted.length) {
+      byTypeContainer.innerHTML = "";
+    } else {
+      const groups = HISTORY_TYPE_GROUPS.filter(g => state.accounts.some(a => g.types.includes(a.type)));
+      byTypeContainer.innerHTML = groups.map(g => {
+        // null when every account of this type is untracked at idx, else the sum.
+        const summed = idx => {
+          let total = null;
+          state.accounts.filter(a => g.types.includes(a.type)).forEach(a => {
+            const v = historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null);
+            if (v != null) total = (total || 0) + v;
+          });
+          return total;
+        };
+        const ret = overallAnnualizedReturn(sorted, summed, period);
+        return returnCard(g.label, ret);
+      }).join("");
+    }
+  }
+
+  const byAccountContainer = document.getElementById("history-return-by-account-cards");
+  if (byAccountContainer) {
+    if (!sorted.length || !state.accounts.length) {
+      byAccountContainer.innerHTML = "";
+    } else {
+      byAccountContainer.innerHTML = state.accounts.map(a => {
+        const getter = idx => historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null);
+        const ret = overallAnnualizedReturn(sorted, getter, period);
+        return returnCard(a.name, ret);
+      }).join("");
+    }
+  }
+}
 
 function renderHistorySummaryCards() {
   const container = document.getElementById("history-summary-cards");
@@ -1051,7 +1184,7 @@ function drawHistoryNetWorthTotalChart() {
   if (historyNetWorthTotalChart) historyNetWorthTotalChart.destroy();
   if (!sorted.length) return;
 
-  const labels = sorted.map(s => s.date);
+  const dates = sorted.map(s => s.date);
   const netWorthSeries = [];
   const exPrimarySeries = [];
   sorted.forEach((_, idx) => {
@@ -1079,65 +1212,23 @@ function drawHistoryNetWorthTotalChart() {
   const exPrimaryTrend = exPrimaryFit ? dayOffsets.map(x => Math.round(exPrimaryFit(x))) : null;
 
   const datasets = [
-    { label: "Total Net Worth", data: netWorthSeries, borderColor: "#1f3a5f", backgroundColor: "transparent", borderWidth: 2, tension: 0.15 },
-    { label: "Net Worth ex. Primary Residence", data: exPrimarySeries, borderColor: "#0891b2", backgroundColor: "transparent", borderWidth: 2, borderDash: [5, 4], tension: 0.15 },
+    { label: "Total Net Worth", data: toTimeSeries(dates, netWorthSeries), borderColor: "#1f3a5f", backgroundColor: "transparent", borderWidth: 2, tension: 0.15 },
+    { label: "Net Worth ex. Primary Residence", data: toTimeSeries(dates, exPrimarySeries), borderColor: "#0891b2", backgroundColor: "transparent", borderWidth: 2, borderDash: [5, 4], tension: 0.15 },
   ];
   if (netWorthTrend) {
-    datasets.push({ label: "Total Net Worth Trend (exp.)", data: netWorthTrend, borderColor: "#1f3a5f", backgroundColor: "transparent", borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0 });
+    datasets.push({ label: "Total Net Worth Trend (exp.)", data: toTimeSeries(dates, netWorthTrend), borderColor: "#1f3a5f", backgroundColor: "transparent", borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0 });
   }
   if (exPrimaryTrend) {
-    datasets.push({ label: "Net Worth ex. Primary Trend (exp.)", data: exPrimaryTrend, borderColor: "#0891b2", backgroundColor: "transparent", borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0 });
+    datasets.push({ label: "Net Worth ex. Primary Trend (exp.)", data: toTimeSeries(dates, exPrimaryTrend), borderColor: "#0891b2", backgroundColor: "transparent", borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0 });
   }
 
   historyNetWorthTotalChart = new Chart(canvas, {
     type: "line",
-    data: { labels, datasets },
+    data: { datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } } },
-      scales: { y: { ticks: { callback: v => fmt(v) } } },
-    },
-  });
-}
-
-function drawHistoryNetWorthChart() {
-  const canvas = document.getElementById("historyNetWorthChart");
-  if (!canvas) return;
-  const sorted = sortedHistory();
-  if (historyNetWorthChart) historyNetWorthChart.destroy();
-  if (!sorted.length) return;
-
-  const labels = sorted.map(s => s.date);
-  const liquidSeries = [];
-  const equitySeries = [];
-  sorted.forEach((_, idx) => {
-    let liquid = 0, equity = 0;
-    state.accounts.forEach(a => {
-      const v = historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null);
-      if (v != null) liquid += v;
-    });
-    state.properties.forEach(p => {
-      const v = historyFieldAt(sorted, idx, s => s.properties && s.properties[p.id] ? s.properties[p.id].value : null) || 0;
-      const l = historyFieldAt(sorted, idx, s => s.properties && s.properties[p.id] ? s.properties[p.id].loanBalance : null) || 0;
-      equity += (v - l);
-    });
-    liquidSeries.push(Math.round(liquid));
-    equitySeries.push(Math.round(equity));
-  });
-
-  historyNetWorthChart = new Chart(canvas, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [
-        { label: "Liquid Accounts", data: liquidSeries, borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,0.15)", fill: true, tension: 0.15 },
-        { label: "Real Estate Equity", data: equitySeries, borderColor: "#16a34a", backgroundColor: "rgba(22,163,74,0.15)", fill: true, tension: 0.15 },
-      ],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      scales: { y: { ticks: { callback: v => fmt(v) } } },
-      plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } } },
+      scales: { x: HISTORY_TIME_X_SCALE, y: { ticks: { callback: v => fmt(v) } } },
     },
   });
 }
@@ -1162,7 +1253,7 @@ function drawHistoryByClassChart() {
   if (!sorted.length) return;
 
   const retirementTypes = ["ira", "sep_ira", "401k", "roth", "roth_401k", "inherited_ira", "hsa"];
-  const labels = sorted.map(s => s.date);
+  const dates = sorted.map(s => s.date);
 
   const series = { taxable: [], retirement: [], investmentRE: [], primary: [] };
   sorted.forEach((_, idx) => {
@@ -1194,18 +1285,18 @@ function drawHistoryByClassChart() {
     { key: "primary",      label: "Primary Residence (equity)",     color: "#16a34a" },
   ]
     .map(({ key, label, color }) => ({
-      label, data: series[key],
+      label, data: toTimeSeries(dates, series[key]),
       borderColor: color, backgroundColor: "transparent", borderWidth: 2, tension: 0.15,
     }))
-    .filter(ds => ds.data.some(v => v > 0));
+    .filter(ds => ds.data.some(pt => pt.y > 0));
 
   historyByClassChart = new Chart(canvas, {
     type: "line",
-    data: { labels, datasets },
+    data: { datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } } },
-      scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
+      scales: { x: HISTORY_TIME_X_SCALE, y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
     },
   });
 }
@@ -1219,7 +1310,7 @@ function drawHistoryByAccountChart() {
   if (historyByAccountChart) historyByAccountChart.destroy();
   if (!sorted.length || !state.accounts.length) return;
 
-  const labels = sorted.map(s => s.date);
+  const dates = sorted.map(s => s.date);
   const palette = [
     "#2563eb","#ef4444","#16a34a","#f59e0b","#8b5cf6","#ec4899",
     "#0891b2","#b45309","#15803d","#dc2626","#7c3aed","#db2777",
@@ -1227,10 +1318,10 @@ function drawHistoryByAccountChart() {
 
   const datasets = state.accounts.map((a, i) => {
     const color = palette[i % palette.length];
-    const data = sorted.map((_, idx) => historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null));
+    const values = sorted.map((_, idx) => historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null));
     return {
       label: a.excluded ? `${a.name} (excluded)` : a.name,
-      data,
+      data: toTimeSeries(dates, values),
       borderColor: color,
       backgroundColor: "transparent",
       borderWidth: a.excluded ? 1 : 2,
@@ -1238,15 +1329,15 @@ function drawHistoryByAccountChart() {
       spanGaps: true,
       tension: 0.15,
     };
-  }).filter(ds => ds.data.some(v => v != null && v > 0));
+  }).filter(ds => ds.data.some(pt => pt.y != null && pt.y > 0));
 
   historyByAccountChart = new Chart(canvas, {
     type: "line",
-    data: { labels, datasets },
+    data: { datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y != null ? fmt(c.parsed.y) : "—"}` } } },
-      scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
+      scales: { x: HISTORY_TIME_X_SCALE, y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
     },
   });
 }
@@ -1296,9 +1387,12 @@ function annualizedReturn(startVal, endVal, startDate, endDate) {
 // Finds the sample closest to exactly 365 days before sorted[idx], restricted to
 // samples strictly earlier than it. Returns null if the closest candidate isn't
 // within ~300-430 days back (i.e. not a reasonable stand-in for "1 year ago").
-function findTrailingYearSampleIndex(sorted, idx) {
+// Finds the sample closest to targetDaysBack days before sorted[idx], restricted to
+// samples strictly earlier than it. Returns null if the closest candidate falls
+// outside [minDays, maxDays] back (i.e. not a reasonable stand-in for the target).
+function findClosestSampleIndex(sorted, idx, targetDaysBack, minDays, maxDays) {
   const curDate = new Date(sorted[idx].date);
-  const targetMs = curDate.getTime() - 365 * 86400000;
+  const targetMs = curDate.getTime() - targetDaysBack * 86400000;
   let bestIdx = -1, bestDiff = Infinity;
   for (let j = idx - 1; j >= 0; j--) {
     const diff = Math.abs(new Date(sorted[j].date).getTime() - targetMs);
@@ -1308,8 +1402,12 @@ function findTrailingYearSampleIndex(sorted, idx) {
   }
   if (bestIdx < 0) return null;
   const gapDays = (curDate - new Date(sorted[bestIdx].date)) / 86400000;
-  if (gapDays < 300 || gapDays > 430) return null;
+  if (gapDays < minDays || gapDays > maxDays) return null;
   return bestIdx;
+}
+
+function findTrailingYearSampleIndex(sorted, idx) {
+  return findClosestSampleIndex(sorted, idx, 365, 300, 430);
 }
 
 function renderHistoryReturnsTable() {
@@ -1362,7 +1460,18 @@ function renderHistoryTable() {
   const sorted = sortedHistory().slice().reverse(); // most recent first
 
   const countEl = document.getElementById("history-sample-count");
-  if (countEl) countEl.textContent = sorted.length ? `${sorted.length} sample${sorted.length === 1 ? "" : "s"}` : "No samples yet.";
+  if (countEl) {
+    if (!sorted.length) {
+      countEl.textContent = "No samples yet.";
+    } else {
+      const fullSorted = sortedHistory();
+      const first = fullSorted[0].date, last = fullSorted[fullSorted.length - 1].date;
+      const span = humanDateSpan(first, last);
+      countEl.textContent = fullSorted.length === 1
+        ? `1 sample (${first})`
+        : `${first} to ${last} (${span})`;
+    }
+  }
 
   if (!sorted.length) { thead.innerHTML = ""; tbody.innerHTML = ""; return; }
 
@@ -1443,8 +1552,8 @@ function makeTableColumnsResizable(table) {
 
 function renderHistoryTab() {
   renderHistorySummaryCards();
+  renderHistoryReturnCards();
   drawHistoryNetWorthTotalChart();
-  drawHistoryNetWorthChart();
   drawHistoryByClassChart();
   drawHistoryByAccountChart();
   renderHistoryByTypeTable();
@@ -1454,6 +1563,7 @@ function renderHistoryTab() {
     makeTableColumnsResizable(document.getElementById(id)));
 }
 
+document.getElementById("history-return-period")?.addEventListener("change", renderHistoryReturnCards);
 document.getElementById("add-history-sample")?.addEventListener("click", () => openHistoryModal(null));
 document.getElementById("history-modal-close")?.addEventListener("click", closeHistoryModal);
 document.getElementById("history-modal-cancel")?.addEventListener("click", closeHistoryModal);
@@ -2052,7 +2162,11 @@ function project(opts) {
 
   for (let year = startYear; year <= endYear; year++) {
     const yearsOut = year - startYear;
-    const frac = yearsOut === 0 ? yearFracRemaining : 1;
+    // growthFrac prorates investment-return compounding by the remaining fraction of
+    // the current year (so account balances grow realistically from today forward).
+    // Income and expenses use the full annual amount regardless of today's date —
+    // only the growth of existing balances is time-adjusted.
+    const growthFrac = yearsOut === 0 ? yearFracRemaining : 1;
     const s1Age = s.s1.age + yearsOut;
     const s2Age = s.hasSpouse2 ? s.s2.age + yearsOut : s1Age;
     const olderAge = Math.max(s1Age, s2Age);
@@ -2070,13 +2184,13 @@ function project(opts) {
     // --- Income ---
     // In the retirement year, salary is prorated by months worked (retireMonth/12).
     // retireMonth=1 means retiring Jan 1 (no salary that year); retireMonth=12 means
-    // retiring Dec 1 (11 full months worked). For all prior years, full salary applies
-    // (subject to the standard first-year partial-year frac).
-    const s1WorkFrac = year < s.s1.retireYear ? frac
+    // retiring Dec 1 (11 full months worked). All other years use the full annual
+    // amount — including the current year, regardless of today's date.
+    const s1WorkFrac = year < s.s1.retireYear ? 1
       : year === s.s1.retireYear ? ((s.s1.retireMonth || 1) - 1) / 12
       : 0;
     const s2WorkFrac = !s.hasSpouse2 ? 0
-      : year < s.s2.retireYear ? frac
+      : year < s.s2.retireYear ? 1
       : year === s.s2.retireYear ? ((s.s2.retireMonth || 1) - 1) / 12
       : 0;
 
@@ -2093,8 +2207,8 @@ function project(opts) {
     }
 
     let grossSS = 0;
-    if (s1Age >= s.s1.ssAge) grossSS += s.s1.ssAmt * cumInfl * frac;
-    if (s.hasSpouse2 && s2Age >= s.s2.ssAge) grossSS += s.s2.ssAmt * cumInfl * frac;
+    if (s1Age >= s.s1.ssAge) grossSS += s.s1.ssAmt * cumInfl;
+    if (s.hasSpouse2 && s2Age >= s.s2.ssAge) grossSS += s.s2.ssAmt * cumInfl;
 
     // --- Rental income & property cash flow ---
     // Convention: of the gross rent collected, the configured taxablePct (default 30%)
@@ -2158,18 +2272,18 @@ function project(opts) {
       if (p.isRental) {
         const rentGrow = (s.defaultRentGrowth ?? 3);
         const grownRent = p.rent * Math.pow(1 + rentGrow / 100, yearsOut);
-        const annualRent = grownRent * 12 * frac;
+        const annualRent = grownRent * 12;
         const taxableShare = annualRent * ((p.taxablePct ?? 30) / 100);
         rentalGross   += annualRent;
         rentalTaxable += taxableShare;
         rentalNet     += taxableShare;
         // Informational only — rental mortgage is conceptually inside the 70% deduction.
         if (annualPmt > 0 && (p.loanBalance > 0 || principalPaid > 0)) {
-          rentalMortgagePayments += annualPmt * frac;
+          rentalMortgagePayments += annualPmt;
         }
       } else {
         if (annualPmt > 0 && (p.loanBalance > 0 || principalPaid > 0)) {
-          mortgagePayments += annualPmt * frac;
+          mortgagePayments += annualPmt;
         }
       }
 
@@ -2238,11 +2352,13 @@ function project(opts) {
       properties.push(newProp);
       fp._purchased = true;
       // In purchase year, run mortgage payment accounting for the partial year
+      // remaining after the purchase (a genuinely partial-duration event, unlike
+      // pre-existing income/expenses which now use the full annual amount).
       if (loanAmt > 0) {
-        const pmt = monthlyPmt * 12 * frac;
+        const pmt = monthlyPmt * 12 * growthFrac;
         if (newProp.isRental) rentalMortgagePayments += pmt;
         else mortgagePayments += pmt;
-        const interest = loanAmt * (fp.mortgageRate || 6.5) / 100 * frac;
+        const interest = loanAmt * (fp.mortgageRate || 6.5) / 100 * growthFrac;
         newProp.loanBalance = Math.max(0, loanAmt - Math.max(0, pmt - interest));
       }
     });
@@ -2255,7 +2371,7 @@ function project(opts) {
       : phaseMultiplier(olderAge);
 
     // expenses.base is MONTHLY in today's dollars — convert to annual here.
-    let baseExp = state.expenses.base * 12 * cumInfl * phaseMult * frac;
+    let baseExp = state.expenses.base * 12 * cumInfl * phaseMult;
 
     let largeExpThisYear = 0;
     state.expenses.large.forEach(ex => {
@@ -2271,7 +2387,7 @@ function project(opts) {
                       year <= (ex.endYear   || endYear);
       if (!inRange) return;
       const annual = (ex.period === "monthly" ? ex.amount * 12 : ex.amount);
-      recurringExpThisYear += (ex.inflate ? annual * cumInfl : annual) * frac;
+      recurringExpThisYear += (ex.inflate ? annual * cumInfl : annual);
     });
 
     // Healthcare pre-Medicare costs
@@ -2279,12 +2395,12 @@ function project(opts) {
     if (hc.enabled) {
       const s1MedicareYear = s.currentYear + (65 - s.s1.age);
       if (year >= s.s1.retireYear && year <= s1MedicareYear) {
-        recurringExpThisYear += (hc.s1Monthly || 0) * 12 * frac;
+        recurringExpThisYear += (hc.s1Monthly || 0) * 12;
       }
       if (s.hasSpouse2) {
         const s2MedicareYear = s.currentYear + (65 - s.s2.age);
         if (year >= s.s2.retireYear && year <= s2MedicareYear) {
-          recurringExpThisYear += (hc.s2Monthly || 0) * 12 * frac;
+          recurringExpThisYear += (hc.s2Monthly || 0) * 12;
         }
       }
     }
@@ -2299,9 +2415,11 @@ function project(opts) {
     // rather than reinvested. Pre-retirement they continue to reinvest.
     const bothRetired = s1WorkFrac === 0 && s2WorkFrac === 0;
     accounts.forEach(a => {
-      // Dividends are paid from PRE-growth balance (more realistic mid-year)
+      // Dividends are paid from PRE-growth balance (more realistic mid-year). Prorated
+      // by growthFrac (not full-year) since dividends already received this year are
+      // baked into the current account balance/sample.
       if (a.type === "taxable" && a.dividendYield > 0) {
-        const div = a.balance * (a.dividendYield / 100) * frac;
+        const div = a.balance * (a.dividendYield / 100) * growthFrac;
         dividendIncome += div;
         if (!bothRetired) {
           // Reinvested: balance grows, basis tracks the new shares.
@@ -2311,18 +2429,42 @@ function project(opts) {
         // bothRetired: dividends leave the account as cash (still taxed as qualified divs).
       }
       // All accounts use the effective return rate for this projection run.
-      a.balance *= 1 + (effReturn + returnDelta) / 100 * frac;
-      // Contribution fraction matches how much of the year the owner is working.
-      // Joint accounts use whichever spouse is still working (higher workFrac wins).
-      const contribFrac =
+      a.balance *= 1 + (effReturn + returnDelta) / 100 * growthFrac;
+      // Contribution fraction: how much of the annual planned contribution is still
+      // ahead of us. In the retirement year, capped by months still worked; in the
+      // current (not-yet-retired) year, capped by how much of the year remains from
+      // today; otherwise a full year of contributions applies.
+      const workCap =
         a.owner === "Spouse 1" ? s1WorkFrac :
         a.owner === "Spouse 2" ? s2WorkFrac :
         Math.max(s1WorkFrac, s2WorkFrac); // Joint
+      const contribFrac = yearsOut === 0 ? Math.min(growthFrac, workCap) : workCap;
       if (contribFrac > 0 && a.contribution > 0) {
         a.balance += a.contribution * contribFrac;
         if (a.type === "taxable") a.basis += a.contribution * contribFrac;
         if (a.type === "ira" || a.type === "sep_ira" || a.type === "401k") pretaxContribs += a.contribution * contribFrac;
       }
+    });
+
+    // --- Merge-at-retirement rollovers ---
+    // Each account with mergeIntoAccountId set rolls its full balance/basis into the
+    // target account the year after its owner retires (e.g. a 401(k) rolling into a
+    // Traditional IRA), then is zeroed out for all subsequent years.
+    accounts.forEach(a => {
+      if (!a.mergeIntoAccountId || a._merged) return;
+      const ownerRetireYear =
+        a.owner === "Spouse 1" ? s.s1.retireYear :
+        a.owner === "Spouse 2" ? (s.hasSpouse2 ? s.s2.retireYear : s.s1.retireYear) :
+        Math.max(s.s1.retireYear, s.hasSpouse2 ? s.s2.retireYear : s.s1.retireYear); // Joint: wait for both
+      const mergeYear = ownerRetireYear + 1;
+      if (year < mergeYear) return;
+      const target = accounts.find(t => t.id === a.mergeIntoAccountId);
+      if (!target) return;
+      target.balance += a.balance;
+      target.basis = (target.basis || 0) + (a.basis || 0);
+      a.balance = 0;
+      a.basis = 0;
+      a._merged = true; // one-time transfer; stays zero afterward even if target changes later
     });
 
     // --- Apply property sale proceeds (gross) to taxable ---
@@ -2686,7 +2828,7 @@ function renderCurrentPortfolio() {
 }
 
 // ===== Render Summary =====
-let assetChart, liquidBreakdownChart, allAssetsBreakdownChart, incomeBreakdownChart, rothConversionChart, withdrawalsByTypeChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart, taxableBrokerageGrowthChart;
+let assetChart, liquidBreakdownChart, allAssetsBreakdownChart, accountGrowthChart, incomeBreakdownChart, rothConversionChart, withdrawalsByTypeChart, gapWithdrawalChart, expenseBreakdownChart, taxableBrokerageFlowChart, taxableBrokerageGrowthChart;
 let taxByBracketChart;
 let expenseByYearChart, expenseInflationChart, realEstateEquityChart, rentalIncomeChart, accountBalancesChart, accountTypeChart;
 
@@ -2712,41 +2854,86 @@ function zeroDropProps(data, color) {
   return { pointRadius, pointBackgroundColor, pointStyle };
 }
 
-// Builds { historyLabels, projLabels } for prepending actual historical sample dates
-// before a projection's yearly labels on the same category axis.
-function historyProjectionLabels(rows) {
-  const historyLabels = sortedHistory().map(s => s.date);
-  const projLabels = rows.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
-  return { historyLabels, projLabels };
+// Draws a vertical grey "today" divider on any chart whose options.plugins.todayLine
+// is set to a category-axis index (may be fractional, e.g. 59.5 to sit exactly between
+// the last historical point and the first projected point). Registered once globally;
+// each chart opts in via its own options.plugins.todayLine value.
+const todayLinePlugin = {
+  id: "todayLine",
+  afterDraw(chart) {
+    const at = chart.options.plugins?.todayLine;
+    // Only a finite number (category-axis index) or a valid date string/Date
+    // (time-axis position) counts — Chart.js hands back a non-primitive default
+    // for any plugin id with no explicit per-chart config, which must be rejected
+    // here or getPixelForValue() throws deep inside Chart.js.
+    const isValidNumber = typeof at === "number" && isFinite(at);
+    const isValidDate = (typeof at === "string" || at instanceof Date) && !isNaN(new Date(at).getTime());
+    if (!isValidNumber && !isValidDate) return;
+    const xScale = chart.scales.x;
+    const yScale = chart.scales.y;
+    if (!xScale || !yScale) return;
+    const xValue = isValidDate ? new Date(at).getTime() : at;
+    const x = xScale.getPixelForValue(xValue);
+    if (!isFinite(x) || x < xScale.left || x > xScale.right) return;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x, yScale.top);
+    ctx.lineTo(x, yScale.bottom);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "#9ca3af";
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
+if (typeof Chart !== "undefined" && typeof Chart.register === "function") {
+  Chart.register(todayLinePlugin);
+}
+
+// Projection rows only carry a whole `year`, so each projected point is placed at
+// Jan 1 of that year for the shared time-scale x-axis (historical samples keep
+// their exact recorded date).
+function projectionYearDate(year) {
+  return `${year}-01-01`;
 }
 
 // Wraps a historical getter + projected data array into a pair of datasets ("Actual"
-// solid, "Projected" dashed) sharing one combined label axis, so the line reads
+// solid, "Projected" dashed) sharing one real time-scale x-axis, so the line reads
 // continuously from real samples into the forecast. historyGetter(idx) returns the
 // historical value at sortedHistory()[idx] (or null/undefined if not tracked).
-function historyProjectionDatasets(label, color, historyGetter, projData, extraStyle) {
+function historyProjectionDatasets(label, color, historyGetter, projData, projYears, extraStyle) {
   const sorted = sortedHistory();
   const nHist = sorted.length;
-  const actualData = sorted.map((_, idx) => historyGetter(idx) ?? null);
-  // Projected series is padded with nulls over the history range, then starts at the
-  // last actual point (if any) so the two lines connect with no visual gap.
-  const projPadded = new Array(Math.max(0, nHist - 1)).fill(null)
-    .concat(nHist ? [actualData[nHist - 1]] : [])
-    .concat(projData);
+  const historyDates = sorted.map(s => s.date);
+  const actualValues = sorted.map((_, idx) => historyGetter(idx) ?? null);
+  const projDates = projYears.map(projectionYearDate);
+
   const base = { borderColor: color, backgroundColor: "transparent", tension: 0.2, spanGaps: true, ...extraStyle };
   const out = [];
   if (nHist) {
-    out.push({ label: `${label} (Actual)`, data: actualData.concat(new Array(projData.length).fill(null)), borderWidth: 2, ...base });
+    out.push({
+      label: `${label} (Actual)`,
+      data: toTimeSeries(historyDates, actualValues),
+      borderWidth: 2, ...base,
+    });
   }
-  out.push({ label: nHist ? `${label} (Projected)` : label, data: projPadded, borderWidth: 2, borderDash: [6, 4], ...base });
+  // Projected series starts at the last actual point (if any) so the two lines
+  // connect with no visual gap.
+  const connectorDate = nHist ? [historyDates[nHist - 1]] : [];
+  const connectorValue = nHist ? [actualValues[nHist - 1]] : [];
+  out.push({
+    label: nHist ? `${label} (Projected)` : label,
+    data: toTimeSeries(connectorDate.concat(projDates), connectorValue.concat(projData)),
+    borderWidth: 2, borderDash: [6, 4], ...base,
+  });
   return out;
 }
 
 function drawAccountTypeBalances(rows) {
   if (accountTypeChart) accountTypeChart.destroy();
-  const { historyLabels, projLabels } = historyProjectionLabels(rows);
-  const labels = [...historyLabels, ...projLabels];
   const sorted = sortedHistory();
+  const projYears = rows.map(r => r.year);
 
   // Only include types that have at least one account with non-zero data
   const typeDefs = [
@@ -2767,22 +2954,23 @@ function drawAccountTypeBalances(rows) {
           const v = historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null);
           return v != null ? sum + v : sum;
         }, 0);
-      return historyProjectionDatasets(label, color, historyGetter, projData);
+      return historyProjectionDatasets(label, color, historyGetter, projData, projYears);
     })
-    .filter(ds => ds.data.some(v => v > 0));
+    .filter(ds => ds.data.some(pt => pt.y > 0));
 
   accountTypeChart = new Chart(
     document.getElementById("accountTypeChart").getContext("2d"),
     {
       type: "line",
-      data: { labels, datasets },
+      data: { datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           title: { display: true, text: "Account Balances by Type Over Time" },
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y != null ? fmt(c.parsed.y) : "—"}` } },
+          todayLine: sorted.length ? sorted[sorted.length - 1].date : null,
         },
-        scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
+        scales: { x: HISTORY_TIME_X_SCALE, y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
       },
     }
   );
@@ -2797,10 +2985,9 @@ function drawAccountBalances(rows) {
       : "Withdrawals are spread pro-rata across all accounts of the same type.";
     descEl.textContent = `Each account tracked individually. ${mode} Excluded accounts grow but are never drawn from. Solid = actual (historical), dashed = projected.`;
   }
-  const { historyLabels, projLabels } = historyProjectionLabels(rows);
-  const labels = [...historyLabels, ...projLabels];
   const sorted = sortedHistory();
   const nHist = sorted.length;
+  const projYears = rows.map(r => r.year);
 
   // Color palette — cycle through a distinct set for up to ~12 accounts
   const palette = [
@@ -2812,31 +2999,23 @@ function drawAccountBalances(rows) {
     const color = palette[i % palette.length];
     const label = a.excluded ? `${a.name} (excluded)` : a.name;
     const projData = rows.map(r => (r.balancesById && r.balancesById[a.id]) || 0);
-    const actualData = sorted.map((_, idx) => historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null) ?? null);
-    const projPadded = new Array(Math.max(0, nHist - 1)).fill(null)
-      .concat(nHist ? [actualData[nHist - 1]] : [])
-      .concat(projData);
-    const base = { borderColor: color, backgroundColor: "transparent", tension: 0.2, spanGaps: true, borderWidth: a.excluded ? 1 : 2 };
-    const out = [];
-    if (nHist) {
-      out.push({ label: `${label} (Actual)`, data: actualData.concat(new Array(projData.length).fill(null)), ...base });
-    }
-    out.push({ label: nHist ? `${label} (Projected)` : label, data: projPadded, borderDash: [6, 4], ...base });
-    return out;
+    const historyGetter = idx => historyFieldAt(sorted, idx, s => s.accounts ? s.accounts[a.id] : null);
+    return historyProjectionDatasets(label, color, historyGetter, projData, projYears, { borderWidth: a.excluded ? 1 : 2 });
   });
 
   accountBalancesChart = new Chart(
     document.getElementById("accountBalancesChart").getContext("2d"),
     {
       type: "line",
-      data: { labels, datasets },
+      data: { datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           title: { display: true, text: "Individual Account Balances Over Time" },
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y != null ? fmt(c.parsed.y) : "—"}` } },
+          todayLine: nHist ? sorted[nHist - 1].date : null,
         },
-        scales: { y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
+        scales: { x: HISTORY_TIME_X_SCALE, y: { ticks: { callback: v => fmt(v) }, beginAtZero: true } },
       },
     }
   );
@@ -3259,6 +3438,7 @@ document.getElementById("sum-peak").textContent = fmt(peakLiquid);
 
   drawCharts(rows, lowRows, highRows);
   drawAllAssetsBreakdown(rows);
+  drawAccountGrowthChart(rows);
   drawIncomeBreakdown(rows);
   drawRothConversions(rows);
   drawWithdrawalsByType(rows);
@@ -3478,8 +3658,8 @@ function drawAllAssetsBreakdown(rows) {
   );
 }
 
-function drawIncomeBreakdown(rows) {
-  if (incomeBreakdownChart) incomeBreakdownChart.destroy();
+function drawAccountGrowthChart(rows) {
+  if (accountGrowthChart) accountGrowthChart.destroy();
   const dr = deflateRows(rows, summaryRealMode);
   const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
 
@@ -3503,6 +3683,44 @@ function drawIncomeBreakdown(rows) {
     backgroundColor: color,
   }));
 
+  accountGrowthChart = new Chart(
+    document.getElementById("accountGrowthChart").getContext("2d"),
+    {
+      type: "bar",
+      data: { labels, datasets: growthDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: "Annual Investment Growth by Account Type (stacked)" },
+          tooltip: {
+            mode: "index",
+            intersect: false,
+            callbacks: {
+              label: c => {
+                const v = c.parsed.y;
+                return v > 0 ? `  ${c.dataset.label}: ${fmt(v)}` : null;
+              },
+              footer: items => {
+                const total = items.reduce((s, i) => s + (i.parsed.y || 0), 0);
+                return `  Total: ${fmt(total)}`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, ticks: { callback: v => fmt(v) } },
+        },
+      },
+    }
+  );
+}
+
+function drawIncomeBreakdown(rows) {
+  if (incomeBreakdownChart) incomeBreakdownChart.destroy();
+  const dr = deflateRows(rows, summaryRealMode);
+  const labels = dr.map(r => [String(r.year), `${r.s1Age}/${r.s2Age}`]);
+
   incomeBreakdownChart = new Chart(
     document.getElementById("incomeBreakdownChart").getContext("2d"),
     {
@@ -3510,18 +3728,18 @@ function drawIncomeBreakdown(rows) {
       data: {
         labels,
         datasets: [
-          { label: "Salaries",               data: dr.map(r => (r.salary1 || 0) + (r.salary2 || 0)), backgroundColor: "#1d4ed8" },
-          { label: "Social Security",        data: dr.map(r => r.grossSS || 0),       backgroundColor: "#0ea5e9" },
-          { label: "Rental Net",             data: dr.map(r => r.rentalNet || 0),     backgroundColor: "#10b981" },
-          { label: "Dividends",              data: dr.map(r => r.dividendIncome || 0),backgroundColor: "#6366f1" },
-          { label: "Property Sale Proceeds", data: dr.map(r => r.saleProceeds || 0),  backgroundColor: "#84cc16" },
-          ...growthDatasets,
+          { label: "Salaries",               data: dr.map(r => (r.salary1 || 0) + (r.salary2 || 0)), backgroundColor: "#1d4ed8", stack: "cash" },
+          { label: "Social Security",        data: dr.map(r => r.grossSS || 0),       backgroundColor: "#0ea5e9", stack: "cash" },
+          { label: "Rental Net",             data: dr.map(r => r.rentalNet || 0),     backgroundColor: "#10b981", stack: "cash" },
+          { label: "Dividends",              data: dr.map(r => r.dividendIncome || 0),backgroundColor: "#6366f1", stack: "cash" },
+          { label: "Property Sale Proceeds", data: dr.map(r => r.saleProceeds || 0),  backgroundColor: "#84cc16", stack: "cash" },
+          ...buildWithdrawalSourceDatasets(dr, "Withdrawn", "cash"),
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          title: { display: true, text: "Annual Inflows & Investment Growth by Source (stacked)" },
+          title: { display: true, text: "Cash Inflows (stacked)" },
           tooltip: {
             mode: "index",
             intersect: false,
@@ -3584,6 +3802,54 @@ function drawRothConversions(rows) {
   );
 }
 
+// Shared account-type/source grouping used by both "Annual Withdrawals by Account
+// Type & Source" and the Cash Inflows chart's withdrawal datasets, so the same
+// dollar amount always carries the same label wherever it's shown.
+const WITHDRAWAL_SOURCE_GROUPS = [
+  { label: "Taxable",        rawKeys: ["taxable"],                    rmdField: null,           bracketField: null,                   color: ["#fbbf24","#f59e0b","#d97706"] },
+  { label: "Traditional/401k", rawKeys: ["ira","sep_ira","401k"],     rmdField: "traditionalRMD", bracketField: null,                  color: ["#f87171","#ef4444","#dc2626"] },
+  { label: "Inherited IRA",  rawKeys: ["inherited_ira"],              rmdField: "inheritedRMD", bracketField: "inheritedBracketDrain",  color: ["#fb923c","#f97316","#ea580c"] },
+  { label: "Roth",           rawKeys: ["roth","roth_401k"],           rmdField: null,           bracketField: null,                   color: ["#34d399","#10b981","#059669"] },
+  { label: "HSA",            rawKeys: ["hsa"],                        rmdField: null,           bracketField: null,                   color: ["#a78bfa","#8b5cf6","#7c3aed"] },
+];
+
+// Builds one dataset per (account-type group × source), matching
+// WITHDRAWAL_SOURCE_GROUPS, for a stacked bar chart. spendingSuffix lets callers
+// reuse the same breakdown with different label wording (e.g. "Spending WD" on
+// the withdrawals chart vs "Withdrawn" on the Cash Inflows chart).
+function buildWithdrawalSourceDatasets(dr, spendingLabel, stackKey) {
+  const sumTypes = (r, keys) => keys.reduce((s, k) => s + (r.withdrawnByType?.[k] || 0), 0);
+  const datasets = [];
+  WITHDRAWAL_SOURCE_GROUPS.forEach(({ label, rawKeys, rmdField, bracketField, color }) => {
+    if (rmdField) {
+      datasets.push({
+        label: `${label} RMD`,
+        data: dr.map(r => r[rmdField] || 0),
+        backgroundColor: color[0],
+        stack: stackKey,
+      });
+    }
+    if (bracketField) {
+      datasets.push({
+        label: `${label} Bracket Drain`,
+        data: dr.map(r => r[bracketField] || 0),
+        backgroundColor: color[1],
+        stack: stackKey,
+      });
+    }
+    // Spending withdrawals: sum raw account-type keys from withdrawnByType.
+    // For inherited_ira: withdrawnByType already equals inheritedSpendWD (excludes RMD/bracket).
+    // For traditional: withdrawnByType["ira"/"sep_ira"/"401k"] are spend+tax pulls only (RMD separate).
+    datasets.push({
+      label: `${label} ${spendingLabel}`,
+      data: dr.map(r => Math.max(0, sumTypes(r, rawKeys))),
+      backgroundColor: color[2],
+      stack: stackKey,
+    });
+  });
+  return datasets;
+}
+
 function drawWithdrawalsByType(rows) {
   if (withdrawalsByTypeChart) withdrawalsByTypeChart.destroy();
   const dr = deflateRows(rows, summaryRealMode);
@@ -3597,47 +3863,7 @@ function drawWithdrawalsByType(rows) {
   // withdrawnByType already includes all spend+tax pulls; inherited bracket/RMD are tracked separately.
   // To avoid double-counting inherited: withdrawnByType["inherited_ira"] = inheritedSpendWD (spend+tax pulls),
   // while inheritedRMD and inheritedBracketDrain are on top of that.
-
-  // withdrawnByType keys are raw account types: "ira","sep_ira","401k","roth","roth_401k","taxable","inherited_ira","hsa"
-  // Helper sums all raw keys that belong to a display group
-  const sumTypes = (r, keys) => keys.reduce((s, k) => s + (r.withdrawnByType?.[k] || 0), 0);
-
-  const accts = [
-    { label: "Taxable",        rawKeys: ["taxable"],                    rmdField: null,           bracketField: null,                   color: ["#fbbf24","#f59e0b","#d97706"] },
-    { label: "Traditional/401k", rawKeys: ["ira","sep_ira","401k"],     rmdField: "traditionalRMD", bracketField: null,                  color: ["#f87171","#ef4444","#dc2626"] },
-    { label: "Inherited IRA",  rawKeys: ["inherited_ira"],              rmdField: "inheritedRMD", bracketField: "inheritedBracketDrain",  color: ["#fb923c","#f97316","#ea580c"] },
-    { label: "Roth",           rawKeys: ["roth","roth_401k"],           rmdField: null,           bracketField: null,                   color: ["#34d399","#10b981","#059669"] },
-    { label: "HSA",            rawKeys: ["hsa"],                        rmdField: null,           bracketField: null,                   color: ["#a78bfa","#8b5cf6","#7c3aed"] },
-  ];
-
-  const datasets = [];
-  accts.forEach(({ label, rawKeys, rmdField, bracketField, color }) => {
-    if (rmdField) {
-      datasets.push({
-        label: `${label} RMD`,
-        data: dr.map(r => r[rmdField] || 0),
-        backgroundColor: color[0],
-        stack: "wd",
-      });
-    }
-    if (bracketField) {
-      datasets.push({
-        label: `${label} Bracket Drain`,
-        data: dr.map(r => r[bracketField] || 0),
-        backgroundColor: color[1],
-        stack: "wd",
-      });
-    }
-    // Spending withdrawals: sum raw account-type keys from withdrawnByType.
-    // For inherited_ira: withdrawnByType already equals inheritedSpendWD (excludes RMD/bracket).
-    // For traditional: withdrawnByType["ira"/"sep_ira"/"401k"] are spend+tax pulls only (RMD separate).
-    datasets.push({
-      label: `${label} Spending WD`,
-      data: dr.map(r => Math.max(0, sumTypes(r, rawKeys))),
-      backgroundColor: color[2],
-      stack: "wd",
-    });
-  });
+  const datasets = buildWithdrawalSourceDatasets(dr, "Spending WD", "wd");
 
   withdrawalsByTypeChart = new Chart(
     document.getElementById("withdrawalsByTypeChart").getContext("2d"),
